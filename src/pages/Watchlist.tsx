@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { Card, CardTitle, Delta, EmptyState, NumberField, Pill, Stat, buttonClass } from '../components/ui.tsx'
+import { mergeQuotes } from '../../shared/quotes.mjs'
 import { getQuotes } from '../lib/api.ts'
 import { coins, dateTime } from '../lib/format.ts'
 import { profit, signalFor, type Signal } from '../../shared/market.mjs'
@@ -23,7 +24,8 @@ const SIGNAL_LABEL: Record<Signal, string> = {
 
 export default function Watchlist() {
   const { data, settings, updateWatch, removeWatch } = useStore()
-  const [quotes, setQuotes] = useState<Record<string, Quote | null>>({})
+  const [liveQuotes, setLiveQuotes] = useState<Record<string, Quote | null>>({})
+  const [source, setSource] = useState<'futbin' | 'demo'>('demo')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null)
@@ -39,7 +41,8 @@ export default function Watchlist() {
       setLoading(true)
       getQuotes(list, settings.platform, signal)
         .then((response) => {
-          setQuotes(response.quotes)
+          setLiveQuotes(response.quotes)
+          setSource(response.source)
           setUpdatedAt(Date.now())
           setFromCache(response.fromCache === true)
           setError(null)
@@ -60,6 +63,11 @@ export default function Watchlist() {
     refresh(controller.signal)
     return () => controller.abort()
   }, [refresh])
+
+  const quotes = useMemo(
+    () => mergeQuotes(liveQuotes, data.manualPrices, source) as Record<string, Quote | null>,
+    [liveQuotes, data.manualPrices, source],
+  )
 
   const buySignals = data.watchlist.filter(
     (item) => signalFor(quotes[item.id]?.price ?? 0, item.buyTarget, item.sellTarget) === 'compra',

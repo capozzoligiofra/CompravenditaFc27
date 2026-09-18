@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
+import ManualPrice from '../components/ManualPrice.tsx'
 import Sparkline from '../components/Sparkline.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
 import { getPlayer, searchPlayers } from '../lib/api.ts'
 import { coins } from '../lib/format.ts'
 import { breakEvenSell, maxBuyForMargin, roundToMarketStep, sellForMargin } from '../../shared/market.mjs'
+import { mergeQuotes } from '../../shared/quotes.mjs'
 import { useStore } from '../lib/useStore.ts'
-import type { Player, PlayerDetail } from '../types.ts'
+import type { Player, PlayerDetail, Quote } from '../types.ts'
 
 const PLATFORM_LABEL = { ps: 'PlayStation', xbox: 'Xbox', pc: 'PC' } as const
 
 export default function Market() {
-  const { settings, addWatch, isWatched, addPosition, rememberPlayer } = useStore()
+  const { data, settings, addWatch, isWatched, addPosition, rememberPlayer } = useStore()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Player[]>([])
   const [searching, setSearching] = useState(false)
@@ -64,7 +66,16 @@ export default function Market() {
     return () => controller.abort()
   }, [selected, settings.platform])
 
-  const quote = detail?.prices?.[settings.platform] ?? null
+  // Anche qui il prezzo scritto a mano copre il buco lasciato dalla sorgente.
+  const quote = useMemo(() => {
+    if (!selected) return null
+    const dalla = detail?.prices?.[settings.platform] ?? null
+    const merged = mergeQuotes({ [selected.id]: dalla }, data.manualPrices, detail?.source ?? 'demo') as Record<
+      string,
+      Quote | null
+    >
+    return merged[selected.id] ?? null
+  }, [selected, detail, settings.platform, data.manualPrices])
   const price = quote?.price ?? 0
   const maxBuy = price ? roundToMarketStep(maxBuyForMargin(price, settings.targetMarginPercent, settings.taxPercent)) : 0
   const suggestedSell = price ? sellForMargin(price, settings.targetMarginPercent, settings.taxPercent) : 0
@@ -143,7 +154,7 @@ export default function Market() {
                 <Stat
                   label="Prezzo attuale"
                   value={coins(price)}
-                  hint={detail?.fromCache ? 'prezzo salvato, sei offline' : quote?.updated}
+                  hint={detail?.fromCache && !quote?.manual ? 'prezzo salvato, sei offline' : quote?.updated}
                 />
                 <Stat label="Min 24h" value={coins(quote?.minPrice ?? 0)} />
                 <Stat label="Max 24h" value={coins(quote?.maxPrice ?? 0)} />
@@ -157,6 +168,12 @@ export default function Market() {
               <div className="mt-4">
                 <Sparkline points={detail?.history ?? []} />
               </div>
+
+              {detail?.source !== 'futbin' ? (
+                <div className="mt-4">
+                  <ManualPrice playerId={selected.id} />
+                </div>
+              ) : null}
 
               <div className="mt-5 rounded-xl border border-gain/25 bg-gain/5 p-4">
                 <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-gain">

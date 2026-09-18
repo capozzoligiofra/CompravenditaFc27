@@ -5,6 +5,7 @@ import type { Catalyst } from '../../shared/catalysts.d.mts'
 import { currentPhase, upcomingEvents } from '../../shared/calendar.mjs'
 import type { CalendarEvent, Phase } from '../../shared/calendar.d.mts'
 import { demoRoster } from '../../shared/demo.mjs'
+import { mergeQuotes } from '../../shared/quotes.mjs'
 import type { Opportunity, ScoreInput, SellVerdict } from '../../shared/scoring.d.mts'
 import { rankOpportunities, scoreSell } from '../../shared/scoring.mjs'
 import type { Alert, Player, Quote } from '../types.ts'
@@ -37,7 +38,7 @@ export function useOpportunities(): OpportunitiesState {
   const [refining, setRefining] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [source, setSource] = useState<'futbin' | 'demo' | null>(null)
-  const [quotes, setQuotes] = useState<Record<string, Quote | null>>({})
+  const [liveQuotes, setLiveQuotes] = useState<Record<string, Quote | null>>({})
   const [histories, setHistories] = useState<Record<string, { t: number; price: number }[]>>({})
   const [remote, setRemote] = useState<Catalyst[]>([])
   const [catalystsReason, setCatalystsReason] = useState<string | null>(null)
@@ -117,7 +118,7 @@ export function useOpportunities(): OpportunitiesState {
     setLoading(true)
     getQuotes(ids, settings.platform, controller.signal)
       .then((response) => {
-        setQuotes(response.quotes)
+        setLiveQuotes(response.quotes)
         setSource(response.source)
         setError(null)
       })
@@ -142,6 +143,12 @@ export function useOpportunities(): OpportunitiesState {
       .catch(() => undefined)
     return () => controller.abort()
   }, [tick])
+
+  // I prezzi scritti a mano coprono i buchi lasciati dalla sorgente.
+  const quotes = useMemo(
+    () => mergeQuotes(liveQuotes, data.manualPrices, source ?? 'demo') as Record<string, Quote | null>,
+    [liveQuotes, data.manualPrices, source],
+  )
 
   const visible = useMemo(
     () => (source === 'futbin' ? candidates.filter((player) => !seeded.has(player.id)) : candidates),

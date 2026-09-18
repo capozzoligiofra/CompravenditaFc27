@@ -14,7 +14,7 @@ const PLATFORMS: { value: Platform; label: string }[] = [
 ]
 
 export default function SettingsPage() {
-  const { data, settings, updateSettings, replaceAll, reset } = useStore()
+  const { data, settings, updateSettings, replaceAll, reset, clearManualPrices } = useStore()
   const { health, error } = useHealth()
   const fileInput = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -220,6 +220,15 @@ export default function SettingsPage() {
         </div>
         {message ? <p className="mt-2 text-xs text-gain">{message}</p> : null}
         <p className="mt-3 text-xs text-chalk-dim">
+          {Object.keys(data.manualPrices).length > 0 ? (
+            <>
+              {Object.keys(data.manualPrices).length} prezzi scritti a mano ·{' '}
+              <button type="button" className="underline hover:text-loss" onClick={clearManualPrices}>
+                cancellali
+              </button>
+              {' · '}
+            </>
+          ) : null}
           {data.watchlist.length} {data.watchlist.length === 1 ? 'giocatore' : 'giocatori'} in watchlist ·{' '}
           {data.positions.length} {data.positions.length === 1 ? 'posizione registrata' : 'posizioni registrate'}
         </p>

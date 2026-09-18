@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 
+import ManualPrice from '../components/ManualPrice.tsx'
 import RosterImport from '../components/RosterImport.tsx'
 import { Card, CardTitle, EmptyState, NumberField, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
 import type { SellAction, SellVerdict } from '../../shared/scoring.d.mts'
@@ -206,6 +207,12 @@ export default function Portfolio() {
                           </li>
                         ))}
                       </ul>
+                    ) : null}
+
+                    {!market || quotes[position.playerId]?.manual ? (
+                      <div className="mt-3">
+                        <ManualPrice playerId={position.playerId} />
+                      </div>
                     ) : null}
 
                     <div className="mt-3 flex flex-wrap items-end gap-2">

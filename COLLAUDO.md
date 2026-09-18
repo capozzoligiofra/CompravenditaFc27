@@ -114,6 +114,15 @@ che l'app non racconti storie. Inserisci acquisto `10000` e vendita `12000`:
 - [ ] Pareggio **10.526** (sotto questa cifra rivendere è una perdita)
 - [ ] Nella tabella, margine 15% → compra entro **9.900**
 
+### Prezzi scritti a mano
+
+Serve quando Futbin risponde `403` (succede spesso) e i prezzi restano demo.
+
+- [ ] Nella scheda di un giocatore scrivi una cifra in «Prezzo visto in gioco»
+      e premi Salva: il prezzo in alto diventa quello, con scritto «inserito
+      da te», e il piano di trade si ricalcola su quella cifra.
+- [ ] Lo stesso prezzo compare in Watchlist e nei verdetti della rosa.
+
 ### Conti (la tua rosa)
 
 - [ ] Incolla nel riquadro «Importa la rosa»:

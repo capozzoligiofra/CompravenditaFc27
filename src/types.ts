@@ -22,6 +22,8 @@ export interface Quote {
   maxPrice: number
   changePercent: number
   updated: string
+  /** Vero quando il prezzo l'hai scritto tu, non la sorgente automatica. */
+  manual?: boolean
 }
 
 export interface HistoryPoint {
@@ -95,4 +97,6 @@ export interface AppData {
   alerts: Alert[]
   /** Giocatori già incontrati: è la base su cui l'app cerca le occasioni. */
   seen: Player[]
+  /** Prezzi scritti a mano, quando la sorgente automatica non è disponibile. */
+  manualPrices: Record<string, { price: number; at: number }>
 }

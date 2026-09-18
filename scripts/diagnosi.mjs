@@ -143,6 +143,31 @@ if (falliti.length === 0) {
   console.log('                             Disattiva la scansione HTTPS oppure indica il certificato con')
   console.log('                             NODE_EXTRA_CA_CERTS.')
   console.log('  UND_ERR_CONNECT_TIMEOUT    Connessione bloccata prima di partire: spesso un proxy.')
+  const problemaCertificati = esiti.some(
+    (esito) => esito.errore && /UNABLE_TO_VERIFY|SELF_SIGNED|CERT_/i.test(esito.errore),
+  )
+  if (problemaCertificati) {
+    console.log('')
+    console.log('Certificati: Node non si fida di quelli installati su questo computer.')
+    console.log('Di solito è un antivirus che ispeziona il traffico cifrato. Prova così:')
+    console.log('')
+    console.log('  Windows (PowerShell)   $env:NODE_OPTIONS="--use-system-ca"; npm run diagnosi')
+    console.log('  Windows (Prompt)       set NODE_OPTIONS=--use-system-ca && npm run diagnosi')
+    console.log('  macOS e Linux          NODE_OPTIONS=--use-system-ca npm run diagnosi')
+    console.log('')
+    console.log('Se funziona, usa la stessa variabile anche per "npm run dev" e "npm run mobile".')
+  }
+
+  const bloccoFutbin = esiti.some((esito) => esito.errore && /40[13]|503/.test(esito.errore))
+  if (bloccoFutbin) {
+    console.log('')
+    console.log('Futbin risponde 403: rifiuta le richieste che non arrivano da un browser.')
+    console.log("Non c'è un modo pulito di aggirarlo, e travestire l'app da browser non è una")
+    console.log('strada che vale la pena prendere. In compenso puoi scrivere i prezzi a mano:')
+    console.log("nella scheda di un giocatore c'è il campo «Prezzo visto in gioco», e da lì")
+    console.log('margini, target, occasioni e verdetti di vendita funzionano come sempre.')
+  }
+
   console.log('')
   console.log("L'app resta usabile: mostra il badge DATI DEMO e lavora sul dataset incluso.")
 }

@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
+import { manualQuote, mergeQuotes } from '../shared/quotes.mjs'
+
+const live = { price: 12_000, minPrice: 11_000, maxPrice: 13_000, changePercent: 2, updated: 'ora' }
+
+test('il prezzo scritto a mano riempie i buchi della sorgente', () => {
+  const merged = mergeQuotes({ '1': null }, { '1': { price: 9_000, at: Date.now() } }, 'futbin')
+  assert.equal(merged['1'].price, 9_000)
+  assert.equal(merged['1'].manual, true)
+})
+
+test('la quotazione vera vince su quella scritta a mano', () => {
+  const merged = mergeQuotes({ '1': live }, { '1': { price: 9_000, at: Date.now() } }, 'futbin')
+  assert.equal(merged['1'].price, 12_000)
+  assert.equal(merged['1'].manual, undefined)
+})
+
+test('sui dati demo comanda il prezzo scritto a mano', () => {
+  const merged = mergeQuotes({ '1': { ...live, updated: 'dataset demo' } }, { '1': { price: 9_000, at: Date.now() } }, 'demo')
+  assert.equal(merged['1'].price, 9_000)
+  assert.equal(merged['1'].manual, true)
+})
+
+test('un prezzo a zero non sovrascrive niente', () => {
+  const merged = mergeQuotes({ '1': live }, { '1': { price: 0, at: Date.now() } }, 'demo')
+  assert.equal(merged['1'].price, 12_000)
+})
+
+test('la data di inserimento finisce nella descrizione', () => {
+  const quote = manualQuote(9_000, Date.parse('2026-09-18T10:00:00Z'))
+  assert.match(quote.updated, /inserito da te il 18\/09\/2026/)
+})

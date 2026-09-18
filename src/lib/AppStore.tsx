@@ -18,6 +18,8 @@ export interface Store {
   reopenPosition: (id: string) => void
   removePosition: (id: string) => void
   rememberPlayer: (player: Player) => void
+  setManualPrice: (playerId: string, price: number) => void
+  clearManualPrices: () => void
   addCatalyst: (raw: Partial<Catalyst> & { title: string }) => void
   removeCatalyst: (id: string) => void
   pushAlerts: (alerts: Alert[]) => Alert[]
@@ -104,6 +106,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  /** Prezzo letto in gioco e scritto a mano: vale finché non arriva quello vero. */
+  const setManualPrice = useCallback((playerId: string, price: number) => {
+    if (!playerId) return
+    setData((current) => {
+      const next = { ...current.manualPrices }
+      if (price > 0) next[playerId] = { price: Math.round(price), at: Date.now() }
+      else delete next[playerId]
+      return { ...current, manualPrices: next }
+    })
+  }, [])
+
+  const clearManualPrices = useCallback(() => setData((current) => ({ ...current, manualPrices: {} })), [])
+
   const addCatalyst = useCallback((raw: Partial<Catalyst> & { title: string }) => {
     const catalyst = normalizeCatalyst({ ...raw, id: raw.id ?? `manuale-${newId()}`, source: 'manuale' })
     setData((current) => ({ ...current, catalysts: [catalyst, ...current.catalysts] }))
@@ -158,6 +173,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       reopenPosition,
       removePosition,
       rememberPlayer,
+      setManualPrice,
+      clearManualPrices,
       addCatalyst,
       removeCatalyst,
       pushAlerts,
@@ -178,6 +195,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       reopenPosition,
       removePosition,
       rememberPlayer,
+      setManualPrice,
+      clearManualPrices,
       addCatalyst,
       removeCatalyst,
       pushAlerts,

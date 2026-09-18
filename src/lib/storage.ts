@@ -9,6 +9,7 @@ export const defaultData: AppData = {
   catalysts: [],
   alerts: [],
   seen: [],
+  manualPrices: {},
 }
 
 /** Lo stato vive solo nel browser: nessun account, nessun dato inviato altrove. */
@@ -24,6 +25,7 @@ export function loadData(): AppData {
       catalysts: Array.isArray(parsed.catalysts) ? parsed.catalysts : [],
       alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
       seen: Array.isArray(parsed.seen) ? parsed.seen : [],
+      manualPrices: isRecord(parsed.manualPrices) ? parsed.manualPrices : {},
     }
   } catch {
     return defaultData
@@ -51,5 +53,10 @@ export function importData(raw: string): AppData {
     catalysts: Array.isArray(parsed.catalysts) ? parsed.catalysts : [],
     alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
     seen: Array.isArray(parsed.seen) ? parsed.seen : [],
+    manualPrices: isRecord(parsed.manualPrices) ? parsed.manualPrices : {},
   }
+}
+
+function isRecord(value: unknown): value is Record<string, { price: number; at: number }> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }

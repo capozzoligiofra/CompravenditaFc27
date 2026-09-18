@@ -314,6 +314,34 @@ posizione del prezzo rispetto ai massimi del periodo, le SBC che la richiedono
 in quel momento e la fase della settimana. Quando scatta un «vendi ora» arriva
 l'avviso.
 
+## Quando i prezzi automatici non arrivano
+
+Futbin protegge il sito dalle richieste automatiche: a un programma risponde
+spesso **403**, anche da una normale connessione di casa. È il motivo per cui
+l'app può mostrare `DATI DEMO` pur essendo tutto configurato bene. Travestire
+l'app da browser per aggirare il blocco non è una strada che vale la pena
+prendere: è un controllo di accesso, e violarlo mette a rischio te e il
+servizio.
+
+Quello che si fa invece:
+
+- **Scrivere il prezzo a mano.** Nella scheda di un giocatore, e su ogni carta
+  della rosa, c'è il campo **«Prezzo visto in gioco»**: scrivi la cifra che
+  leggi sul mercato e tutto il resto — margini, BIN massimo, target, occasioni,
+  verdetti di vendita, avvisi — funziona esattamente come con il prezzo
+  automatico. Il prezzo scritto resta finché non ne arriva uno vero, e
+  l'interfaccia lo dichiara («inserito da te il …»).
+- **Controllare il perché** con `npm run diagnosi`, che distingue il blocco di
+  Futbin da un problema del computer.
+
+Un caso frequente su Windows: l'antivirus ispeziona il traffico cifrato e Node
+non riconosce il suo certificato (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`). Si
+risolve dicendo a Node di usare i certificati di sistema:
+
+```powershell
+$env:NODE_OPTIONS="--use-system-ca"; npm run dev
+```
+
 ## Come funziona il collegamento a Futbin
 
 Futbin **non ha un'API pubblica** e il browser non può interrogarlo
@@ -373,6 +401,7 @@ shared/          logica pura, condivisa fra proxy e browser e coperta da test
   alerts.mjs     regole degli avvisi
   roster-import.mjs  lettura della rosa incollata
   text.mjs       confronto dei nomi senza accenti
+  quotes.mjs     unione fra prezzi automatici e prezzi scritti a mano
   demo.mjs       dataset demo, usato sia dal proxy sia dall'app statica
 server/
   index.mjs   avvio del server locale e indirizzi per il telefono
