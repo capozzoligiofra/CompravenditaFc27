@@ -175,6 +175,11 @@ autorizza Node sulla rete privata quando Windows o macOS lo chiede.
 
 - [ ] Si apre e mostra il badge `dati demo` (là il proxy non esiste: è
       previsto).
+- [ ] **Pagina bianca?** Allora Pages sta pubblicando i sorgenti invece della
+      build: *Settings → Pages → Source* va messo su **GitHub Actions**, poi
+      ricarica con Ctrl+Shift+R. Conferma del problema: nella scheda Actions
+      compaiono due processi a ogni push e «pages build and deployment»
+      finisce dopo «Pubblica su GitHub Pages».
 - [ ] Calcoli, watchlist, rosa e avvisi funzionano.
 - [ ] Si installa sul telefono come la versione locale.
 

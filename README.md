@@ -84,12 +84,21 @@ di casa, non su Wi-Fi pubbliche.
 ### 2. GitHub Pages: l'app online, senza prezzi live
 
 Il repository pubblica da solo la versione statica su GitHub Pages a ogni push
-su `main` (workflow `.github/workflows/pages.yml`, che attiva Pages da sé alla
-prima esecuzione). L'indirizzo è:
+su `main` (workflow `.github/workflows/pages.yml`). L'indirizzo è:
 
 ```
 https://capozzoligiofra.github.io/CompravenditaFc27/
 ```
+
+> **Da impostare una volta sola.** In *Settings → Pages → Build and
+> deployment → Source* dev'esserci **GitHub Actions**, non «Deploy from a
+> branch». Con l'impostazione a branch, GitHub pubblica i file sorgenti del
+> repository invece della build: il browser riceve un `index.html` che punta
+> a `/src/main.tsx`, che nessun browser sa eseguire, e mostra una **pagina
+> bianca**. Si riconosce dal fatto che a ogni push girano due processi,
+> «Pubblica su GitHub Pages» e «pages build and deployment»: il secondo
+> finisce dopo e sovrascrive il lavoro del primo. Cambiata l'impostazione, il
+> secondo sparisce da solo.
 
 Da lì l'app si apre ovunque e si installa sul telefono come le altre versioni.
 Il limite è strutturale, non un dettaglio: **Pages serve solo file statici**,
