@@ -335,7 +335,7 @@ toccare il codice, bastano le variabili d'ambiente.
 
 | Variabile | Default | A cosa serve |
 | --- | --- | --- |
-| `FUT_YEAR` | `26` | anno del gioco negli URL Futbin (`26`, `27`…) |
+| `FUT_YEAR` | `27` | anno del gioco negli URL Futbin (`27`, `26`…) |
 | `FUTBIN_ENABLED` | `true` | `false` per lavorare solo sul dataset demo |
 | `FUTBIN_SEARCH_URL` | `.../search` | endpoint di ricerca |
 | `FUTBIN_PRICES_URL` | `.../<anno>/playerPrices` | endpoint prezzi |
@@ -348,14 +348,14 @@ toccare il codice, bastano le variabili d'ambiente.
 | `PORT` | `8787` | porta del proxy |
 | `HOST` | `127.0.0.1` | `0.0.0.0` per accettare i dispositivi della rete locale |
 
-**L'anno del gioco lo trova da solo.** Negli indirizzi di Futbin compare
-l'anno (`/26/`, `/27/`…) e cambia a ogni settembre. L'app parte dall'anno
-configurato e, se quello non risponde, prova gli anni vicini e adotta quello
-vivo, dichiarandolo nel badge in alto e in `npm run diagnosi`. Quindi al
-lancio del gioco nuovo non serve aggiornare niente; volendo si può forzare:
+**L'anno del gioco.** Negli indirizzi di Futbin compare l'anno (`/27/`,
+`/26/`…) e cambia a ogni settembre. L'app punta a **FC27** e, se quelle pagine
+non rispondessero, prova gli anni vicini e adotta quello vivo, dichiarandolo
+nel badge in alto e in `npm run diagnosi`: una rete di sicurezza per il
+passaggio al gioco successivo, non un cambio di gioco. Volendo si forza:
 
 ```bash
-FUT_YEAR=27 npm run dev
+FUT_YEAR=26 npm run dev
 ```
 
 Futbin è un servizio di terzi con propri termini d'uso: tieni il traffico a

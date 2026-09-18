@@ -13,8 +13,8 @@ import { parseCoins, parsePercent, RateLimiter, TtlCache } from './util.mjs'
 // configurato e, se quello non risponde, si provano gli anni vicini fino a
 // trovare quello vivo: così l'app continua a funzionare quando esce il
 // gioco nuovo, senza che nessuno debba aggiornarla.
-const CONFIGURED_YEAR = String(process.env.FUT_YEAR ?? process.env.FC27_YEAR ?? '26')
-const YEAR_CANDIDATES = [...new Set([CONFIGURED_YEAR, '26', '27', '25'])]
+const CONFIGURED_YEAR = String(process.env.FUT_YEAR ?? process.env.FC27_YEAR ?? '27')
+const YEAR_CANDIDATES = [...new Set([CONFIGURED_YEAR, '27', '26', '25'])]
 let activeYear = CONFIGURED_YEAR
 
 const BASE = (process.env.FUTBIN_BASE ?? 'https://www.futbin.com').replace(/\/$/, '')
