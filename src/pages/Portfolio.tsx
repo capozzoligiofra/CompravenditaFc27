@@ -1,11 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
+import RosterImport from '../components/RosterImport.tsx'
 import { Card, CardTitle, EmptyState, NumberField, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
-import { getQuotes } from '../lib/api.ts'
+import type { SellAction, SellVerdict } from '../../shared/scoring.d.mts'
 import { coins, dateTime, percent, signedCoins } from '../lib/format.ts'
 import { profit, roiPercent } from '../../shared/market.mjs'
+import { useOpportunities } from '../lib/useOpportunities.ts'
 import { useStore } from '../lib/useStore.ts'
-import type { Quote } from '../types.ts'
+
+const SELL: Record<SellAction, { label: string; tone: 'gain' | 'loss' | 'flag' | 'neutral' }> = {
+  'vendi-ora': { label: 'vendi ora', tone: 'gain' },
+  'vendi-presto': { label: 'vendi presto', tone: 'flag' },
+  tieni: { label: 'tieni', tone: 'neutral' },
+  aspetta: { label: 'aspetta', tone: 'neutral' },
+}
 
 function toCsv(rows: string[][]): string {
   return rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n')
@@ -13,31 +21,20 @@ function toCsv(rows: string[][]): string {
 
 export default function Portfolio() {
   const { data, settings, addPosition, closePosition, reopenPosition, removePosition } = useStore()
+  const { quotes, sellVerdicts, loading } = useOpportunities()
   const [name, setName] = useState('')
   const [buyPrice, setBuyPrice] = useState(0)
   const [quantity, setQuantity] = useState(1)
-  const [quotes, setQuotes] = useState<Record<string, Quote | null>>({})
   const [sellDrafts, setSellDrafts] = useState<Record<string, number>>({})
+
+  const verdictByPlayer = useMemo(() => {
+    const map = new Map<string, SellVerdict>()
+    for (const verdict of sellVerdicts) map.set(verdict.player.id, verdict)
+    return map
+  }, [sellVerdicts])
 
   const open = useMemo(() => data.positions.filter((position) => position.sellPrice === null), [data.positions])
   const closed = useMemo(() => data.positions.filter((position) => position.sellPrice !== null), [data.positions])
-
-  const trackedIds = useMemo(
-    () => [...new Set(open.map((position) => position.playerId).filter(Boolean))].join(','),
-    [open],
-  )
-
-  // Per le posizioni aperte con un giocatore collegato mostriamo anche il
-  // valore corrente di mercato, così il P&L latente è reale e non stimato.
-  useEffect(() => {
-    const ids = trackedIds ? trackedIds.split(',') : []
-    if (ids.length === 0) return undefined
-    const controller = new AbortController()
-    getQuotes(ids, settings.platform, controller.signal)
-      .then((response) => setQuotes(response.quotes))
-      .catch(() => undefined)
-    return () => controller.abort()
-  }, [trackedIds, settings.platform])
 
   const invested = open.reduce((total, position) => total + position.buyPrice * position.quantity, 0)
   const realized = closed.reduce(
@@ -53,6 +50,8 @@ export default function Portfolio() {
     (position) => profit(position.buyPrice, position.sellPrice ?? 0, settings.taxPercent) > 0,
   ).length
   const winRate = closed.length ? (wins / closed.length) * 100 : 0
+
+  const daVendere = sellVerdicts.filter((verdict) => verdict.action === 'vendi-ora').length
 
   const exportCsv = () => {
     const rows = [
@@ -101,10 +100,17 @@ export default function Portfolio() {
           />
           <Stat label="Trade in utile" value={closed.length ? percent(winRate, 0) : '—'} />
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <button type="button" className={buttonClass} onClick={exportCsv} disabled={data.positions.length === 0}>
             Esporta CSV
           </button>
+          <span className="text-xs text-chalk-dim">
+            {loading
+              ? 'controllo i prezzi della rosa…'
+              : daVendere > 0
+                ? `${daVendere} ${daVendere === 1 ? 'carta' : 'carte'} da vendere adesso`
+                : 'nessuna carta da vendere adesso'}
+          </span>
         </div>
       </Card>
 
@@ -151,9 +157,11 @@ export default function Portfolio() {
         </form>
       </Card>
 
+      <RosterImport />
+
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-chalk-dim">
-          Posizioni aperte ({open.length})
+          La tua rosa ({open.length})
         </h2>
         {open.length === 0 ? (
           <EmptyState title="Nessuna carta in magazzino">
@@ -162,6 +170,7 @@ export default function Portfolio() {
         ) : (
           <ul className="space-y-3">
             {open.map((position) => {
+              const verdict = verdictByPlayer.get(position.playerId)
               const market = quotes[position.playerId]?.price ?? 0
               const latent = market ? profit(position.buyPrice, market, settings.taxPercent) * position.quantity : 0
               const draft = sellDrafts[position.id] ?? market ?? 0
@@ -171,6 +180,7 @@ export default function Portfolio() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="flex-1 text-sm font-semibold">{position.name}</p>
                       <Pill>{position.quantity}×</Pill>
+                      {verdict ? <Pill tone={SELL[verdict.action].tone}>{SELL[verdict.action].label}</Pill> : null}
                       <Pill tone={latent > 0 ? 'gain' : latent < 0 ? 'loss' : 'neutral'}>
                         {market ? signedCoins(latent) : 'prezzo n/d'}
                       </Pill>
@@ -185,6 +195,19 @@ export default function Portfolio() {
                         tone={latent > 0 ? 'gain' : latent < 0 ? 'loss' : 'neutral'}
                       />
                     </div>
+                    {verdict && verdict.reasons.length > 0 ? (
+                      <ul className="mt-3 space-y-1">
+                        {verdict.reasons.slice(0, 2).map((reason) => (
+                          <li key={reason.label} className="flex gap-2 text-xs text-chalk-dim">
+                            <span className={reason.weight >= 0 ? 'text-gain' : 'text-loss'}>
+                              {reason.weight >= 0 ? '▲' : '▼'}
+                            </span>
+                            <span>{reason.label}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+
                     <div className="mt-3 flex flex-wrap items-end gap-2">
                       <div className="w-40">
                         <NumberField

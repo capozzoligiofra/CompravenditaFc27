@@ -1,5 +1,5 @@
 import type { CalendarEvent, Phase } from './calendar.d.mts'
-import type { Opportunity, ScoreQuote } from './scoring.d.mts'
+import type { Opportunity, ScoreQuote, SellVerdict } from './scoring.d.mts'
 
 export interface AlertLike {
   id: string
@@ -25,6 +25,7 @@ export interface AlertContext {
     sellPrice: number | null
   }[]
   opportunities?: Opportunity[]
+  sellVerdicts?: SellVerdict[]
   phase?: Phase | null
   events?: CalendarEvent[]
   settings?: { taxPercent?: number; targetMarginPercent?: number }

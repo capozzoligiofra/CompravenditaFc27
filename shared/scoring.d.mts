@@ -54,3 +54,22 @@ export function priceSignals(
 }
 export function scorePlayer(input: ScoreInput): Opportunity
 export function rankOpportunities(inputs: ScoreInput[], limit?: number): Opportunity[]
+
+export type SellAction = 'vendi-ora' | 'vendi-presto' | 'tieni' | 'aspetta'
+
+export interface SellVerdict {
+  player: ScoreInput['player']
+  score: number
+  action: SellAction
+  reasons: ScoreReason[]
+  askPrice: number
+  netNow: number
+  gainPercent: number
+  catalysts: Catalyst[]
+}
+
+export interface SellInput extends Omit<ScoreInput, 'position'> {
+  position: { buyPrice: number; quantity: number } | null
+}
+
+export function scoreSell(input: SellInput): SellVerdict

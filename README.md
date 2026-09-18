@@ -25,9 +25,10 @@ strumento di analisi e di contabilità personale.
 - **Calcolatore** — margine su un singolo trade (tassa, incasso netto, ROI,
   prezzo di pareggio) e il BIN massimo da mettere nel filtro quando cerchi
   occasioni, anche in tabella per margini dal 5% al 50%.
-- **Portafoglio** — registro degli acquisti: capitale investito, profitto già
-  incassato, profitto latente ai prezzi correnti, percentuale di trade in
-  utile ed esportazione CSV.
+- **Conti** — la tua rosa e il registro degli acquisti: importazione della
+  rosa incollando l'elenco, verdetto «tieni o vendi» su ogni carta con il
+  motivo, capitale investito, profitto già incassato, profitto latente ai
+  prezzi correnti, percentuale di trade in utile ed esportazione CSV.
 - **Impostazioni** — piattaforma, tassa, margine obiettivo, budget, backup
   JSON dei dati e diagnostica della connessione a Futbin.
 
@@ -213,6 +214,52 @@ Fonti usate per il modello del mercato:
 [calendario promo](https://www.dexerto.com/wikis/ea-fc-26-guides-walkthrough-tips/ea-fc-26-promo-calendar/),
 [orari e premi della Champions](https://www.operationsports.com/ea-fc-26-champions-schedule-and-all-rewards/).
 
+## Collegare l'account EA: cosa si può fare davvero
+
+La domanda naturale è: perché non collego il mio account EA e lascio che
+l'app legga la rosa da sola? Ecco la situazione, senza giri di parole.
+
+**Non esiste un'API pubblica di Ultimate Team.** Con FC 26 EA ha aperto la
+*FC Community API*, che permette di collegare l'account EA a un sito e
+condividere i dati del proprio club, ma è riservata a pochi partner
+autorizzati: al lancio soltanto **FUT.GG, FUTBIN e FUTWIZ**. EA avverte
+esplicitamente di non fidarsi di nessun altro sito che mostri un login EA.
+Un'app personale come questa non può ottenere quell'accesso.
+
+**La strada non ufficiale è pericolosa, non scomoda.** Gli endpoint interni
+della Web App (quelli che usano i vari tool "FUT") funzionano con il token di
+sessione dell'account, ma sono esattamente ciò che EA punisce: nei giorni
+prima dell'uscita di FC 27 ci sono stati ban di massa proprio per **strumenti
+di terze parti che girano accanto alla Web App**, e il ban è permanente e
+vale per tutti i titoli EA Sports FC presenti e futuri. Per questo l'app non
+chiede le tue credenziali EA e non parlerà mai con i server EA: il rischio non
+è un fastidio tecnico, è perdere il club.
+
+**Quello che puoi fare, invece:**
+
+1. Se vuoi la sincronizzazione ufficiale della rosa, collega il tuo account EA
+   a **Futbin** (è uno dei partner autorizzati) dalla loro pagina: il login
+   resta fra te ed EA, e nessuna password passa da terzi.
+2. Porta la rosa qui **incollandola**: pagina *Conti* → «Importa la rosa». Una
+   carta per riga, con quantità e prezzo pagato facoltativi:
+
+   ```
+   Lautaro Martinez x2 150k
+   Bastoni 44000
+   Rafael Leao, 1, 58000
+   Declan Rice 55.000
+   ```
+
+   L'app cerca ogni nome sulla sorgente dati e collega la carta al suo prezzo,
+   anche se scrivi i nomi senza accenti. Quello che non trova lo registra lo
+   stesso, ma senza quotazione.
+
+Da lì in poi la rosa è sotto osservazione: per ogni carta l'app dice se
+**tenere o vendere**, guardando il guadagno rispetto a quanto l'hai pagata, la
+posizione del prezzo rispetto ai massimi del periodo, le SBC che la richiedono
+in quel momento e la fase della settimana. Quando scatta un «vendi ora» arriva
+l'avviso.
+
 ## Come funziona il collegamento a Futbin
 
 Futbin **non ha un'API pubblica** e il browser non può interrogarlo
@@ -266,6 +313,8 @@ shared/          logica pura, condivisa fra proxy e browser e coperta da test
   catalysts.mjs  forma dei catalizzatori e regole di corrispondenza
   scoring.mjs    punteggio delle occasioni e ragioni in chiaro
   alerts.mjs     regole degli avvisi
+  roster-import.mjs  lettura della rosa incollata
+  text.mjs       confronto dei nomi senza accenti
   demo.mjs       dataset demo, usato sia dal proxy sia dall'app statica
 server/
   index.mjs   avvio del server locale e indirizzi per il telefono

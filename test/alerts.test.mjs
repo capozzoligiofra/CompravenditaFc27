@@ -81,3 +81,46 @@ test('non segnala come occasione un giocatore già in watchlist', () => {
   })
   assert.equal(conLista.length, 0)
 })
+
+test('un verdetto «vendi ora» diventa un avviso urgente', () => {
+  const avvisi = buildAlerts({
+    now: ora,
+    sellVerdicts: [
+      {
+        player: { id: '1', name: 'Tizio', rating: 85 },
+        score: 80,
+        action: 'vendi-ora',
+        reasons: [{ label: 'Prezzo sui massimi delle ultime settimane', weight: 18 }],
+        askPrice: 15_000,
+        netNow: 4_250,
+        gainPercent: 42,
+        catalysts: [],
+      },
+    ],
+  })
+  assert.equal(avvisi.length, 1)
+  assert.equal(avvisi[0].severity, 'urgente')
+  assert.match(avvisi[0].title, /Momento di vendere/)
+})
+
+test('non manda due avvisi di vendita per la stessa carta', () => {
+  const avvisi = buildAlerts({
+    now: ora,
+    quotes: { '1': quote(13_000) },
+    positions: [{ id: 'p1', playerId: '1', name: 'Tizio', quantity: 1, buyPrice: 10_000, sellPrice: null }],
+    settings: { taxPercent: 5, targetMarginPercent: 15 },
+    sellVerdicts: [
+      {
+        player: { id: '1', name: 'Tizio', rating: 85 },
+        score: 80,
+        action: 'vendi-ora',
+        reasons: [{ label: 'Sui massimi', weight: 18 }],
+        askPrice: 13_000,
+        netNow: 2_350,
+        gainPercent: 23,
+        catalysts: [],
+      },
+    ],
+  })
+  assert.equal(avvisi.filter((avviso) => avviso.kind === 'vendi').length, 1)
+})

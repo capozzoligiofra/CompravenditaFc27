@@ -5,8 +5,8 @@ import type { Catalyst } from '../../shared/catalysts.d.mts'
 import { currentPhase, upcomingEvents } from '../../shared/calendar.mjs'
 import type { CalendarEvent, Phase } from '../../shared/calendar.d.mts'
 import { demoRoster } from '../../shared/demo.mjs'
-import type { Opportunity, ScoreInput } from '../../shared/scoring.d.mts'
-import { rankOpportunities } from '../../shared/scoring.mjs'
+import type { Opportunity, ScoreInput, SellVerdict } from '../../shared/scoring.d.mts'
+import { rankOpportunities, scoreSell } from '../../shared/scoring.mjs'
 import type { Alert, Player, Quote } from '../types.ts'
 import { getCatalysts, getPlayer, getQuotes } from './api.ts'
 import { notifyAlerts } from './notifications.ts'
@@ -18,6 +18,9 @@ export interface OpportunitiesState {
   error: string | null
   source: 'futbin' | 'demo' | null
   opportunities: Opportunity[]
+  /** Cosa fare con le carte che hai già: una per posizione aperta. */
+  sellVerdicts: SellVerdict[]
+  quotes: Record<string, Quote | null>
   catalysts: Catalyst[]
   catalystsReason: string | null
   phase: Phase
@@ -161,13 +164,44 @@ export function useOpportunities(): OpportunitiesState {
     return rankOpportunities(inputs, 12)
   }, [visible, quotes, histories, catalysts, phase, settings, data.positions])
 
+  // Le carte in rosa: per ognuna il verdetto su tenere o vendere.
+  const sellVerdicts = useMemo(() => {
+    const aperte = data.positions.filter((entry) => entry.sellPrice === null && entry.playerId)
+    return aperte
+      .map((entry) => {
+        const player = visible.find((candidate) => candidate.id === entry.playerId) ?? {
+          id: entry.playerId,
+          name: entry.name,
+          rating: entry.rating,
+          position: '',
+          club: '',
+          league: '',
+          nation: '',
+          version: '',
+          image: '',
+        }
+        return scoreSell({
+          player,
+          quote: quotes[entry.playerId] ?? null,
+          history: histories[entry.playerId] ?? [],
+          catalysts,
+          phase,
+          settings,
+          position: { buyPrice: entry.buyPrice, quantity: entry.quantity },
+        })
+      })
+      .sort((a, b) => b.score - a.score)
+  }, [data.positions, visible, quotes, histories, catalysts, phase, settings])
+
   // Storico solo per i primi della lista: una richiesta per giocatore costa,
   // e per gli altri bastano i segnali del prezzo corrente.
   useEffect(() => {
-    const missing = opportunities
-      .slice(0, REFINE_TOP)
-      .map((opportunity) => opportunity.player.id)
-      .filter((id) => !(id in histories))
+    // Le carte in rosa vengono approfondite per prime: su quelle il consiglio
+    // di vendere vale soldi già impegnati.
+    const missing = [
+      ...sellVerdicts.map((verdict) => verdict.player.id),
+      ...opportunities.slice(0, REFINE_TOP).map((opportunity) => opportunity.player.id),
+    ].filter((id, index, list) => id && !(id in histories) && list.indexOf(id) === index)
     if (missing.length === 0) {
       setRefining(false)
       return undefined
@@ -192,7 +226,7 @@ export function useOpportunities(): OpportunitiesState {
       cancelled = true
       controller.abort()
     }
-  }, [opportunities, histories, settings.platform])
+  }, [opportunities, sellVerdicts, histories, settings.platform])
 
   // Gli avvisi nascono da prezzi, occasioni e calendario, e vengono
   // notificati una sola volta per sessione.
@@ -205,6 +239,7 @@ export function useOpportunities(): OpportunitiesState {
         watchlist: data.watchlist,
         positions: data.positions,
         opportunities,
+        sellVerdicts,
         phase,
         events,
         settings,
@@ -213,7 +248,7 @@ export function useOpportunities(): OpportunitiesState {
     const daNotificare = fresh.filter((alert) => !notified.current.has(alert.id))
     for (const alert of daNotificare) notified.current.add(alert.id)
     if (settings.notifications) void notifyAlerts(daNotificare)
-  }, [loading, quotes, opportunities, phase, events, data.watchlist, data.positions, settings, pushAlerts])
+  }, [loading, quotes, opportunities, sellVerdicts, phase, events, data.watchlist, data.positions, settings, pushAlerts])
 
   return {
     loading,
@@ -221,6 +256,8 @@ export function useOpportunities(): OpportunitiesState {
     error,
     source,
     opportunities,
+    sellVerdicts,
+    quotes,
     catalysts,
     catalystsReason,
     phase,

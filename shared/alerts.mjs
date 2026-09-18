@@ -30,6 +30,7 @@ export function buildAlerts(context) {
     watchlist = [],
     positions = [],
     opportunities = [],
+    sellVerdicts = [],
     phase = null,
     events = [],
     settings = {},
@@ -90,6 +91,27 @@ export function buildAlerts(context) {
         }),
       )
     }
+  }
+
+  // 2-bis. Verdetti di vendita: valgono più della sola soglia di margine,
+  // perché tengono conto del picco di prezzo, delle SBC e del momento della
+  // settimana. Si evita il doppione con la regola precedente.
+  const giaAvvisati = new Set(out.filter((entry) => entry.kind === 'vendi').map((entry) => entry.playerId))
+  for (const verdetto of sellVerdicts) {
+    if (verdetto.action !== 'vendi-ora') continue
+    const id = verdetto.player?.id ?? null
+    if (giaAvvisati.has(id)) continue
+    out.push(
+      alert({
+        id: `vendiora:${id}:${dayKey(now)}:${bucket(verdetto.askPrice)}`,
+        kind: 'vendi',
+        severity: 'urgente',
+        title: `Momento di vendere: ${verdetto.player?.name ?? 'carta in rosa'}`,
+        body: `${verdetto.reasons[0]?.label ?? 'Condizioni favorevoli'}. Mettendola a ${verdetto.askPrice.toLocaleString('it-IT')} incassi ${verdetto.netNow.toLocaleString('it-IT')} crediti netti.`,
+        at: now,
+        playerId: id,
+      }),
+    )
   }
 
   // 3. Occasioni con punteggio alto, purché non siano già in watchlist.

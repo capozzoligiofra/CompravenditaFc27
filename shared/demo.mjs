@@ -5,6 +5,8 @@
 // I prezzi sono plausibili ma inventati: l'interfaccia lo segnala sempre
 // con il badge "DEMO".
 
+import { normalizeName } from './text.mjs'
+
 const ROSTER = [
   { id: '1001', name: 'Kylian Mbappé', rating: 92, position: 'ST', club: 'Real Madrid', league: 'LaLiga', nation: 'Francia', version: 'Oro Raro', price: 1_450_000 },
   { id: '1002', name: 'Erling Haaland', rating: 91, position: 'ST', club: 'Manchester City', league: 'Premier League', nation: 'Norvegia', version: 'Oro Raro', price: 980_000 },
@@ -96,13 +98,10 @@ export function demoPrices(playerId) {
 }
 
 export function demoSearch(query) {
-  const term = String(query ?? '').trim().toLowerCase()
+  const term = normalizeName(query)
   if (!term) return ROSTER.slice(0, 12).map(toPlayer)
   return ROSTER.filter((player) =>
-    [player.name, player.club, player.nation, player.league, player.position]
-      .join(' ')
-      .toLowerCase()
-      .includes(term),
+    normalizeName([player.name, player.club, player.nation, player.league, player.position].join(' ')).includes(term),
   )
     .slice(0, 25)
     .map(toPlayer)

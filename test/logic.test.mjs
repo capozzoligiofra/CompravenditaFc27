@@ -4,7 +4,8 @@ import { test } from 'node:test'
 import { currentPhase, romeParts, upcomingEvents } from '../shared/calendar.mjs'
 import { matchesPlayer, normalizeCatalyst } from '../shared/catalysts.mjs'
 import { breakEvenSell, maxBuyForMargin, profit, roundToMarketStep, signalFor } from '../shared/market.mjs'
-import { priceSignals, scorePlayer } from '../shared/scoring.mjs'
+import { demoSearch } from '../shared/demo.mjs'
+import { priceSignals, scorePlayer, scoreSell } from '../shared/scoring.mjs'
 
 // --- matematica del mercato -------------------------------------------------
 
@@ -191,4 +192,51 @@ test('senza storico il consiglio resta prudente', () => {
   })
   assert.notEqual(risultato.action, 'compra')
   assert.equal(risultato.confidence, 'bassa')
+})
+
+// --- lato vendita -----------------------------------------------------------
+
+test('con margine raggiunto e prezzo sui massimi dice di vendere ora', () => {
+  const verdetto = scoreSell({
+    player: giocatore,
+    quote: quote(15_000),
+    history: storico([10_000, 11_000, 12_000, 13_000, 14_000, 14_500, 15_000]),
+    phase: { id: 'hype-promo', label: 'Uscita promo', advice: '', bias: -3 },
+    position: { buyPrice: 10_000, quantity: 1 },
+    settings: { taxPercent: 5, targetMarginPercent: 15 },
+  })
+  assert.equal(verdetto.action, 'vendi-ora')
+  assert.ok(verdetto.netNow > 0)
+})
+
+test('in perdita non consiglia mai di vendere', () => {
+  const verdetto = scoreSell({
+    player: giocatore,
+    quote: quote(8_000),
+    history: storico([12_000, 11_000, 10_000, 9_000, 8_500, 8_200, 8_000]),
+    phase: { id: 'hype-promo', label: 'Uscita promo', advice: '', bias: -3 },
+    position: { buyPrice: 10_000, quantity: 1 },
+  })
+  assert.equal(verdetto.action, 'aspetta')
+  assert.ok(verdetto.netNow < 0)
+})
+
+test('una SBC che richiede la carta spinge la vendita', () => {
+  const base = {
+    player: giocatore,
+    quote: quote(12_000),
+    history: storico([11_000, 11_000, 11_500, 11_500, 12_000, 12_000, 12_000]),
+    position: { buyPrice: 10_000, quantity: 1 },
+    settings: { taxPercent: 5, targetMarginPercent: 15 },
+  }
+  const senza = scoreSell(base)
+  const con = scoreSell({ ...base, catalysts: [sbcSerieA] })
+  assert.ok(con.score > senza.score)
+  assert.ok(con.reasons.some((reason) => reason.label.includes('Richiesta ora da')))
+})
+
+test('la ricerca nel dataset ignora gli accenti', () => {
+  assert.ok(demoSearch('martinez').some((player) => player.name === 'Lautaro Martínez'))
+  assert.ok(demoSearch('leao').some((player) => player.name === 'Rafael Leão'))
+  assert.ok(demoSearch('Nicolo Barella').length >= 0)
 })

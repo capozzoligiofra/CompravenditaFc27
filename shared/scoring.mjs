@@ -211,3 +211,91 @@ export function rankOpportunities(inputs, limit = 12) {
     .sort((a, b) => b.score - a.score || b.expectedProfit - a.expectedProfit)
     .slice(0, limit)
 }
+
+// --- Lato vendita -----------------------------------------------------------
+//
+// Per una carta che hai già in rosa la domanda è un'altra: la tengo o la
+// vendo adesso? Qui pesano il picco di prezzo, la domanda creata dalle SBC
+// e soprattutto il momento della settimana, perché una carta tenuta oltre
+// il venerdì sera rischia di ritrovarsi nel crollo del giovedì dopo.
+
+export function scoreSell(input) {
+  const { player, quote, history = [], catalysts = [], phase, position, settings = {} } = input
+  const price = quote?.price ?? 0
+  const tax = settings.taxPercent ?? 5
+  const margin = settings.targetMarginPercent ?? 15
+  const reasons = []
+  let score = 30
+
+  if (!price || !position) {
+    return {
+      player,
+      score: 0,
+      action: 'aspetta',
+      reasons: [{ label: 'Prezzo non disponibile: impossibile dire se conviene vendere', weight: 0 }],
+      askPrice: 0,
+      netNow: 0,
+      gainPercent: 0,
+      catalysts: [],
+    }
+  }
+
+  const signals = priceSignals(price, history, quote)
+  const netNow = profit(position.buyPrice, price, tax) * (position.quantity ?? 1)
+  const gainPercent = position.buyPrice > 0 ? (profit(position.buyPrice, price, tax) / position.buyPrice) * 100 : 0
+
+  // 1. Il margine che ti eri dato.
+  if (gainPercent >= margin) {
+    const points = Math.min(30, Math.round(gainPercent))
+    score += points
+    reasons.push({ label: `Sei oltre il margine che volevi: +${Math.round(gainPercent)}%`, weight: points })
+  } else if (gainPercent < 0) {
+    score -= 15
+    reasons.push({ label: `Vendendo ora perdi il ${Math.abs(Math.round(gainPercent))}%: meglio aspettare`, weight: -15 })
+  }
+
+  // 2. Prezzo sui massimi del periodo.
+  if (signals.hasHistory && signals.position >= 0.85) {
+    score += 18
+    reasons.push({ label: 'Prezzo sui massimi delle ultime settimane', weight: 18 })
+  } else if (signals.hasHistory && signals.position <= 0.2) {
+    score -= 12
+    reasons.push({ label: 'Prezzo vicino ai minimi: venderla ora significa svenderla', weight: -12 })
+  }
+
+  // 3. Domanda creata da una SBC o da un obiettivo in corso.
+  const active = matchingCatalysts(player, catalysts)
+  for (const catalyst of active.slice(0, 2)) {
+    const points = catalyst.impact * 8
+    score += points
+    reasons.push({ label: `Richiesta ora da: ${catalyst.title}`, weight: points })
+  }
+
+  // 4. Momento della settimana, al contrario del lato acquisto.
+  if (phase) {
+    const points = -phase.bias * 4
+    score += points
+    reasons.push({ label: `${phase.label}: ${phase.advice}`, weight: points })
+  }
+
+  score = Math.max(0, Math.min(100, Math.round(score)))
+  const askPrice = Math.round(price)
+
+  return {
+    player,
+    score,
+    action: decideSell({ score, gainPercent, margin }),
+    reasons: reasons.sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight)),
+    askPrice,
+    netNow: Math.round(netNow),
+    gainPercent,
+    catalysts: active,
+  }
+}
+
+function decideSell({ score, gainPercent, margin }) {
+  if (score >= 70 && gainPercent > 0) return 'vendi-ora'
+  if (score >= 55 && gainPercent >= margin / 2) return 'vendi-presto'
+  if (gainPercent < 0) return 'aspetta'
+  return 'tieni'
+}
