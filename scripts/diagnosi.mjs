@@ -97,7 +97,9 @@ await prova(`Connessione a ${nome}`, 'Il sito non risponde a questo computer: fi
   } catch (error) {
     throw new Error(describeFetchError(error))
   }
-  if (!risposta.ok) {
+  // Su un'API la radice spesso non esiste: un 404 o un 401 dicono comunque
+  // che il server è raggiungibile, ed è questo che stiamo verificando.
+  if (risposta.status === 403 || risposta.status === 503 || risposta.status >= 500) {
     const testo = await risposta.text().catch(() => '')
     const chi = riconosciBlocco(testo, risposta.headers)
     const titolo = testo.match(/<title[^>]*>([^<]{0,80})/i)?.[1]?.trim()
@@ -105,18 +107,35 @@ await prova(`Connessione a ${nome}`, 'Il sito non risponde a questo computer: fi
       `HTTP ${risposta.status} ${risposta.statusText} — ${chi}${titolo ? ` · pagina: "${titolo}"` : ''}`,
     )
   }
+  if (risposta.status >= 400) {
+    return `HTTP ${risposta.status} sulla radice: normale per un'API, il server risponde`
+  }
   return `HTTP ${risposta.status}: il sito risponde`
 })
 
-await prova('Internet in generale', 'Se fallisce anche questo, il problema non è Futbin ma la connessione o un proxy.', async () => {
-  try {
-    const risposta = await fetch('https://example.com', { signal: AbortSignal.timeout(9000) })
-    if (!risposta.ok) throw new Error(`example.com risponde HTTP ${risposta.status}`)
-    return 'la connessione funziona'
-  } catch (error) {
-    throw new Error(describeFetchError(error))
-  }
-})
+await prova(
+  'Internet in generale',
+  'Se fallisce anche questo, il problema non è la sorgente ma la connessione o un filtro.',
+  async () => {
+    // Due sentinelle invece di una: se un sito ha problemi suoi, l'altro evita
+    // una diagnosi sbagliata.
+    const sentinelle = (process.env.DIAGNOSI_SENTINELLE ?? 'https://example.com,https://api.github.com')
+      .split(',')
+      .map((voce) => voce.trim())
+      .filter(Boolean)
+    const problemi = []
+    for (const sito of sentinelle) {
+      try {
+        const risposta = await fetch(sito, { signal: AbortSignal.timeout(9000) })
+        if (risposta.ok) return `${new URL(sito).hostname} risponde: la connessione funziona`
+        problemi.push(`${new URL(sito).hostname} HTTP ${risposta.status}`)
+      } catch (error) {
+        problemi.push(`${new URL(sito).hostname}: ${describeFetchError(error)}`)
+      }
+    }
+    throw new Error(problemi.join(' · '))
+  },
+)
 
 console.log('')
 
@@ -185,9 +204,15 @@ if (falliti.length === 0) {
   console.log(`${falliti.length} controlli su ${esiti.length} non passano: ${falliti.map((e) => e.nome).join(', ')}.`)
   console.log('')
   console.log('Cosa vogliono dire gli errori più comuni:')
-  console.log('  403 / 503                  Futbin blocca le richieste automatiche (protezione anti-bot).')
-  console.log("  non in formato JSON        L'indirizzo risponde una pagina: endpoint cambiato.")
-  console.log("  404                        L'indirizzo non esiste più: prova FUT_YEAR=26 npm run diagnosi.")
+  console.log('  403 / 503                  Il sito blocca le richieste automatiche (protezione anti-bot).')
+  console.log('  429                        Hai superato il limite di richieste: aspetta e riprova.')
+  console.log("  401                        Chiave mancante o rifiutata.")
+  console.log("  non in formato JSON        L'indirizzo risponde una pagina: percorso sbagliato.")
+  console.log(
+    providerConfig.name === 'futbin'
+      ? "  404                        L'indirizzo non esiste più: prova FUT_YEAR=26 npm run diagnosi."
+      : '  404                        Percorso inesistente: controlla FUT_API_SEARCH_PATH e FUT_API_PRICE_PATH.',
+  )
   console.log('  ENOTFOUND / EAI_AGAIN      Il DNS non risolve: connessione o DNS del computer.')
   console.log('  ECONNREFUSED / ECONNRESET  Qualcosa chiude la connessione: firewall o rete.')
   console.log('  ETIMEDOUT / TimeoutError   Nessuna risposta in tempo: rete lenta o traffico filtrato.')
@@ -209,6 +234,14 @@ if (falliti.length === 0) {
     console.log('  macOS e Linux          NODE_OPTIONS=--use-system-ca npm run diagnosi')
     console.log('')
     console.log('Se funziona, usa la stessa variabile anche per "npm run dev" e "npm run mobile".')
+  }
+
+  const limiteRichieste = esiti.some((esito) => esito.errore && /Troppe richieste|429/.test(esito.errore))
+  if (limiteRichieste) {
+    console.log('')
+    console.log('Il servizio ha risposto «troppe richieste»: la chiave funziona e il collegamento')
+    console.log('pure, hai solo esaurito le richieste consentite per ora. Aspetta qualche minuto')
+    console.log('(o il rinnovo giornaliero del piano) e riprova questo stesso comando.')
   }
 
   const bloccoLocale = esiti.some((esito) => esito.errore && /filtro locale/.test(esito.errore))

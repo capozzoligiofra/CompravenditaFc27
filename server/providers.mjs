@@ -28,6 +28,8 @@ export const providerConfig = usaApi
       configuredYear: '',
       /** Un'API di sola quotazione non dà il passato: lo costruisce l'app. */
       hasHistory: false,
+      /** I piani a consumo vanno risparmiati: meno quotazioni per volta. */
+      maxQuotes: rest.MAX_QUOTAZIONI,
     }
   : {
       name: 'futbin',
@@ -41,6 +43,7 @@ export const providerConfig = usaApi
       },
       configuredYear: futbin.futbinConfig.configuredYear,
       hasHistory: true,
+      maxQuotes: 40,
     }
 
 export const searchPlayers = attivo.searchPlayers

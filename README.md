@@ -393,11 +393,16 @@ npm run dev
 | `FUT_API_SEARCH_PARAM` | `name` | nome del parametro di ricerca |
 | `FUT_API_SEARCH_METHOD` | `GET` | `POST` se la ricerca vuole il nome nel corpo |
 | `FUT_API_PRESET` | — | `fut-db` per usare indirizzi e percorsi già pronti |
+| `FUT_API_MAX_QUOTES` | `12` | quante quotazioni chiedere per schermata (piani a consumo) |
 | `FUT_API_PRICE_PATH` | `/players/{id}/price` | percorso dei prezzi (`{id}` viene sostituito) |
 
 Poi `npm run diagnosi` dice se l'indirizzo risponde, se la chiave è accettata
 e se i prezzi vengono letti: gli errori sono espliciti (401 chiave rifiutata,
-404 percorso sbagliato, risposta non JSON).
+404 percorso sbagliato, 429 limite di richieste superato, risposta non JSON).
+
+Con un'API a consumo l'app va leggera: le ricerche restano in cache un'ora, i
+prezzi un quarto d'ora, e per schermata chiede al massimo dodici quotazioni
+(`FUT_API_MAX_QUOTES`). Le altre carte restano ai prezzi scritti a mano.
 
 L'app legge le risposte in modo tollerante: accetta elenchi sotto `items`,
 `data`, `results` o `players`, nomi di campo diversi per nome e valutazione, e

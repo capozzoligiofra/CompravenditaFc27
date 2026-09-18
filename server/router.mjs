@@ -188,7 +188,7 @@ export async function handleApi(req, res, url) {
       .split(',')
       .map((id) => id.trim())
       .filter(Boolean)
-      .slice(0, 40)
+      .slice(0, providerConfig.maxQuotes ?? 40)
     const quotes = {}
     let source = providerConfig.name
     for (const id of ids) {

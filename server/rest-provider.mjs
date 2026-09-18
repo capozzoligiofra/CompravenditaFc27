@@ -43,10 +43,15 @@ const TIMEOUT_MS = Number(process.env.FUT_API_TIMEOUT_MS ?? 9000)
 const limiter = new RateLimiter(Number(process.env.FUT_API_MIN_INTERVAL_MS ?? 700))
 const cache = new TtlCache()
 
+// Le API con chiave contano le richieste, e i piani gratuiti ne danno poche:
+// si tiene tutto in cache molto più a lungo che con un sito senza limiti.
 const TTL = {
-  search: Number(process.env.FUT_API_TTL_SEARCH_MS ?? 10 * 60 * 1000),
-  prices: Number(process.env.FUT_API_TTL_PRICES_MS ?? 90 * 1000),
+  search: Number(process.env.FUT_API_TTL_SEARCH_MS ?? 60 * 60 * 1000),
+  prices: Number(process.env.FUT_API_TTL_PRICES_MS ?? 15 * 60 * 1000),
 }
+
+/** Quante quotazioni al massimo chiedere in un colpo solo. */
+export const MAX_QUOTAZIONI = Number(process.env.FUT_API_MAX_QUOTES ?? 12)
 
 export const restConfig = {
   get enabled() {
@@ -104,7 +109,12 @@ async function fetchJson(path, params, { method = 'GET', body = null } = {}) {
     if (response.status === 401 || response.status === 403) {
       throw new Error(`L'API rifiuta la chiave (HTTP ${response.status}): controlla FUT_API_KEY e FUT_API_KEY_HEADER`)
     }
-    if (response.status === 429) throw new Error('Troppe richieste: aspetta qualche minuto')
+    if (response.status === 429) {
+      const attesa = response.headers.get('retry-after')
+      throw new Error(
+        `Troppe richieste (HTTP 429)${attesa ? `: il servizio chiede di aspettare ${attesa}s` : ': aspetta qualche minuto'}`,
+      )
+    }
     if (response.status === 404) throw new Error(`HTTP 404: il percorso ${path} non esiste su questa API`)
     if (!response.ok) throw new Error(`L'API ha risposto ${response.status}`)
     const text = await response.text()
