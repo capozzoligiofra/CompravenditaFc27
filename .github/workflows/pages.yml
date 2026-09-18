@@ -39,11 +39,23 @@ jobs:
         with:
           enablement: true
 
+      # Con un dominio personalizzato il sito sta nella radice; senza, dentro
+      # /<nome-repo>/. Lo decide la presenza del file public/CNAME, così per
+      # passare a un dominio proprio basta aggiungere quel file.
+      - name: Calcola la base del sito
+        id: base
+        run: |
+          if [ -f public/CNAME ]; then
+            echo "value=/" >> "$GITHUB_OUTPUT"
+            echo "Dominio personalizzato: $(cat public/CNAME)"
+          else
+            echo "value=/${{ github.event.repository.name }}/" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Compila
         run: npm run build
         env:
-          # Il sito vive in https://<utente>.github.io/<repo>/
-          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_BASE: ${{ steps.base.outputs.value }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

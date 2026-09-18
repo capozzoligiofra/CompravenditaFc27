@@ -29,7 +29,8 @@ function walk(dir, prefix = '') {
 
 // Il service worker non mette in cache sé stesso, e index.html è già coperto
 // dalla voce '/' (la navigazione passa sempre da lì).
-const skip = new Set(['/sw.js', '/index.html'])
+// CNAME non è un file del sito: è la configurazione del dominio per Pages.
+const skip = new Set(['/sw.js', '/index.html', '/CNAME'])
 const files = walk(DIST)
   .filter((file) => !skip.has(file))
   .map((file) => `${BASE}${file.replace(/^\//, '')}`)

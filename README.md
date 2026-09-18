@@ -103,6 +103,51 @@ computer), puoi indicarne l'indirizzo in **Opzioni → Indirizzo del proxy dati*
 e anche la versione su Pages mostrerà i prezzi veri. Un indirizzo `http://…`
 non funziona: il browser blocca le chiamate non cifrate da una pagina https.
 
+#### Con un dominio tuo
+
+Il sito su Pages può stare su un indirizzo tuo, per esempio
+`https://fc27trader.it`, restando gratuito: si paga solo il dominio (dieci o
+quindici euro l'anno da un qualsiasi registrar).
+
+1. **Dichiara il dominio nel progetto.** Crea il file `public/CNAME` con
+   dentro solo il dominio, senza `https://`:
+
+   ```
+   fc27trader.it
+   ```
+
+   Al primo push il workflow se ne accorge da solo e compila il sito per la
+   radice del dominio invece che per la sottocartella `/CompravenditaFc27/`.
+
+2. **Punta il dominio a GitHub.** Nel pannello DNS del registrar:
+
+   | Tipo | Nome | Valore |
+   | --- | --- | --- |
+   | A | `@` | `185.199.108.153` |
+   | A | `@` | `185.199.109.153` |
+   | A | `@` | `185.199.110.153` |
+   | A | `@` | `185.199.111.153` |
+   | CNAME | `www` | `capozzoligiofra.github.io` |
+
+   I quattro record A servono per il dominio nudo (`fc27trader.it`), che per
+   le regole del DNS non può essere un CNAME; il CNAME serve solo per
+   `www.fc27trader.it`.
+
+3. **Dillo a GitHub.** Repository → *Settings* → *Pages* → *Custom domain*:
+   scrivi il dominio e salva. Quando il certificato è pronto (di solito
+   qualche minuto, fino a 24 ore) spunta **Enforce HTTPS**.
+
+Il DNS può metterci fino a un giorno a propagarsi: se nel frattempo il sito
+non risponde o il browser segnala il certificato, quasi sempre basta
+aspettare. Chi aveva già installato l'app sul telefono dal vecchio indirizzo
+deve reinstallarla dal nuovo: per il telefono sono due siti diversi, e i dati
+salvati (watchlist, rosa) restano legati al vecchio.
+
+Un dominio però non cambia la sostanza: **Pages resta un hosting statico**, e
+lì i prezzi restano quelli demo. Se vuoi prezzi veri su un indirizzo pubblico
+serve un hosting con funzioni lato server (la strada 3 qui sotto), tenendo
+presente che Futbin filtra comunque il traffico dei datacenter.
+
 ### 3. Online con i prezzi, su un hosting con funzioni
 
 Il repo è già configurato anche per un deploy su Vercel (piano gratuito): il proxy
