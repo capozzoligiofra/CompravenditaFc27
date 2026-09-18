@@ -12,12 +12,32 @@
 
 import { describeFetchError, parseCoins, RateLimiter, TtlCache } from './util.mjs'
 
-const BASE = (process.env.FUT_API_BASE ?? process.env.FUTDB_BASE ?? '').replace(/\/$/, '')
+/**
+ * Preimpostazioni per i servizi già noti, così non servono sei variabili.
+ * Restano solo indirizzi e percorsi: nessuna chiave, e ogni valore resta
+ * sovrascrivibile.
+ */
+const PRESET = {
+  'fut-db': {
+    base: 'https://api.fut-db.com/api',
+    keyHeader: 'X-AUTH-TOKEN',
+    searchPath: '/players/search',
+    searchParam: 'name',
+    searchMethod: 'POST',
+    pricePath: '/players/{id}/price',
+  },
+}
+
+const preset = PRESET[String(process.env.FUT_API_PRESET ?? '').toLowerCase()] ?? {}
+
+const BASE = (process.env.FUT_API_BASE ?? process.env.FUTDB_BASE ?? preset.base ?? '').replace(/\/$/, '')
 const KEY = process.env.FUT_API_KEY ?? process.env.FUTDB_KEY ?? ''
-const KEY_HEADER = process.env.FUT_API_KEY_HEADER ?? 'X-AUTH-TOKEN'
-const SEARCH_PATH = process.env.FUT_API_SEARCH_PATH ?? process.env.FUTDB_SEARCH_PATH ?? '/players/search'
-const SEARCH_PARAM = process.env.FUT_API_SEARCH_PARAM ?? 'name'
-const PRICE_PATH = process.env.FUT_API_PRICE_PATH ?? process.env.FUTDB_PRICE_PATH ?? '/players/{id}/price'
+const KEY_HEADER = process.env.FUT_API_KEY_HEADER ?? preset.keyHeader ?? 'X-AUTH-TOKEN'
+const SEARCH_PATH = process.env.FUT_API_SEARCH_PATH ?? process.env.FUTDB_SEARCH_PATH ?? preset.searchPath ?? '/players/search'
+const SEARCH_PARAM = process.env.FUT_API_SEARCH_PARAM ?? preset.searchParam ?? 'name'
+// Alcune API vogliono la ricerca in POST con il nome nel corpo (FUT-DB fa così).
+const SEARCH_METHOD = (process.env.FUT_API_SEARCH_METHOD ?? preset.searchMethod ?? 'GET').toUpperCase()
+const PRICE_PATH = process.env.FUT_API_PRICE_PATH ?? process.env.FUTDB_PRICE_PATH ?? preset.pricePath ?? '/players/{id}/price'
 const TIMEOUT_MS = Number(process.env.FUT_API_TIMEOUT_MS ?? 9000)
 
 const limiter = new RateLimiter(Number(process.env.FUT_API_MIN_INTERVAL_MS ?? 700))
@@ -56,7 +76,7 @@ function valoreChiave() {
   return KEY
 }
 
-async function fetchJson(path, params) {
+async function fetchJson(path, params, { method = 'GET', body = null } = {}) {
   if (!BASE) throw new Error("Manca l'indirizzo dell'API: imposta FUT_API_BASE")
   if (!KEY) throw new Error('Manca la chiave: impostala in FUT_API_KEY')
   const target = new URL(`${BASE}${path}`)
@@ -67,8 +87,14 @@ async function fetchJson(path, params) {
   let response
   try {
     response = await fetch(target, {
+      method,
       signal: controller.signal,
-      headers: { accept: 'application/json', [KEY_HEADER]: valoreChiave() },
+      headers: {
+        accept: 'application/json',
+        [KEY_HEADER]: valoreChiave(),
+        ...(body ? { 'content-type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
     })
   } catch (error) {
     clearTimeout(timer)
@@ -138,7 +164,9 @@ export async function searchPlayers(query) {
   const term = String(query ?? '').trim()
   if (term.length < 2) return []
   const payload = await cached(`api:search:${term.toLowerCase()}`, TTL.search, () =>
-    fetchJson(SEARCH_PATH, { [SEARCH_PARAM]: term, page: 1 }),
+    SEARCH_METHOD === 'POST'
+      ? fetchJson(SEARCH_PATH, { page: 1 }, { method: 'POST', body: { [SEARCH_PARAM]: term } })
+      : fetchJson(SEARCH_PATH, { [SEARCH_PARAM]: term, page: 1 }),
   )
   return toArray(payload).map(normalizePlayer).filter(Boolean).slice(0, 25)
 }
@@ -175,11 +203,38 @@ function prezzoDaPiattaforma(node) {
   }
 }
 
+const PREZZI_NON_INCLUSI = 'I prezzi richiedono un abbonamento a pagamento su questo servizio'
+
+/**
+ * Su alcuni servizi i prezzi sono riservati agli abbonati. In quel caso non ha
+ * senso insistere a ogni carta né considerarlo un guasto: si annota una volta
+ * e si restituiscono quotazioni vuote, che l'app riempie con i prezzi scritti
+ * a mano continuando a usare il servizio per la ricerca.
+ */
+export const restState = { prezziPremium: false }
+
+function prezziVuoti(motivo) {
+  const vuoto = { price: 0, minPrice: 0, maxPrice: 0, changePercent: 0, updated: motivo }
+  return { ps: { ...vuoto }, xbox: { ...vuoto }, pc: { ...vuoto } }
+}
+
 export async function fetchPrices(playerId) {
   const id = String(playerId)
-  const payload = await cached(`api:prices:${id}`, TTL.prices, () =>
-    fetchJson(PRICE_PATH.replace('{id}', encodeURIComponent(id))),
-  )
+  if (restState.prezziPremium) return prezziVuoti(PREZZI_NON_INCLUSI)
+  let payload
+  try {
+    payload = await cached(`api:prices:${id}`, TTL.prices, () =>
+      fetchJson(PRICE_PATH.replace('{id}', encodeURIComponent(id))),
+    )
+  } catch (error) {
+    const messaggio = error instanceof Error ? error.message : String(error)
+    if (/premium|abbonamento|HTTP 40[13]|rifiuta la chiave/i.test(messaggio)) {
+      restState.prezziPremium = true
+      console.log(`[fc27-trader] ${PREZZI_NON_INCLUSI}: uso la ricerca del servizio e i prezzi scritti a mano.`)
+      return prezziVuoti(PREZZI_NON_INCLUSI)
+    }
+    throw error
+  }
   const blocco = trovaPrezzi(payload) ?? {}
   const perPiattaforma = (chiavi) => {
     for (const chiave of chiavi) {

@@ -20,11 +20,29 @@ const GIOCATORE = {
 let server
 let provider
 const intestazioniRicevute = []
+const corpiRicevuti = []
 
 before(async () => {
-  server = createServer((req, res) => {
+  server = createServer(async (req, res) => {
     intestazioniRicevute.push(req.headers)
     const url = new URL(req.url, 'http://x')
+
+    if (req.method === 'POST') {
+      const pezzi = []
+      for await (const pezzo of req) pezzi.push(pezzo)
+      corpiRicevuti.push(Buffer.concat(pezzi).toString())
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ items: [GIOCATORE] }))
+      return
+    }
+
+    // Percorso riservato agli abbonati, come su certi servizi veri.
+    if (url.pathname.endsWith('/premium-price')) {
+      res.writeHead(403, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ message: 'premium only' }))
+      return
+    }
+
     res.writeHead(200, { 'content-type': 'application/json' })
 
     if (url.pathname === '/players/search') {
@@ -102,4 +120,29 @@ test('con Authorization la chiave viaggia come Bearer, senza doverlo scrivere', 
   const altro = await import(`../server/rest-provider.mjs?variante=${Date.now()}`)
   await altro.searchPlayers('mbappe')
   assert.equal(intestazioniRicevute.at(-1).authorization, 'Bearer chiave-nuda')
+})
+
+test('la ricerca in POST manda il nome nel corpo', async () => {
+  const { port } = server.address()
+  process.env.FUT_API_BASE = `http://127.0.0.1:${port}`
+  process.env.FUT_API_KEY_HEADER = 'X-AUTH-TOKEN'
+  process.env.FUT_API_KEY = 'chiave-di-prova'
+  process.env.FUT_API_SEARCH_METHOD = 'POST'
+  const conPost = await import(`../server/rest-provider.mjs?post=${Date.now()}`)
+  const trovati = await conPost.searchPlayers('mbappe')
+  assert.equal(trovati.length, 1)
+  assert.equal(corpiRicevuti.at(-1), JSON.stringify({ name: 'mbappe' }))
+})
+
+test('se i prezzi sono riservati agli abbonati non è un guasto', async () => {
+  const { port } = server.address()
+  process.env.FUT_API_BASE = `http://127.0.0.1:${port}`
+  process.env.FUT_API_KEY = 'chiave-di-prova'
+  process.env.FUT_API_SEARCH_METHOD = 'GET'
+  process.env.FUT_API_PRICE_PATH = '/players/{id}/premium-price'
+  const premium = await import(`../server/rest-provider.mjs?premium=${Date.now()}`)
+  const prezzi = await premium.fetchPrices('231747')
+  assert.equal(prezzi.ps.price, 0)
+  assert.match(prezzi.ps.updated, /abbonamento/)
+  assert.equal(premium.restState.prezziPremium, true)
 })

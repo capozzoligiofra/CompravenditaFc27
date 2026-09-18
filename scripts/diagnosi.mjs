@@ -139,6 +139,11 @@ if (idTrovato) {
   await prova('Prezzi', "Se fallisce, l'app mostra le carte senza quotazione.", async () => {
     const prezzi = await fetchPrices(idTrovato)
     const ps = prezzi.ps
+    if (ps && /abbonamento/i.test(ps.updated ?? '')) {
+      throw new Error(
+        'i prezzi di questo servizio sono riservati agli abbonati: la ricerca funziona, i prezzi si scrivono a mano',
+      )
+    }
     if (!ps || ps.price <= 0) throw new Error('Prezzo PlayStation non valido o a zero')
     return `PS ${ps.price} · Xbox ${prezzi.xbox?.price ?? 0} · PC ${prezzi.pc?.price ?? 0} · aggiornato: ${ps.updated}`
   })

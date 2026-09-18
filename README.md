@@ -352,6 +352,19 @@ collega senza toccare il codice. Nessun fornitore è scritto dentro l'app di
 proposito: questi servizi nascono, cambiano nome e chiudono, e un indirizzo
 nel codice diventa presto un indirizzo morto.
 
+Per **FUT-DB** (api.fut-db.com) c'è una preimpostazione pronta:
+
+```powershell
+$env:FUT_API_PRESET="fut-db"; $env:FUT_API_KEY="la-tua-chiave"; npm run diagnosi
+```
+
+Attenzione a cosa include il loro piano gratuito: nella loro documentazione la
+**ricerca** (`POST /api/players/search`) e i **prezzi**
+(`GET /api/players/{id}/price`) sono segnati *premium only*. Con una chiave
+gratuita l'app può leggere l'anagrafica dei giocatori ma non le quotazioni: in
+quel caso lo dichiara, continua a usare il servizio per la ricerca e i prezzi
+restano quelli scritti a mano.
+
 **Non sai come è fatta l'API del tuo servizio?** Con la chiave in mano:
 
 ```powershell
@@ -378,6 +391,8 @@ npm run dev
 | `FUT_API_KEY_HEADER` | `X-AUTH-TOKEN` | intestazione con cui inviare la chiave |
 | `FUT_API_SEARCH_PATH` | `/players/search` | percorso della ricerca |
 | `FUT_API_SEARCH_PARAM` | `name` | nome del parametro di ricerca |
+| `FUT_API_SEARCH_METHOD` | `GET` | `POST` se la ricerca vuole il nome nel corpo |
+| `FUT_API_PRESET` | — | `fut-db` per usare indirizzi e percorsi già pronti |
 | `FUT_API_PRICE_PATH` | `/players/{id}/price` | percorso dei prezzi (`{id}` viene sostituito) |
 
 Poi `npm run diagnosi` dice se l'indirizzo risponde, se la chiave è accettata
