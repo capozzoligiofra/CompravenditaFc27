@@ -9,12 +9,13 @@
 // rompe nulla, semplicemente non arrivano catalizzatori e restano quelli
 // del calendario e quelli inseriti a mano nell'app.
 
+import { futbinConfig } from './futbin.mjs'
 import { RateLimiter, TtlCache } from './util.mjs'
 
-const GAME_YEAR = process.env.FC27_YEAR ?? '27'
 const BASE = (process.env.FUTBIN_BASE ?? 'https://www.futbin.com').replace(/\/$/, '')
-const SBC_URL = process.env.FUTBIN_SBC_URL ?? `${BASE}/${GAME_YEAR}/squad-building-challenges`
-const OBJECTIVES_URL = process.env.FUTBIN_OBJECTIVES_URL ?? `${BASE}/${GAME_YEAR}/objectives`
+// L'anno lo decide il client dei prezzi, che lo verifica sul campo.
+const sbcUrl = () => process.env.FUTBIN_SBC_URL ?? `${BASE}/${futbinConfig.year}/squad-building-challenges`
+const objectivesUrl = () => process.env.FUTBIN_OBJECTIVES_URL ?? `${BASE}/${futbinConfig.year}/objectives`
 const TIMEOUT_MS = Number(process.env.FUTBIN_TIMEOUT_MS ?? 9000)
 const TTL_MS = Number(process.env.FUTBIN_TTL_CATALYSTS_MS ?? 30 * 60 * 1000)
 
@@ -151,13 +152,13 @@ function describe(rule) {
  * riconosciuto vengono scartate: riempirebbero la pagina senza dire nulla.
  */
 export async function fetchCatalysts() {
-  const cached = cache.get('catalysts')
+  const cached = cache.get(`catalysts:${futbinConfig.year}`)
   if (cached) return cached
 
   const catalysts = await limiter.run(async () => {
     const [sbcHtml, objectivesHtml] = await Promise.all([
-      fetchHtml(SBC_URL).catch(() => ''),
-      fetchHtml(OBJECTIVES_URL).catch(() => ''),
+      fetchHtml(sbcUrl()).catch(() => ''),
+      fetchHtml(objectivesUrl()).catch(() => ''),
     ])
     if (!sbcHtml && !objectivesHtml) throw new Error('Nessuna pagina di Futbin raggiungibile')
 
@@ -166,8 +167,8 @@ export async function fetchCatalysts() {
     return [...sbc, ...objectives].filter((catalyst) => catalyst.impact > 1).slice(0, 30)
   })
 
-  cache.set('catalysts', catalysts, TTL_MS)
+  cache.set(`catalysts:${futbinConfig.year}`, catalysts, TTL_MS)
   return catalysts
 }
 
-export const catalystsConfig = { sbcUrl: SBC_URL, objectivesUrl: OBJECTIVES_URL }
+export const catalystsConfig = { get sbcUrl() { return sbcUrl() }, get objectivesUrl() { return objectivesUrl() } }

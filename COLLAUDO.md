@@ -48,7 +48,10 @@ npm run diagnosi
 ```
 
 **Deve succedere:** quattro righe `[ OK ]` con un giocatore vero, i suoi
-prezzi sulle tre piattaforme, i punti dello storico e le SBC riconosciute.
+prezzi sulle tre piattaforme, i punti dello storico e le SBC riconosciute. La
+prima riga dice anche su quale anno del gioco sta lavorando (FC26, FC27…): se
+l'anno configurato non risponde, l'app passa da sola a quello giusto e lo
+scrive.
 
 Se invece compaiono righe `[ NO ]`, il comando stampa l'errore preciso e cosa
 significa. Casi tipici:
@@ -57,7 +60,7 @@ significa. Casi tipici:
 | --- | --- | --- |
 | `403` / `503` | Futbin blocca le richieste automatiche | riprova più tardi; se persiste, l'app resta utile in modalità demo |
 | `non in formato JSON` | l'indirizzo risponde una pagina, non dati | l'endpoint è cambiato: serve aggiornare `FUTBIN_*_URL` |
-| `404` | l'indirizzo non esiste più | prova un altro anno: `FC27_YEAR=26 npm run diagnosi` |
+| `404` | l'indirizzo non esiste più | prova un altro anno: `FUT_YEAR=25 npm run diagnosi` |
 | `timeout` / `ENOTFOUND` | rete o DNS del computer | controlla la connessione |
 
 Puoi provare con un altro giocatore:

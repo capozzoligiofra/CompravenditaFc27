@@ -8,11 +8,19 @@
 
 import { parseCoins, parsePercent, RateLimiter, TtlCache } from './util.mjs'
 
-const GAME_YEAR = process.env.FC27_YEAR ?? '27'
+// L'anno del gioco compare negli indirizzi di Futbin (/26/, /27/…) e cambia
+// ogni settembre. Invece di darlo per scontato si parte dal valore
+// configurato e, se quello non risponde, si provano gli anni vicini fino a
+// trovare quello vivo: così l'app continua a funzionare quando esce il
+// gioco nuovo, senza che nessuno debba aggiornarla.
+const CONFIGURED_YEAR = String(process.env.FUT_YEAR ?? process.env.FC27_YEAR ?? '26')
+const YEAR_CANDIDATES = [...new Set([CONFIGURED_YEAR, '26', '27', '25'])]
+let activeYear = CONFIGURED_YEAR
+
 const BASE = (process.env.FUTBIN_BASE ?? 'https://www.futbin.com').replace(/\/$/, '')
 const SEARCH_URL = process.env.FUTBIN_SEARCH_URL ?? `${BASE}/search`
-const PRICES_URL = process.env.FUTBIN_PRICES_URL ?? `${BASE}/${GAME_YEAR}/playerPrices`
-const GRAPH_URL = process.env.FUTBIN_GRAPH_URL ?? `${BASE}/${GAME_YEAR}/playerGraph`
+const pricesUrl = (year) => process.env.FUTBIN_PRICES_URL ?? `${BASE}/${year}/playerPrices`
+const graphUrl = (year) => process.env.FUTBIN_GRAPH_URL ?? `${BASE}/${year}/playerGraph`
 const TIMEOUT_MS = Number(process.env.FUTBIN_TIMEOUT_MS ?? 9000)
 const ENABLED = (process.env.FUTBIN_ENABLED ?? 'true') !== 'false'
 
@@ -25,7 +33,15 @@ export const TTL = {
   graph: Number(process.env.FUTBIN_TTL_GRAPH_MS ?? 30 * 60 * 1000),
 }
 
-export const futbinConfig = { enabled: ENABLED, year: GAME_YEAR, base: BASE }
+export const futbinConfig = {
+  enabled: ENABLED,
+  base: BASE,
+  configuredYear: CONFIGURED_YEAR,
+  /** Anno effettivamente in uso: può differire da quello configurato. */
+  get year() {
+    return activeYear
+  },
+}
 
 export const PLATFORMS = ['ps', 'xbox', 'pc']
 
@@ -110,18 +126,41 @@ function toArray(payload) {
   return []
 }
 
+/**
+ * Cerca prima con l'anno in uso; se non trova nulla prova gli altri anni e,
+ * quando uno risponde, lo adotta anche per prezzi e grafici.
+ */
 export async function searchPlayers(query) {
   const term = String(query ?? '').trim()
   if (term.length < 2) return []
-  const payload = await cached(`search:${term.toLowerCase()}`, TTL.search, () =>
-    fetchJson(SEARCH_URL, { year: GAME_YEAR, term }),
-  )
-  return toArray(payload).map(normalizePlayer).filter(Boolean).slice(0, 25)
+  return cached(`search:${activeYear}:${term.toLowerCase()}`, TTL.search, async () => {
+    const ordine = [activeYear, ...YEAR_CANDIDATES.filter((year) => year !== activeYear)]
+    let ultimoErrore = null
+    for (const year of ordine) {
+      try {
+        const payload = await fetchJson(SEARCH_URL, { year, term })
+        const players = toArray(payload).map(normalizePlayer).filter(Boolean)
+        if (players.length > 0) {
+          if (year !== activeYear) {
+            console.log(`[fc27-trader] Futbin risponde per l'anno FC${year}: passo a quello.`)
+            activeYear = year
+          }
+          return players.slice(0, 25)
+        }
+      } catch (error) {
+        ultimoErrore = error
+      }
+    }
+    if (ultimoErrore) throw ultimoErrore
+    return []
+  })
 }
 
 export async function fetchPrices(playerId) {
   const id = String(playerId)
-  const payload = await cached(`prices:${id}`, TTL.prices, () => fetchJson(PRICES_URL, { player: id }))
+  const payload = await cached(`prices:${activeYear}:${id}`, TTL.prices, () =>
+    fetchJson(pricesUrl(activeYear), { player: id }),
+  )
   const node = payload?.[id]?.prices ?? payload?.prices ?? payload?.[id] ?? payload
   const result = {}
   for (const platform of PLATFORMS) {
@@ -161,8 +200,8 @@ function findSeries(node, depth = 0) {
 export async function fetchGraph(playerId, platform) {
   const id = String(playerId)
   const plat = normalizePlatform(platform)
-  const payload = await cached(`graph:${id}:${plat}`, TTL.graph, () =>
-    fetchJson(GRAPH_URL, { type: 'daily_graph', year: GAME_YEAR, player: id }),
+  const payload = await cached(`graph:${activeYear}:${id}:${plat}`, TTL.graph, () =>
+    fetchJson(graphUrl(activeYear), { type: 'daily_graph', year: activeYear, player: id }),
   )
   const platformNode = payload?.[plat] ?? payload?.[plat === 'ps' ? 'ps4' : plat] ?? payload
   const series = findSeries(platformNode) ?? []

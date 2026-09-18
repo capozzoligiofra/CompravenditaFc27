@@ -335,23 +335,27 @@ toccare il codice, bastano le variabili d'ambiente.
 
 | Variabile | Default | A cosa serve |
 | --- | --- | --- |
-| `FC27_YEAR` | `27` | anno del gioco usato negli URL Futbin |
+| `FUT_YEAR` | `26` | anno del gioco negli URL Futbin (`26`, `27`…) |
 | `FUTBIN_ENABLED` | `true` | `false` per lavorare solo sul dataset demo |
 | `FUTBIN_SEARCH_URL` | `.../search` | endpoint di ricerca |
-| `FUTBIN_PRICES_URL` | `.../27/playerPrices` | endpoint prezzi |
-| `FUTBIN_GRAPH_URL` | `.../27/playerGraph` | endpoint storico |
-| `FUTBIN_SBC_URL` | `.../27/squad-building-challenges` | pagina delle SBC |
-| `FUTBIN_OBJECTIVES_URL` | `.../27/objectives` | pagina degli obiettivi |
+| `FUTBIN_PRICES_URL` | `.../<anno>/playerPrices` | endpoint prezzi |
+| `FUTBIN_GRAPH_URL` | `.../<anno>/playerGraph` | endpoint storico |
+| `FUTBIN_SBC_URL` | `.../<anno>/squad-building-challenges` | pagina delle SBC |
+| `FUTBIN_OBJECTIVES_URL` | `.../<anno>/objectives` | pagina degli obiettivi |
 | `FUTBIN_MIN_INTERVAL_MS` | `1200` | pausa minima fra due richieste |
 | `FUTBIN_COOLDOWN_MS` | `60000` | pausa dopo un errore |
 | `FUTBIN_TIMEOUT_MS` | `9000` | timeout per richiesta |
 | `PORT` | `8787` | porta del proxy |
 | `HOST` | `127.0.0.1` | `0.0.0.0` per accettare i dispositivi della rete locale |
 
-Esempio:
+**L'anno del gioco lo trova da solo.** Negli indirizzi di Futbin compare
+l'anno (`/26/`, `/27/`…) e cambia a ogni settembre. L'app parte dall'anno
+configurato e, se quello non risponde, prova gli anni vicini e adotta quello
+vivo, dichiarandolo nel badge in alto e in `npm run diagnosi`. Quindi al
+lancio del gioco nuovo non serve aggiornare niente; volendo si può forzare:
 
 ```bash
-FC27_YEAR=27 FUTBIN_MIN_INTERVAL_MS=2000 npm run dev
+FUT_YEAR=27 npm run dev
 ```
 
 Futbin è un servizio di terzi con propri termini d'uso: tieni il traffico a

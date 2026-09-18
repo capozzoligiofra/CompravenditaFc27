@@ -32,7 +32,7 @@ async function prova(nome, descrizione, azione) {
 
 console.log('')
 console.log('Diagnosi del collegamento a Futbin')
-console.log(`sito: ${futbinConfig.base} · anno gioco: FC${futbinConfig.year}`)
+console.log(`sito: ${futbinConfig.base} · anno configurato: FC${futbinConfig.configuredYear}`)
 console.log('')
 
 if (!futbinConfig.enabled) {
@@ -47,7 +47,11 @@ await prova('Ricerca giocatori', "Se fallisce, l'app non trova nessuno e ricade 
   const trovati = await searchPlayers(NOME_PROVA)
   if (trovati.length === 0) throw new Error(`Nessun risultato per "${NOME_PROVA}"`)
   idTrovato = trovati[0].id
-  return `${trovati.length} risultati · primo: ${trovati[0].name} (${trovati[0].rating}, id ${trovati[0].id})`
+  const nota =
+    futbinConfig.year === futbinConfig.configuredYear
+      ? `anno FC${futbinConfig.year}`
+      : `anno FC${futbinConfig.year} (trovato da solo: il FC${futbinConfig.configuredYear} non risponde)`
+  return `${trovati.length} risultati · primo: ${trovati[0].name} (${trovati[0].rating}, id ${trovati[0].id}) · ${nota}`
 })
 
 if (idTrovato) {
@@ -89,7 +93,7 @@ if (falliti.length === 0) {
   console.log('Cosa vogliono dire gli errori più comuni:')
   console.log('  403 / 503             Futbin sta bloccando la richiesta (protezione anti-bot).')
   console.log("  non in formato JSON   L'indirizzo risponde una pagina: endpoint cambiato.")
-  console.log("  404                   L'indirizzo non esiste più: cambia FUTBIN_*_URL o FC27_YEAR.")
+  console.log("  404                   L'indirizzo non esiste più: prova FUT_YEAR=25 npm run diagnosi.")
   console.log('  timeout / ENOTFOUND   Problema di rete o DNS dal tuo computer.')
   console.log('')
   console.log("L'app resta usabile: mostra il badge DATI DEMO e lavora sul dataset incluso.")

@@ -35,7 +35,9 @@ function badgeState(health: HealthResponse): { label: string; tone: BadgeTone } 
   if (health.fromCache) return { label: 'offline', tone: 'loss' }
   if (health.mode === 'statico') return { label: 'dati demo', tone: 'flag' }
   if (!health.futbin.enabled) return { label: 'dati demo', tone: 'flag' }
-  if (health.futbin.reachable === true) return { label: `Futbin FC${health.futbin.year}`, tone: 'gain' }
+  if (health.futbin.reachable === true) {
+    return { label: health.futbin.year ? `Futbin FC${health.futbin.year}` : 'Futbin', tone: 'gain' }
+  }
   if (health.futbin.reachable === false) return { label: 'dati demo', tone: 'flag' }
   // Nessuna richiesta ancora partita: non sappiamo se Futbin risponde.
   return { label: 'sorgente da verificare', tone: 'neutral' }
