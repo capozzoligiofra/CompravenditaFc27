@@ -48,6 +48,14 @@ export const restConfig = {
   },
 }
 
+/** Con l'intestazione Authorization la chiave va preceduta da "Bearer". */
+function valoreChiave() {
+  if (KEY_HEADER.toLowerCase() === 'authorization' && !/^(bearer|basic|token)\s/i.test(KEY)) {
+    return `Bearer ${KEY}`
+  }
+  return KEY
+}
+
 async function fetchJson(path, params) {
   if (!BASE) throw new Error("Manca l'indirizzo dell'API: imposta FUT_API_BASE")
   if (!KEY) throw new Error('Manca la chiave: impostala in FUT_API_KEY')
@@ -60,7 +68,7 @@ async function fetchJson(path, params) {
   try {
     response = await fetch(target, {
       signal: controller.signal,
-      headers: { accept: 'application/json', [KEY_HEADER]: KEY },
+      headers: { accept: 'application/json', [KEY_HEADER]: valoreChiave() },
     })
   } catch (error) {
     clearTimeout(timer)

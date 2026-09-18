@@ -92,3 +92,14 @@ test('i prezzi vengono letti per tutte e tre le piattaforme', async () => {
 test('lo storico non è previsto e la cosa non è un errore', async () => {
   assert.deepEqual(await provider.fetchGraph('231747', 'ps'), [])
 })
+
+test('con Authorization la chiave viaggia come Bearer, senza doverlo scrivere', async () => {
+  // Modulo nuovo con un'altra configurazione: l'intestazione fa la differenza.
+  const { port } = server.address()
+  process.env.FUT_API_BASE = `http://127.0.0.1:${port}`
+  process.env.FUT_API_KEY_HEADER = 'authorization'
+  process.env.FUT_API_KEY = 'chiave-nuda'
+  const altro = await import(`../server/rest-provider.mjs?variante=${Date.now()}`)
+  await altro.searchPlayers('mbappe')
+  assert.equal(intestazioniRicevute.at(-1).authorization, 'Bearer chiave-nuda')
+})

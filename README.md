@@ -352,6 +352,17 @@ collega senza toccare il codice. Nessun fornitore è scritto dentro l'app di
 proposito: questi servizi nascono, cambiano nome e chiudono, e un indirizzo
 nel codice diventa presto un indirizzo morto.
 
+**Non sai come è fatta l'API del tuo servizio?** Con la chiave in mano:
+
+```powershell
+$env:FUT_API_KEY="la-tua-chiave"; $env:FUT_API_SITE="https://il-servizio.tld"; npm run esplora
+```
+
+`npm run esplora` prova dalla tua connessione le combinazioni più comuni di
+indirizzo, intestazione della chiave e percorsi, e stampa la configurazione
+esatta da incollare. Se non trova niente, dice se la chiave è stata rifiutata
+o se il servizio non ha mai risposto.
+
 Servono tre valori (più due se i percorsi non sono quelli standard):
 
 ```powershell
@@ -472,7 +483,8 @@ src/
 npm test          # test della logica: tasse, margini, calendario, punteggi, avvisi
 npm run build     # typecheck + build
 npm run lint      # oxlint
-npm run diagnosi  # prova i collegamenti a Futbin dalla tua connessione
+npm run diagnosi  # prova i collegamenti alla sorgente dalla tua connessione
+npm run esplora   # scopre la forma dell'API di un servizio con chiave
 ```
 
 `npm run diagnosi` è il comando da usare quando i prezzi non arrivano: prova
