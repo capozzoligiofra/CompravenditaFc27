@@ -4,14 +4,14 @@ import Sparkline from '../components/Sparkline.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
 import { getPlayer, searchPlayers } from '../lib/api.ts'
 import { coins } from '../lib/format.ts'
-import { breakEvenSell, maxBuyForMargin, roundToMarketStep, sellForMargin } from '../lib/market.ts'
+import { breakEvenSell, maxBuyForMargin, roundToMarketStep, sellForMargin } from '../../shared/market.mjs'
 import { useStore } from '../lib/useStore.ts'
 import type { Player, PlayerDetail } from '../types.ts'
 
 const PLATFORM_LABEL = { ps: 'PlayStation', xbox: 'Xbox', pc: 'PC' } as const
 
 export default function Market() {
-  const { settings, addWatch, isWatched, addPosition } = useStore()
+  const { settings, addWatch, isWatched, addPosition, rememberPlayer } = useStore()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Player[]>([])
   const [searching, setSearching] = useState(false)
@@ -89,7 +89,10 @@ export default function Market() {
             <li key={player.id}>
               <button
                 type="button"
-                onClick={() => setSelected(player)}
+                onClick={() => {
+                  setSelected(player)
+                  rememberPlayer(player)
+                }}
                 className={`flex w-full items-center gap-3 px-1 py-2.5 text-left transition hover:bg-pitch/60 ${
                   selected?.id === player.id ? 'bg-pitch/60' : ''
                 }`}

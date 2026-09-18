@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card, CardTitle, EmptyState, NumberField, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
 import { getQuotes } from '../lib/api.ts'
 import { coins, dateTime, percent, signedCoins } from '../lib/format.ts'
-import { profit, roiPercent } from '../lib/market.ts'
+import { profit, roiPercent } from '../../shared/market.mjs'
 import { useStore } from '../lib/useStore.ts'
 import type { Quote } from '../types.ts'
 

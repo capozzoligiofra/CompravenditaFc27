@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Card, CardTitle, Delta, EmptyState, NumberField, Pill, Stat, buttonClass } from '../components/ui.tsx'
 import { getQuotes } from '../lib/api.ts'
 import { coins, dateTime } from '../lib/format.ts'
-import { profit, signalFor, type Signal } from '../lib/market.ts'
+import { profit, signalFor, type Signal } from '../../shared/market.mjs'
 import { useStore } from '../lib/useStore.ts'
 import type { Quote } from '../types.ts'
 

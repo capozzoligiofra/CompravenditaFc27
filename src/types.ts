@@ -1,3 +1,5 @@
+import type { Catalyst } from '../shared/catalysts.d.mts'
+
 export type Platform = 'ps' | 'xbox' | 'pc'
 
 export type DataSource = 'futbin' | 'demo'
@@ -67,10 +69,30 @@ export interface Settings {
   taxPercent: number
   targetMarginPercent: number
   budget: number
+  /** Avvisi del browser, chiesti esplicitamente dall'utente. */
+  notifications: boolean
+}
+
+export type AlertSeverity = 'urgente' | 'buona' | 'info'
+
+export interface Alert {
+  id: string
+  kind: 'compra' | 'vendi' | 'occasione' | 'finestra' | 'catalizzatore'
+  title: string
+  body: string
+  severity: AlertSeverity
+  at: number
+  read: boolean
+  playerId: string | null
 }
 
 export interface AppData {
   settings: Settings
   watchlist: WatchItem[]
   positions: Position[]
+  /** Catalizzatori aggiunti a mano: quello che vedi in gioco e Futbin non dice. */
+  catalysts: Catalyst[]
+  alerts: Alert[]
+  /** Giocatori già incontrati: è la base su cui l'app cerca le occasioni. */
+  seen: Player[]
 }

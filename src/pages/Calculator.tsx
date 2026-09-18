@@ -12,7 +12,7 @@ import {
   roundToMarketStep,
   sellForMargin,
   taxAmount,
-} from '../lib/market.ts'
+} from '../../shared/market.mjs'
 import { useStore } from '../lib/useStore.ts'
 
 export default function Calculator() {

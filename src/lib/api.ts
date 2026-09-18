@@ -1,3 +1,4 @@
+import type { Catalyst } from '../../shared/catalysts.d.mts'
 import { demoHistory, demoPlayer, demoPrices, demoRoster, demoSearch } from '../../shared/demo.mjs'
 import type { DataSource, HistoryPoint, Platform, Player, PlayerDetail, Quote } from '../types.ts'
 import { getApiBase } from './apiBase.ts'
@@ -141,6 +142,25 @@ export function getQuotes(ids: string[], platform: Platform, signal?: AbortSigna
       platform,
       quotes: Object.fromEntries(ids.map((id) => [id, (demoPrices(id)?.[platform] as Quote | undefined) ?? null])),
     }),
+    signal,
+  )
+}
+
+export interface CatalystsResponse {
+  source: DataSource
+  reason: string | null
+  catalysts: Catalyst[]
+  fromCache?: boolean
+}
+
+/**
+ * SBC e obiettivi in corso letti da Futbin. Senza proxy (versione statica)
+ * l'elenco è vuoto: restano il calendario e i catalizzatori inseriti a mano.
+ */
+export function getCatalysts(signal?: AbortSignal): Promise<CatalystsResponse> {
+  return withLocalFallback(
+    () => request<CatalystsResponse>('/catalysts', signal),
+    () => ({ source: 'demo' as DataSource, reason: STATIC_REASON, catalysts: [] }),
     signal,
   )
 }

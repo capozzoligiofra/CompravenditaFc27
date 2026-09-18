@@ -10,6 +10,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs'
 import { extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { fetchCatalysts } from './catalysts.mjs'
 import { fetchGraph, fetchPrices, futbinConfig, normalizePlatform, searchPlayers } from './futbin.mjs'
 import { demoHistory, demoPlayer, demoPrices, demoRoster, demoSearch } from '../shared/demo.mjs'
 import { sendJson } from './util.mjs'
@@ -125,6 +126,33 @@ export async function handleApi(req, res, url) {
       prices: prices.data,
       history: history.data,
     })
+    return
+  }
+
+  if (path === '/api/catalysts') {
+    // SBC e obiettivi in corso. Sono un "meglio di niente": se Futbin non
+    // risponde o cambia pagina, l'elenco resta vuoto e l'app usa il
+    // calendario e i catalizzatori inseriti a mano.
+    // Errori gestiti qui e non con withFallback di proposito: un elenco
+    // vuoto di SBC non deve mettere in pausa anche le richieste dei prezzi.
+    if (!futbinConfig.enabled) {
+      sendJson(res, 200, { source: 'demo', reason: 'Futbin disattivato (FUTBIN_ENABLED=false)', catalysts: [] })
+      return
+    }
+    try {
+      const catalysts = await fetchCatalysts()
+      sendJson(res, 200, {
+        source: catalysts.length > 0 ? 'futbin' : 'demo',
+        reason: catalysts.length > 0 ? null : 'Nessuna SBC o obiettivo riconosciuto sulle pagine di Futbin',
+        catalysts,
+      })
+    } catch (error) {
+      sendJson(res, 200, {
+        source: 'demo',
+        reason: error instanceof Error ? error.message : 'Catalizzatori non disponibili',
+        catalysts: [],
+      })
+    }
     return
   }
 

@@ -1,15 +1,17 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
+
 import type { HealthResponse } from '../lib/api.ts'
 import { useHealth } from '../lib/useHealth.ts'
 import { useStore } from '../lib/useStore.ts'
 import type { Platform } from '../types.ts'
 
 const NAV = [
-  { to: '/', label: 'Mercato', end: true },
+  { to: '/', label: 'Occasioni', end: true },
+  { to: '/mercato', label: 'Mercato' },
   { to: '/watchlist', label: 'Watchlist' },
   { to: '/calcolatore', label: 'Calcoli' },
-  { to: '/portafoglio', label: 'Portafoglio' },
+  { to: '/portafoglio', label: 'Conti' },
   { to: '/impostazioni', label: 'Opzioni' },
 ]
 
@@ -69,7 +71,8 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 }
 
 export default function Layout() {
-  const { settings, updateSettings } = useStore()
+  const { data, settings, updateSettings } = useStore()
+  const nonLetti = data.alerts.filter((alert) => !alert.read).length
 
   return (
     <div className="min-h-screen bg-pitch">
@@ -80,7 +83,18 @@ export default function Layout() {
             <span className="text-base font-semibold tracking-tight">Trader</span>
           </div>
           <SourceBadge />
-          <label className="ml-auto flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
+          <NavLink
+            to="/avvisi"
+            className="ml-auto flex items-center gap-1.5 rounded-lg border border-pitch-line px-2 py-1 text-xs text-chalk-dim transition hover:text-chalk"
+            title="Avvisi"
+          >
+            <span aria-hidden>🔔</span>
+            <span className="sr-only">Avvisi</span>
+            {nonLetti > 0 ? (
+              <span className="rounded-full bg-gain px-1.5 font-mono text-[11px] font-bold text-pitch">{nonLetti}</span>
+            ) : null}
+          </NavLink>
+          <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
             Piattaforma
             <select
               value={settings.platform}

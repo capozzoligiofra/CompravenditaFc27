@@ -3,9 +3,12 @@ import type { AppData } from '../types.ts'
 const KEY = 'fc27-trader:v1'
 
 export const defaultData: AppData = {
-  settings: { platform: 'ps', taxPercent: 5, targetMarginPercent: 15, budget: 0 },
+  settings: { platform: 'ps', taxPercent: 5, targetMarginPercent: 15, budget: 0, notifications: false },
   watchlist: [],
   positions: [],
+  catalysts: [],
+  alerts: [],
+  seen: [],
 }
 
 /** Lo stato vive solo nel browser: nessun account, nessun dato inviato altrove. */
@@ -18,6 +21,9 @@ export function loadData(): AppData {
       settings: { ...defaultData.settings, ...(parsed.settings ?? {}) },
       watchlist: Array.isArray(parsed.watchlist) ? parsed.watchlist : [],
       positions: Array.isArray(parsed.positions) ? parsed.positions : [],
+      catalysts: Array.isArray(parsed.catalysts) ? parsed.catalysts : [],
+      alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
+      seen: Array.isArray(parsed.seen) ? parsed.seen : [],
     }
   } catch {
     return defaultData
@@ -42,5 +48,8 @@ export function importData(raw: string): AppData {
     settings: { ...defaultData.settings, ...(parsed.settings ?? {}) },
     watchlist: Array.isArray(parsed.watchlist) ? parsed.watchlist : [],
     positions: Array.isArray(parsed.positions) ? parsed.positions : [],
+    catalysts: Array.isArray(parsed.catalysts) ? parsed.catalysts : [],
+    alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
+    seen: Array.isArray(parsed.seen) ? parsed.seen : [],
   }
 }

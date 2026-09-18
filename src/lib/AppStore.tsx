@@ -1,6 +1,8 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import type { AppData, Position, Settings, WatchItem } from '../types.ts'
+import type { Catalyst } from '../../shared/catalysts.d.mts'
+import { normalizeCatalyst } from '../../shared/catalysts.mjs'
+import type { Alert, AppData, Player, Position, Settings, WatchItem } from '../types.ts'
 import { defaultData, loadData, saveData } from './storage.ts'
 
 export interface Store {
@@ -15,6 +17,13 @@ export interface Store {
   closePosition: (id: string, sellPrice: number) => void
   reopenPosition: (id: string) => void
   removePosition: (id: string) => void
+  rememberPlayer: (player: Player) => void
+  addCatalyst: (raw: Partial<Catalyst> & { title: string }) => void
+  removeCatalyst: (id: string) => void
+  pushAlerts: (alerts: Alert[]) => Alert[]
+  markAlertsRead: () => void
+  removeAlert: (id: string) => void
+  clearAlerts: () => void
   replaceAll: (data: AppData) => void
   reset: () => void
 }
@@ -86,6 +95,52 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setData((current) => ({ ...current, positions: current.positions.filter((entry) => entry.id !== id) }))
   }, [])
 
+  /** Ogni scheda aperta entra nel bacino da cui nascono le proposte. */
+  const rememberPlayer = useCallback((player: Player) => {
+    if (!player?.id) return
+    setData((current) => {
+      const rest = current.seen.filter((entry) => entry.id !== player.id)
+      return { ...current, seen: [player, ...rest].slice(0, 60) }
+    })
+  }, [])
+
+  const addCatalyst = useCallback((raw: Partial<Catalyst> & { title: string }) => {
+    const catalyst = normalizeCatalyst({ ...raw, id: raw.id ?? `manuale-${newId()}`, source: 'manuale' })
+    setData((current) => ({ ...current, catalysts: [catalyst, ...current.catalysts] }))
+  }, [])
+
+  const removeCatalyst = useCallback((id: string) => {
+    setData((current) => ({ ...current, catalysts: current.catalysts.filter((entry) => entry.id !== id) }))
+  }, [])
+
+  /**
+   * Gli avvisi arrivano dalle regole a ogni aggiornamento dei prezzi: si
+   * scartano i duplicati per id e si tengono solo gli ultimi 60, così la
+   * lista resta leggibile e lo storage non cresce all'infinito.
+   * Restituisce i soli avvisi nuovi, per poterli notificare una volta sola.
+   */
+  const pushAlerts = useCallback((incoming: Alert[]) => {
+    if (incoming.length === 0) return []
+    let fresh: Alert[] = []
+    setData((current) => {
+      const known = new Set(current.alerts.map((alert) => alert.id))
+      fresh = incoming.filter((alert) => !known.has(alert.id))
+      if (fresh.length === 0) return current
+      return { ...current, alerts: [...fresh, ...current.alerts].slice(0, 60) }
+    })
+    return fresh
+  }, [])
+
+  const markAlertsRead = useCallback(() => {
+    setData((current) => ({ ...current, alerts: current.alerts.map((alert) => ({ ...alert, read: true })) }))
+  }, [])
+
+  const removeAlert = useCallback((id: string) => {
+    setData((current) => ({ ...current, alerts: current.alerts.filter((alert) => alert.id !== id) }))
+  }, [])
+
+  const clearAlerts = useCallback(() => setData((current) => ({ ...current, alerts: [] })), [])
+
   const replaceAll = useCallback((next: AppData) => setData(next), [])
   const reset = useCallback(() => setData(defaultData), [])
 
@@ -102,6 +157,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       closePosition,
       reopenPosition,
       removePosition,
+      rememberPlayer,
+      addCatalyst,
+      removeCatalyst,
+      pushAlerts,
+      markAlertsRead,
+      removeAlert,
+      clearAlerts,
       replaceAll,
       reset,
     }),
@@ -115,6 +177,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       closePosition,
       reopenPosition,
       removePosition,
+      rememberPlayer,
+      addCatalyst,
+      removeCatalyst,
+      pushAlerts,
+      markAlertsRead,
+      removeAlert,
+      clearAlerts,
       replaceAll,
       reset,
     ],

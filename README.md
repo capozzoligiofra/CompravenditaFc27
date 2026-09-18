@@ -10,6 +10,13 @@ strumento di analisi e di contabilità personale.
 
 ## Cosa fa
 
+- **Occasioni** — la schermata iniziale: proposte di acquisto ordinate per
+  convenienza, con il motivo di ognuna, il prezzo massimo a cui comprarle e
+  quello verso cui rivenderle. Sopra, il momento del ciclo settimanale e il
+  conto alla rovescia per i prossimi eventi che muovono i prezzi.
+- **Avvisi** — la campanella in alto: target raggiunti, carte in magazzino
+  andate in utile, finestre di acquisto che si aprono. Con notifica del
+  browser, se la attivi.
 - **Mercato** — ricerca giocatori, prezzo attuale, minimo/massimo, variazione,
   grafico dello storico e «piano di trade» già pronto: a quanto comprare per
   ottenere il margine che hai impostato e a quanto rivendere.
@@ -118,6 +125,94 @@ sempre. I prezzi invece no: l'app mostra l'ultima risposta ricevuta e la
 segnala con l'etichetta **OFFLINE** e la scritta «prezzi salvati in memoria,
 non aggiornati», così non rischi di comprare guardando un prezzo di ieri.
 
+## Come sceglie i giocatori da comprare
+
+Il mercato di Ultimate Team non si muove a caso: si muove sul **calendario**
+dei contenuti e sulla **domanda improvvisa** creata da sfide e obiettivi.
+L'app mette insieme tre cose.
+
+### 1. Il ciclo settimanale
+
+È la causa più regolare dei movimenti di prezzo. Quando arrivano i premi tutti
+aprono pacchetti, il mercato si riempie di carte e i prezzi scendono; quando si
+gioca si ricompra e i prezzi risalgono. Orari italiani:
+
+| Quando | Cosa succede | Effetto |
+| --- | --- | --- |
+| Giovedì mattina | Chiude la Champions, arrivano i premi | Offerta ↑, prezzi ↓ — **si compra** |
+| Giovedì sera → venerdì | Si svende la rosa per fare crediti in vista della promo | Prezzi ai minimi — **si compra** |
+| Venerdì 19:00 | Nuova promo e apertura Champions | Domanda ↑ — **si vende** |
+| Sabato e domenica | Weekend League in corso | Domanda alta, prezzi tengono |
+| Lunedì mattina | Premi Rivals | Seconda ondata di pacchetti, prezzi ↓ |
+| Notte e primo mattino | Pochi acquirenti online | Occasioni sotto prezzo |
+
+L'app riconosce da sola in che fase sei e te lo dice in cima alla pagina
+Occasioni, con il conto alla rovescia per il prossimo appuntamento.
+
+### 2. I catalizzatori
+
+Sono gli eventi che creano domanda su carte precise:
+
+- **Sfide creazione rosa (SBC)**: chiedono giocatori di una lega, di una
+  nazione o sopra una certa valutazione. È il motivo per cui il "fodder" 83-86
+  è sempre conteso.
+- **Obiettivi**: premiano chi segna o gioca con giocatori di una nazionalità o
+  di un campionato, e quei giocatori diventano improvvisamente richiesti.
+- **Promo**: mettono sotto i riflettori un campionato o una nazione.
+- **Prima settimana di Weekend League e lancio del gioco**: le carte meta e i
+  difensori usati da tutti salgono per primi.
+
+L'app prova a leggerli da Futbin (pagine SBC e obiettivi) e ne ricava il
+requisito dal titolo: «Serie A 84+ Upgrade» diventa *lega Serie A, valutazione
+minima 84*. Quando Futbin non è raggiungibile o cambia pagina, l'elenco resta
+vuoto e **li aggiungi tu** in dieci secondi dalla pagina Occasioni: titolo,
+valutazione minima, lega, nazione. Un catalizzatore inserito a mano pesa come
+uno letto da Futbin, e riconosce anche i nomi in inglese (una SBC "Italy" trova
+i giocatori italiani).
+
+### 3. I segnali di prezzo
+
+Su ogni carta l'app guarda: quanto costa rispetto alla **media della
+settimana**, quanto è vicina al **minimo** del periodo, come si è mossa negli
+**ultimi tre giorni** e nelle **ultime ore**, e se è nella **fascia fodder**.
+
+Da tutto questo esce un punteggio 0-100 con le ragioni in chiaro, e un
+consiglio. Per dire «compra ora» non basta il punteggio alto: serve un motivo
+concreto (prezzo sotto la media, una SBC che la richiede, un calo appena
+avvenuto) **e** uno storico su cui basarsi. Senza, resta «tieni pronto». Se
+ogni carta fosse un affare, il consiglio non varrebbe niente.
+
+Le proposte nascono dai giocatori che segui: watchlist, carte in magazzino e
+schede che hai aperto nel Mercato. Più usi l'app, più il bacino è tuo.
+
+### Gli avvisi
+
+Le regole che generano un avviso:
+
+- un giocatore della watchlist scende sotto il tuo target di acquisto (o sale
+  sopra quello di vendita);
+- una carta in magazzino ha raggiunto il margine che hai impostato;
+- compare un'occasione con punteggio alto che non stai già seguendo;
+- si apre una finestra del calendario, o manca meno di tre ore a un evento.
+
+Lo stesso avviso non si ripete finché la situazione non cambia davvero. Le
+notifiche del browser sono facoltative e, non essendoci un server che le
+spinge, arrivano solo mentre l'app è aperta (anche in secondo piano).
+
+### Quello che l'app non fa
+
+Non prevede il futuro e non conosce le notizie: un infortunio, un
+annuncio a sorpresa o una carta speciale fuori calendario non li vede. Non
+automatizza nulla in gioco. I prezzi di rivendita sono stime calcolate sui
+segnali descritti qui sopra, e sono mostrati come tali.
+
+Fonti usate per il modello del mercato:
+[FUTBIN](https://www.futbin.com/),
+[guida al mercato FC 26](https://www.itemd2r.com/en/blog/fc-26/ea-sports-fc-26-market-trds-trading-guide-for-smart-investors),
+[trading settimana di lancio FC 27](https://timesaver.gg/blog/fc-27-fut-market-launch-week-trading-85s-otw-prep),
+[calendario promo](https://www.dexerto.com/wikis/ea-fc-26-guides-walkthrough-tips/ea-fc-26-promo-calendar/),
+[orari e premi della Champions](https://www.operationsports.com/ea-fc-26-champions-schedule-and-all-rewards/).
+
 ## Come funziona il collegamento a Futbin
 
 Futbin **non ha un'API pubblica** e il browser non può interrogarlo
@@ -144,6 +239,8 @@ toccare il codice, bastano le variabili d'ambiente.
 | `FUTBIN_SEARCH_URL` | `.../search` | endpoint di ricerca |
 | `FUTBIN_PRICES_URL` | `.../27/playerPrices` | endpoint prezzi |
 | `FUTBIN_GRAPH_URL` | `.../27/playerGraph` | endpoint storico |
+| `FUTBIN_SBC_URL` | `.../27/squad-building-challenges` | pagina delle SBC |
+| `FUTBIN_OBJECTIVES_URL` | `.../27/objectives` | pagina degli obiettivi |
 | `FUTBIN_MIN_INTERVAL_MS` | `1200` | pausa minima fra due richieste |
 | `FUTBIN_COOLDOWN_MS` | `60000` | pausa dopo un errore |
 | `FUTBIN_TIMEOUT_MS` | `9000` | timeout per richiesta |
@@ -163,14 +260,20 @@ club, non per rivendere i dati.
 ## Struttura
 
 ```
-shared/
-  demo.mjs    dataset demo, usato sia dal proxy sia dall'app statica
+shared/          logica pura, condivisa fra proxy e browser e coperta da test
+  market.mjs     tassa, margine, BIN massimo, prezzo di pareggio
+  calendar.mjs   il ciclo settimanale di Ultimate Team e le sue fasi
+  catalysts.mjs  forma dei catalizzatori e regole di corrispondenza
+  scoring.mjs    punteggio delle occasioni e ragioni in chiaro
+  alerts.mjs     regole degli avvisi
+  demo.mjs       dataset demo, usato sia dal proxy sia dall'app statica
 server/
   index.mjs   avvio del server locale e indirizzi per il telefono
-  router.mjs  rotte HTTP (/api/health, /api/search, /api/player/:id, /api/quotes)
+  router.mjs  rotte HTTP (/api/health, /api/search, /api/player/:id, /api/quotes, /api/catalysts)
   futbin.mjs  client Futbin: fetch, normalizzazione, cache, rate limit
-  demo.mjs    dataset di riserva con storico generato in modo deterministico
+  catalysts.mjs  lettura delle pagine SBC e obiettivi di Futbin
   util.mjs    parsing prezzi, cache TTL, coda di richieste
+test/          test della logica (node --test)
 api/
   index.mjs   stesse rotte come funzione serverless per il deploy
 public/
@@ -180,12 +283,13 @@ src/
   lib/market.ts   tutta la matematica: tassa, margine, BIN massimo, pareggio
   lib/api.ts      client delle rotte del proxy
   lib/AppStore.tsx  stato persistito in localStorage
-  pages/          Mercato, Watchlist, Calcolatore, Portafoglio, Impostazioni
+  pages/          Occasioni, Mercato, Watchlist, Calcolatore, Portafoglio, Avvisi, Impostazioni
 ```
 
 ## Verifiche
 
 ```bash
+npm test        # test della logica: tasse, margini, calendario, punteggi, avvisi
 npm run build   # typecheck + build
 npm run lint    # oxlint
 ```
