@@ -8,6 +8,7 @@
     "mobile": "node scripts/mobile.mjs",
     "dev:web": "vite",
     "server": "node server/index.mjs",
+    "diagnosi": "node scripts/diagnosi.mjs",
     "build": "tsc -b && vite build && node scripts/postbuild-sw.mjs",
     "lint": "oxlint",
     "test": "node --test test/*.test.mjs",

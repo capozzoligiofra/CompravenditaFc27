@@ -338,7 +338,17 @@ src/
 ## Verifiche
 
 ```bash
-npm test        # test della logica: tasse, margini, calendario, punteggi, avvisi
-npm run build   # typecheck + build
-npm run lint    # oxlint
+npm test          # test della logica: tasse, margini, calendario, punteggi, avvisi
+npm run build     # typecheck + build
+npm run lint      # oxlint
+npm run diagnosi  # prova i collegamenti a Futbin dalla tua connessione
 ```
+
+`npm run diagnosi` è il comando da usare quando i prezzi non arrivano: prova
+ricerca, prezzi, storico e pagine SBC uno per uno e stampa l'errore vero,
+invece del silenzioso ripiego sul dataset demo.
+
+Per il collaudo completo dell'app, passo per passo, c'è
+**[COLLAUDO.md](COLLAUDO.md)**: controlli automatici, diagnosi del
+collegamento, prova sul computer con i conti verificabili a mano, prova dal
+telefono e prova offline.
