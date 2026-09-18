@@ -33,7 +33,7 @@ async function prova(nome, descrizione, azione) {
   }
 }
 
-const nome = providerConfig.name === 'futdb' ? 'FutDB' : 'Futbin'
+const nome = providerConfig.name === 'api' ? (providerConfig.label ?? 'API configurata') : 'Futbin'
 
 console.log('')
 console.log(`Diagnosi della sorgente dati: ${nome}`)
@@ -43,11 +43,13 @@ console.log(
 console.log('')
 
 if (!providerConfig.enabled) {
-  if (providerConfig.name === 'futdb') {
-    console.log('Manca la chiave FutDB. Crea la tua (gratuita) su https://futdb.app e poi:')
+  if (providerConfig.name === 'api') {
+    console.log("Sorgente API scelta ma non configurata: servono indirizzo e chiave.")
     console.log('')
-    console.log('  Windows (PowerShell)   $env:FUTDB_KEY="la-tua-chiave"; npm run diagnosi')
-    console.log('  macOS e Linux          FUTDB_KEY=la-tua-chiave npm run diagnosi')
+    console.log('  Windows (PowerShell)   $env:FUT_API_BASE="https://esempio/api"; $env:FUT_API_KEY="chiave"')
+    console.log('  macOS e Linux          FUT_API_BASE=https://esempio/api FUT_API_KEY=chiave npm run diagnosi')
+    console.log('')
+    console.log('Vedi il README: servono anche i percorsi di ricerca e prezzi se diversi da quelli standard.')
   } else {
     console.log("Futbin è disattivato (FUTBIN_ENABLED=false): l'app userà solo il dataset demo.")
   }
@@ -224,8 +226,8 @@ if (falliti.length === 0) {
     console.log("nella scheda di un giocatore c'è il campo «Prezzo visto in gioco», e da lì")
     console.log('margini, target, occasioni e verdetti di vendita funzionano come sempre.')
     console.log('')
-    console.log('In alternativa FutDB pubblica un\'API con chiave gratuita: crea la chiave su')
-    console.log('https://futdb.app e riprova con FUTDB_KEY impostata (vedi README).')
+    console.log("In alternativa si può collegare un'API che consenta l'accesso programmatico:")
+    console.log('imposta FUT_API_BASE e FUT_API_KEY e riprova (vedi README).')
   }
 
   console.log('')

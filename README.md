@@ -342,45 +342,45 @@ Quello che si fa invece:
   «costa meno della media della settimana», «è vicino al minimo», il grafico.
 - **Controllare il perché** con `npm run diagnosi`, che distingue il blocco di
   Futbin da un problema del computer.
-- **Cambiare sorgente**: FutDB, qui sotto.
+- **Cambiare sorgente**: collegare un'API che consenta l'accesso, qui sotto.
 
-### Sorgente alternativa: FutDB
+### Sorgente alternativa: un'API con chiave
 
-[FutDB](https://futdb.app) pubblica un'API documentata con **chiave gratuita**:
-è accesso consentito, non aggirato. Per usarla:
+Se trovi un servizio di dati FUT che **consente l'accesso programmatico** —
+cioè pubblica un'API con chiave, invece di vietarla come fa Futbin — lo si
+collega senza toccare il codice. Nessun fornitore è scritto dentro l'app di
+proposito: questi servizi nascono, cambiano nome e chiudono, e un indirizzo
+nel codice diventa presto un indirizzo morto.
 
-1. crea la chiave gratuita su <https://futdb.app>;
-2. impostala e avvia:
-
-   ```powershell
-   $env:FUTDB_KEY="la-tua-chiave"; npm run dev
-   ```
-
-   ```bash
-   FUTDB_KEY=la-tua-chiave npm run dev     # macOS e Linux
-   ```
-
-3. verifica con `npm run diagnosi`: l'intestazione deve dire «Diagnosi della
-   sorgente dati: FutDB».
-
-Quando la chiave c'è, l'app usa FutDB al posto di Futbin senza altre
-modifiche; il badge in alto lo dichiara. Due differenze da sapere:
-
-- **niente storico dei prezzi**: FutDB dà la quotazione di adesso, non il
-  passato. Non è un problema serio, perché l'app si costruisce lo storico da
-  sola annotando un prezzo al giorno per carta;
-- **niente SBC e obiettivi**: quelli si leggono solo dalle pagine di Futbin, e
-  con FutDB i catalizzatori si aggiungono a mano dalla pagina Occasioni.
-
-Con `FUT_PROVIDER=futbin` si torna a Futbin anche avendo la chiave.
-
-Un caso frequente su Windows: l'antivirus ispeziona il traffico cifrato e Node
-non riconosce il suo certificato (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`). Si
-risolve dicendo a Node di usare i certificati di sistema:
+Servono tre valori (più due se i percorsi non sono quelli standard):
 
 ```powershell
-$env:NODE_OPTIONS="--use-system-ca"; npm run dev
+$env:FUT_API_BASE="https://esempio.tld/api"
+$env:FUT_API_KEY="la-tua-chiave"
+npm run dev
 ```
+
+| Variabile | Default | A cosa serve |
+| --- | --- | --- |
+| `FUT_API_BASE` | — | indirizzo dell'API (senza barra finale) |
+| `FUT_API_KEY` | — | la tua chiave |
+| `FUT_API_KEY_HEADER` | `X-AUTH-TOKEN` | intestazione con cui inviare la chiave |
+| `FUT_API_SEARCH_PATH` | `/players/search` | percorso della ricerca |
+| `FUT_API_SEARCH_PARAM` | `name` | nome del parametro di ricerca |
+| `FUT_API_PRICE_PATH` | `/players/{id}/price` | percorso dei prezzi (`{id}` viene sostituito) |
+
+Poi `npm run diagnosi` dice se l'indirizzo risponde, se la chiave è accettata
+e se i prezzi vengono letti: gli errori sono espliciti (401 chiave rifiutata,
+404 percorso sbagliato, risposta non JSON).
+
+L'app legge le risposte in modo tollerante: accetta elenchi sotto `items`,
+`data`, `results` o `players`, nomi di campo diversi per nome e valutazione, e
+prezzi scritti come numero, come `"1,450,000"` o come `"1.4M"`. Due cose non
+arrivano quasi mai da queste API e restano coperte diversamente: lo **storico
+dei prezzi**, che l'app si costruisce annotandone uno al giorno, e **SBC e
+obiettivi**, che si aggiungono a mano dalla pagina Occasioni.
+
+Con `FUT_PROVIDER=futbin` si torna a Futbin anche avendo configurato un'API.
 
 ## Come funziona il collegamento a Futbin
 
@@ -413,11 +413,8 @@ toccare il codice, bastano le variabili d'ambiente.
 | `FUTBIN_MIN_INTERVAL_MS` | `1200` | pausa minima fra due richieste |
 | `FUTBIN_COOLDOWN_MS` | `60000` | pausa dopo un errore |
 | `FUTBIN_TIMEOUT_MS` | `9000` | timeout per richiesta |
-| `FUTDB_KEY` | — | chiave FutDB: se c'è, l'app usa FutDB al posto di Futbin |
-| `FUTDB_BASE` | `https://futdb.app/api` | indirizzo dell'API FutDB |
-| `FUTDB_SEARCH_PATH` | `/players/search` | percorso della ricerca su FutDB |
-| `FUTDB_PRICE_PATH` | `/players/{id}/price` | percorso dei prezzi su FutDB |
-| `FUT_PROVIDER` | automatico | forza la sorgente: `futbin` o `futdb` |
+| `FUT_API_BASE`, `FUT_API_KEY` | — | sorgente alternativa: vedi sopra |
+| `FUT_PROVIDER` | automatico | forza la sorgente: `futbin` o `api` |
 | `PORT` | `8787` | porta del proxy |
 | `HOST` | `127.0.0.1` | `0.0.0.0` per accettare i dispositivi della rete locale |
 
@@ -450,8 +447,8 @@ shared/          logica pura, condivisa fra proxy e browser e coperta da test
   demo.mjs       dataset demo, usato sia dal proxy sia dall'app statica
 server/
   index.mjs   avvio del server locale e indirizzi per il telefono
-  providers.mjs  sceglie la sorgente dati fra Futbin e FutDB
-  futdb.mjs   client FutDB: API documentata con chiave gratuita
+  providers.mjs  sceglie la sorgente dati fra Futbin e l'API configurata
+  rest-provider.mjs  client generico per un'API REST con chiave
   router.mjs  rotte HTTP (/api/health, /api/search, /api/player/:id, /api/quotes, /api/catalysts)
   futbin.mjs  client Futbin: fetch, normalizzazione, cache, rate limit
   catalysts.mjs  lettura delle pagine SBC e obiettivi di Futbin

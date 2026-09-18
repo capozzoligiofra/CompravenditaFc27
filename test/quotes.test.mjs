@@ -34,8 +34,8 @@ test('la data di inserimento finisce nella descrizione', () => {
 })
 
 test('anche una sorgente diversa da Futbin conta come prezzo vero', () => {
-  const merged = mergeQuotes({ '1': live }, { '1': { price: 9_000, at: Date.now() } }, 'futdb')
+  const merged = mergeQuotes({ '1': live }, { '1': { price: 9_000, at: Date.now() } }, 'api')
   assert.equal(merged['1'].price, 12_000)
-  assert.equal(isLiveSource('futdb'), true)
+  assert.equal(isLiveSource('api'), true)
   assert.equal(isLiveSource('demo'), false)
 })

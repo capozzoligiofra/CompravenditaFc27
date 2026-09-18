@@ -1,41 +1,56 @@
-// Client FutDB (futdb.app).
+// Sorgente dati generica: una qualsiasi API REST con chiave.
 //
-// A differenza di Futbin, FutDB pubblica un'API documentata con chiave
-// gratuita: l'accesso è consentito, non aggirato. In cambio dà meno roba —
-// niente storico dei prezzi — ma lo storico ormai l'app se lo costruisce da
-// sola annotando un prezzo al giorno.
+// Non è legata a un fornitore preciso di proposito. I servizi di dati FUT
+// nascono, cambiano nome e chiudono, e indicarne uno nel codice significa
+// spedire un indirizzo che un giorno non risponde più. Qui si configurano
+// indirizzo, chiave, intestazione e percorsi; il codice si limita a leggere
+// la risposta in modo difensivo, accettando nomi di campo diversi, prezzi
+// scritti in mille modi ed elenchi annidati.
 //
-// Le risposte vengono lette in modo difensivo: campi con nomi diversi, prezzi
-// scritti in mille modi, elenchi annidati. Ogni indirizzo è sovrascrivibile
-// da variabile d'ambiente, così un cambio di API non richiede una modifica al
-// codice.
+// Serve un servizio che consenta l'accesso programmatico: è il punto di
+// tutta questa strada, visto che Futbin lo vieta.
 
 import { describeFetchError, parseCoins, RateLimiter, TtlCache } from './util.mjs'
 
-const BASE = (process.env.FUTDB_BASE ?? 'https://futdb.app/api').replace(/\/$/, '')
-const KEY = process.env.FUTDB_KEY ?? ''
-const SEARCH_PATH = process.env.FUTDB_SEARCH_PATH ?? '/players/search'
-const PRICE_PATH = process.env.FUTDB_PRICE_PATH ?? '/players/{id}/price'
-const TIMEOUT_MS = Number(process.env.FUTDB_TIMEOUT_MS ?? 9000)
+const BASE = (process.env.FUT_API_BASE ?? process.env.FUTDB_BASE ?? '').replace(/\/$/, '')
+const KEY = process.env.FUT_API_KEY ?? process.env.FUTDB_KEY ?? ''
+const KEY_HEADER = process.env.FUT_API_KEY_HEADER ?? 'X-AUTH-TOKEN'
+const SEARCH_PATH = process.env.FUT_API_SEARCH_PATH ?? process.env.FUTDB_SEARCH_PATH ?? '/players/search'
+const SEARCH_PARAM = process.env.FUT_API_SEARCH_PARAM ?? 'name'
+const PRICE_PATH = process.env.FUT_API_PRICE_PATH ?? process.env.FUTDB_PRICE_PATH ?? '/players/{id}/price'
+const TIMEOUT_MS = Number(process.env.FUT_API_TIMEOUT_MS ?? 9000)
 
-const limiter = new RateLimiter(Number(process.env.FUTDB_MIN_INTERVAL_MS ?? 700))
+const limiter = new RateLimiter(Number(process.env.FUT_API_MIN_INTERVAL_MS ?? 700))
 const cache = new TtlCache()
 
 const TTL = {
-  search: Number(process.env.FUTDB_TTL_SEARCH_MS ?? 10 * 60 * 1000),
-  prices: Number(process.env.FUTDB_TTL_PRICES_MS ?? 90 * 1000),
+  search: Number(process.env.FUT_API_TTL_SEARCH_MS ?? 10 * 60 * 1000),
+  prices: Number(process.env.FUT_API_TTL_PRICES_MS ?? 90 * 1000),
 }
 
-export const futdbConfig = {
+export const restConfig = {
   get enabled() {
-    return Boolean(KEY)
+    return Boolean(BASE && KEY)
   },
   base: BASE,
-  name: 'futdb',
+  keyHeader: KEY_HEADER,
+  searchPath: SEARCH_PATH,
+  pricePath: PRICE_PATH,
+  name: 'api',
+  /** Etichetta leggibile: il nome del sito configurato. */
+  get label() {
+    if (!BASE) return 'nessuna API configurata'
+    try {
+      return new URL(BASE).hostname
+    } catch {
+      return BASE
+    }
+  },
 }
 
 async function fetchJson(path, params) {
-  if (!KEY) throw new Error('Manca la chiave FutDB: crea la tua su futdb.app e mettila in FUTDB_KEY')
+  if (!BASE) throw new Error("Manca l'indirizzo dell'API: imposta FUT_API_BASE")
+  if (!KEY) throw new Error('Manca la chiave: impostala in FUT_API_KEY')
   const target = new URL(`${BASE}${path}`)
   for (const [key, value] of Object.entries(params ?? {})) target.searchParams.set(key, String(value))
 
@@ -45,7 +60,7 @@ async function fetchJson(path, params) {
   try {
     response = await fetch(target, {
       signal: controller.signal,
-      headers: { accept: 'application/json', 'X-AUTH-TOKEN': KEY },
+      headers: { accept: 'application/json', [KEY_HEADER]: KEY },
     })
   } catch (error) {
     clearTimeout(timer)
@@ -53,15 +68,16 @@ async function fetchJson(path, params) {
   }
   try {
     if (response.status === 401 || response.status === 403) {
-      throw new Error(`FutDB rifiuta la chiave (HTTP ${response.status}): controlla FUTDB_KEY`)
+      throw new Error(`L'API rifiuta la chiave (HTTP ${response.status}): controlla FUT_API_KEY e FUT_API_KEY_HEADER`)
     }
-    if (response.status === 429) throw new Error('FutDB: troppe richieste, aspetta qualche minuto')
-    if (!response.ok) throw new Error(`FutDB ha risposto ${response.status}`)
+    if (response.status === 429) throw new Error('Troppe richieste: aspetta qualche minuto')
+    if (response.status === 404) throw new Error(`HTTP 404: il percorso ${path} non esiste su questa API`)
+    if (!response.ok) throw new Error(`L'API ha risposto ${response.status}`)
     const text = await response.text()
     try {
       return JSON.parse(text)
     } catch {
-      throw new Error('Risposta di FutDB non in formato JSON')
+      throw new Error('Risposta non in formato JSON: indirizzo giusto?')
     }
   } finally {
     clearTimeout(timer)
@@ -113,8 +129,8 @@ function normalizePlayer(raw) {
 export async function searchPlayers(query) {
   const term = String(query ?? '').trim()
   if (term.length < 2) return []
-  const payload = await cached(`futdb:search:${term.toLowerCase()}`, TTL.search, () =>
-    fetchJson(SEARCH_PATH, { name: term, page: 1 }),
+  const payload = await cached(`api:search:${term.toLowerCase()}`, TTL.search, () =>
+    fetchJson(SEARCH_PATH, { [SEARCH_PARAM]: term, page: 1 }),
   )
   return toArray(payload).map(normalizePlayer).filter(Boolean).slice(0, 25)
 }
@@ -135,23 +151,25 @@ function trovaPrezzi(node, depth = 0) {
 }
 
 function prezzoDaPiattaforma(node) {
-  if (node === null || node === undefined) return { price: 0, minPrice: 0, maxPrice: 0, changePercent: 0, updated: 'FutDB' }
+  if (node === null || node === undefined) {
+    return { price: 0, minPrice: 0, maxPrice: 0, changePercent: 0, updated: restConfig.label }
+  }
   if (typeof node === 'number' || typeof node === 'string') {
     const price = parseCoins(node)
-    return { price, minPrice: price, maxPrice: price, changePercent: 0, updated: 'FutDB' }
+    return { price, minPrice: price, maxPrice: price, changePercent: 0, updated: restConfig.label }
   }
   return {
     price: parseCoins(pick(node, ['LCPrice', 'lowest_bin', 'price', 'current', 'value'], 0)),
     minPrice: parseCoins(pick(node, ['MinPrice', 'min', 'minPrice'], 0)),
     maxPrice: parseCoins(pick(node, ['MaxPrice', 'max', 'maxPrice'], 0)),
     changePercent: Number(pick(node, ['PRP', 'change', 'percent'], 0)) || 0,
-    updated: String(pick(node, ['updated', 'updatedAt', 'date'], 'FutDB')),
+    updated: String(pick(node, ['updated', 'updatedAt', 'date'], restConfig.label)),
   }
 }
 
 export async function fetchPrices(playerId) {
   const id = String(playerId)
-  const payload = await cached(`futdb:prices:${id}`, TTL.prices, () =>
+  const payload = await cached(`api:prices:${id}`, TTL.prices, () =>
     fetchJson(PRICE_PATH.replace('{id}', encodeURIComponent(id))),
   )
   const blocco = trovaPrezzi(payload) ?? {}
@@ -169,7 +187,7 @@ export async function fetchPrices(playerId) {
   }
 }
 
-/** FutDB non espone lo storico: l'app se lo costruisce annotando i prezzi. */
+/** Lo storico non è previsto: l'app se lo costruisce annotando i prezzi. */
 export async function fetchGraph() {
   return []
 }

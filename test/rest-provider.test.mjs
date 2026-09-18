@@ -1,5 +1,6 @@
-// Il client FutDB provato contro un finto FutDB locale: da qui il sito vero
-// non è raggiungibile, quindi almeno la lettura delle risposte va verificata.
+// La sorgente generica provata contro una finta API locale. Nessun fornitore
+// vero è scritto nel codice: qui si verifica che, data un'API con chiave,
+// l'app sappia leggerne ricerca e prezzi.
 
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
@@ -17,7 +18,7 @@ const GIOCATORE = {
 }
 
 let server
-let futdb
+let provider
 const intestazioniRicevute = []
 
 before(async () => {
@@ -49,16 +50,16 @@ before(async () => {
   })
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const { port } = server.address()
-  process.env.FUTDB_BASE = `http://127.0.0.1:${port}`
-  process.env.FUTDB_KEY = 'chiave-di-prova'
-  process.env.FUTDB_MIN_INTERVAL_MS = '0'
-  futdb = await import('../server/futdb.mjs')
+  process.env.FUT_API_BASE = `http://127.0.0.1:${port}`
+  process.env.FUT_API_KEY = 'chiave-di-prova'
+  process.env.FUT_API_MIN_INTERVAL_MS = '0'
+  provider = await import('../server/rest-provider.mjs')
 })
 
 after(() => server?.close())
 
 test('la ricerca restituisce i giocatori normalizzati', async () => {
-  const trovati = await futdb.searchPlayers('mbappe')
+  const trovati = await provider.searchPlayers('mbappe')
   assert.equal(trovati.length, 1)
   assert.equal(trovati[0].name, 'Mbappé')
   assert.equal(trovati[0].rating, 92)
@@ -67,15 +68,20 @@ test('la ricerca restituisce i giocatori normalizzati', async () => {
 
 test('un club scritto come numero non diventa un nome finto', () => {
   // Meglio "—" che spacciare 241 per il nome di una squadra.
-  return futdb.searchPlayers('mbappe').then((trovati) => assert.equal(trovati[0].club, '—'))
+  return provider.searchPlayers('mbappe').then((trovati) => assert.equal(trovati[0].club, '—'))
 })
 
-test('la chiave viaggia nell\'intestazione prevista', () => {
+test('la chiave viaggia nell\'intestazione configurata', () => {
   assert.equal(intestazioniRicevute.at(-1)['x-auth-token'], 'chiave-di-prova')
 })
 
+test('senza indirizzo o chiave la sorgente si dichiara non configurata', () => {
+  assert.equal(provider.restConfig.enabled, true)
+  assert.equal(provider.restConfig.label, '127.0.0.1')
+})
+
 test('i prezzi vengono letti per tutte e tre le piattaforme', async () => {
-  const prezzi = await futdb.fetchPrices('231747')
+  const prezzi = await provider.fetchPrices('231747')
   assert.equal(prezzi.ps.price, 1_450_000)
   assert.equal(prezzi.ps.minPrice, 1_300_000)
   assert.equal(prezzi.xbox.price, 1_470_000)
@@ -83,6 +89,6 @@ test('i prezzi vengono letti per tutte e tre le piattaforme', async () => {
   assert.equal(prezzi.pc.price, 1_280_000)
 })
 
-test('lo storico non esiste su FutDB e la cosa non è un errore', async () => {
-  assert.deepEqual(await futdb.fetchGraph('231747', 'ps'), [])
+test('lo storico non è previsto e la cosa non è un errore', async () => {
+  assert.deepEqual(await provider.fetchGraph('231747', 'ps'), [])
 })

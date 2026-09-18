@@ -36,7 +36,7 @@ function badgeState(health: HealthResponse): { label: string; tone: BadgeTone } 
   if (health.mode === 'statico') return { label: 'dati demo', tone: 'flag' }
   if (!health.futbin.enabled) return { label: 'dati demo', tone: 'flag' }
   if (health.futbin.reachable === true) {
-    const sorgente = health.futbin.name === 'futdb' ? 'FutDB' : 'Futbin'
+    const sorgente = health.futbin.name === 'api' ? (health.futbin.label ?? 'API') : 'Futbin'
     return { label: health.futbin.year ? `${sorgente} FC${health.futbin.year}` : sorgente, tone: 'gain' }
   }
   if (health.futbin.reachable === false) return { label: 'dati demo', tone: 'flag' }

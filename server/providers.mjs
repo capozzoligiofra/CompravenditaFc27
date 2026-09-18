@@ -1,28 +1,32 @@
 // Scelta della sorgente dati.
 //
-// Futbin resta il valore predefinito, ma rifiuta le richieste dei programmi
-// (403 di Cloudflare). FutDB invece pubblica un'API con chiave gratuita:
-// basta impostare FUTDB_KEY e l'app la usa al posto di Futbin.
+// Futbin è il valore predefinito ma rifiuta le richieste dei programmi (403 di
+// Cloudflare). In alternativa si può collegare una qualsiasi API REST con
+// chiave, impostando FUT_API_BASE e FUT_API_KEY: nessun fornitore è scritto
+// nel codice, perché i servizi di dati FUT cambiano nome e chiudono.
 
 import * as futbin from './futbin.mjs'
-import * as futdb from './futdb.mjs'
+import * as rest from './rest-provider.mjs'
 import { normalizePlatform } from './futbin.mjs'
 
 const SCELTA = String(process.env.FUT_PROVIDER ?? '').toLowerCase()
-const usaFutdb = SCELTA === 'futdb' || (SCELTA === '' && futdb.futdbConfig.enabled)
+const usaApi = SCELTA === 'api' || SCELTA === 'futdb' || (SCELTA === '' && rest.restConfig.enabled)
 
-const attivo = usaFutdb ? futdb : futbin
+const attivo = usaApi ? rest : futbin
 
-export const providerName = usaFutdb ? 'futdb' : 'futbin'
+export const providerName = usaApi ? 'api' : 'futbin'
 
-export const providerConfig = usaFutdb
+export const providerConfig = usaApi
   ? {
-      name: 'futdb',
-      enabled: futdb.futdbConfig.enabled,
-      base: futdb.futdbConfig.base,
+      name: 'api',
+      get enabled() {
+        return rest.restConfig.enabled
+      },
+      base: rest.restConfig.base,
+      label: rest.restConfig.label,
       year: '',
       configuredYear: '',
-      /** FutDB non dà lo storico: lo costruisce l'app annotando i prezzi. */
+      /** Un'API di sola quotazione non dà il passato: lo costruisce l'app. */
       hasHistory: false,
     }
   : {
@@ -31,6 +35,7 @@ export const providerConfig = usaFutdb
         return futbin.futbinConfig.enabled
       },
       base: futbin.futbinConfig.base,
+      label: 'Futbin',
       get year() {
         return futbin.futbinConfig.year
       },

@@ -146,7 +146,7 @@ export default function Market() {
             <div className="flex items-center gap-2">
               {detail?.fromCache ? <Pill tone="flag">offline</Pill> : null}
               <Pill tone={isLiveSource(detail?.source) ? 'gain' : 'flag'}>
-                {detail?.source === 'futdb' ? 'FutDB' : detail?.source === 'futbin' ? 'Futbin' : 'demo'}
+                {detail?.source === 'api' ? 'API' : detail?.source === 'futbin' ? 'Futbin' : 'demo'}
               </Pill>
               <Pill>{PLATFORM_LABEL[settings.platform]}</Pill>
             </div>

@@ -63,10 +63,11 @@ significa. Casi tipici:
 | `404` | l'indirizzo non esiste più | prova un altro anno: `FUT_YEAR=25 npm run diagnosi` |
 | `timeout` / `ENOTFOUND` | rete o DNS del computer | controlla la connessione |
 
-Se hai la chiave FutDB, provala così (l'intestazione deve dire «FutDB»):
+Se hai collegato un'API alternativa, provala così (l'intestazione deve
+mostrare il nome del sito configurato):
 
 ```powershell
-$env:FUTDB_KEY="la-tua-chiave"; npm run diagnosi
+$env:FUT_API_BASE="https://esempio.tld/api"; $env:FUT_API_KEY="chiave"; npm run diagnosi
 ```
 
 Puoi provare con un altro giocatore:

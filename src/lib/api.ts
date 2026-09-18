@@ -68,8 +68,10 @@ export interface HealthResponse {
   ok: boolean
   mode: 'proxy' | 'statico'
   futbin: {
-    /** Sorgente in uso: 'futbin' oppure 'futdb'. */
+    /** Sorgente in uso: 'futbin' oppure 'api'. */
     name?: string
+    /** Etichetta leggibile della sorgente, per esempio il sito dell'API. */
+    label?: string
     enabled: boolean
     year: string
     configuredYear?: string
