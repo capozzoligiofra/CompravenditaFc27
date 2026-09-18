@@ -33,6 +33,7 @@ export interface PlayerDetail {
   player: Player | null
   prices: Partial<Record<Platform, Quote>>
   history: HistoryPoint[]
+  fromCache?: boolean
 }
 
 export interface WatchItem {

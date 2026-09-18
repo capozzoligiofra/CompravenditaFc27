@@ -27,6 +27,7 @@ export default function Watchlist() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null)
+  const [fromCache, setFromCache] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
 
   const ids = data.watchlist.map((item) => item.id).join(',')
@@ -40,6 +41,7 @@ export default function Watchlist() {
         .then((response) => {
           setQuotes(response.quotes)
           setUpdatedAt(Date.now())
+          setFromCache(response.fromCache === true)
           setError(null)
         })
         .catch((cause: unknown) => {
@@ -79,8 +81,16 @@ export default function Watchlist() {
     <div className="space-y-5">
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle hint={updatedAt ? `Ultimo aggiornamento: ${dateTime(updatedAt)}` : 'Prezzi non ancora caricati'}>
-            Segnali attivi
+          <CardTitle
+            hint={
+              fromCache
+                ? 'Telefono offline: prezzi salvati in memoria, non aggiornati.'
+                : updatedAt
+                  ? `Ultimo aggiornamento: ${dateTime(updatedAt)}`
+                  : 'Prezzi non ancora caricati'
+            }
+          >
+            Segnali attivi {fromCache ? <Pill tone="flag">offline</Pill> : null}
           </CardTitle>
           <button type="button" className={buttonClass} onClick={() => refresh()} disabled={loading}>
             {loading ? 'aggiorno…' : 'Aggiorna prezzi'}

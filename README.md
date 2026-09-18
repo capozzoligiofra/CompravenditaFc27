@@ -41,7 +41,60 @@ Per la versione di produzione:
 ```bash
 npm run build    # compila l'interfaccia in dist/
 npm run server   # un solo processo serve API e interfaccia su :8787
+npm run mobile   # come sopra, ma raggiungibile dal telefono sulla stessa Wi-Fi
 ```
+
+## Dal telefono
+
+L'app è installabile: una volta aperta nel browser del telefono, dal menu
+scegli **«Aggiungi a schermata Home»** (Android: ⋮ → Installa app; iPhone:
+Condividi → Aggiungi a Home). Da quel momento ha la sua icona, si apre a
+schermo intero e resta utilizzabile anche senza rete.
+
+### 1. Sulla stessa rete Wi-Fi di casa (consigliato)
+
+È l'unico modo che dà i **prezzi veri**, perché le richieste a Futbin partono
+dalla connessione di casa e non da un datacenter.
+
+```bash
+npm run mobile
+```
+
+Il comando compila l'app e la pubblica sulla rete locale, stampando gli
+indirizzi da digitare sul telefono, per esempio:
+
+```
+  Dal telefono (stessa rete Wi-Fi) apri:
+    http://192.168.1.42:8787
+```
+
+Il computer deve restare acceso con il comando in esecuzione, e telefono e
+computer devono essere sulla stessa Wi-Fi. In questa modalità il server
+risponde a chiunque sia sulla tua rete e non ha password: tienilo per la rete
+di casa, non su Wi-Fi pubbliche.
+
+### 2. Online, da qualunque rete
+
+Il repo è già configurato per un deploy su Vercel (piano gratuito): il proxy
+diventa una funzione serverless (`api/`) e l'interfaccia viene servita come
+sito statico. Basta collegare il repository su <https://vercel.com/new>,
+lasciare le impostazioni proposte e fare Deploy: ottieni un indirizzo
+`https://…vercel.app` apribile ovunque, anche in 4G.
+
+Una avvertenza onesta: Futbin filtra il traffico proveniente dai datacenter,
+quindi è probabile che dall'hosting le richieste vengano respinte e l'app
+mostri il badge `DATI DEMO`. Calcolatore, watchlist e portafoglio funzionano
+comunque al 100% (i conti sono locali); per i prezzi aggiornati serve la
+modalità Wi-Fi qui sopra. L'indirizzo pubblico è raggiungibile da chiunque lo
+conosca, ma i tuoi dati restano sul tuo telefono: sul server non viene salvato
+nulla.
+
+### Cosa funziona senza rete
+
+Watchlist, portafoglio e calcolatore vivono nel telefono, quindi funzionano
+sempre. I prezzi invece no: l'app mostra l'ultima risposta ricevuta e la
+segnala con l'etichetta **OFFLINE** e la scritta «prezzi salvati in memoria,
+non aggiornati», così non rischi di comprare guardando un prezzo di ieri.
 
 ## Come funziona il collegamento a Futbin
 
@@ -73,6 +126,7 @@ toccare il codice, bastano le variabili d'ambiente.
 | `FUTBIN_COOLDOWN_MS` | `60000` | pausa dopo un errore |
 | `FUTBIN_TIMEOUT_MS` | `9000` | timeout per richiesta |
 | `PORT` | `8787` | porta del proxy |
+| `HOST` | `127.0.0.1` | `0.0.0.0` per accettare i dispositivi della rete locale |
 
 Esempio:
 
@@ -88,10 +142,16 @@ club, non per rivendere i dati.
 
 ```
 server/
-  index.mjs   rotte HTTP (/api/health, /api/search, /api/player/:id, /api/quotes)
+  index.mjs   avvio del server locale e indirizzi per il telefono
+  router.mjs  rotte HTTP (/api/health, /api/search, /api/player/:id, /api/quotes)
   futbin.mjs  client Futbin: fetch, normalizzazione, cache, rate limit
   demo.mjs    dataset di riserva con storico generato in modo deterministico
   util.mjs    parsing prezzi, cache TTL, coda di richieste
+api/
+  index.mjs   stesse rotte come funzione serverless per il deploy
+public/
+  sw.js       service worker: installazione sul telefono e uso offline
+  manifest.webmanifest  nome, icone e colori dell'app installata
 src/
   lib/market.ts   tutta la matematica: tassa, margine, BIN massimo, pareggio
   lib/api.ts      client delle rotte del proxy

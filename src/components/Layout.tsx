@@ -7,9 +7,9 @@ import type { Platform } from '../types.ts'
 const NAV = [
   { to: '/', label: 'Mercato', end: true },
   { to: '/watchlist', label: 'Watchlist' },
-  { to: '/calcolatore', label: 'Calcolatore' },
+  { to: '/calcolatore', label: 'Calcoli' },
   { to: '/portafoglio', label: 'Portafoglio' },
-  { to: '/impostazioni', label: 'Impostazioni' },
+  { to: '/impostazioni', label: 'Opzioni' },
 ]
 
 const PLATFORMS: { value: Platform; label: string }[] = [
@@ -30,17 +30,36 @@ function SourceBadge() {
     )
   }
 
-  const live = health.futbin.enabled && health.futbin.reachable !== false
+  // `reachable` resta null finché non parte la prima richiesta vera: in quel
+  // caso il badge non promette prezzi veri, dice solo che deve ancora provarci.
+  const state = !health.futbin.enabled
+    ? { label: 'dati demo', tone: 'flag' }
+    : health.futbin.reachable === true
+      ? { label: `Futbin FC${health.futbin.year}`, tone: 'gain' }
+      : health.futbin.reachable === false
+        ? { label: 'dati demo', tone: 'flag' }
+        : { label: 'sorgente da verificare', tone: 'neutral' }
+
+  const tones = {
+    gain: 'border-gain/40 bg-gain/10 text-gain',
+    flag: 'border-flag/40 bg-flag/10 text-flag',
+    neutral: 'border-pitch-line text-chalk-dim',
+  } as const
+
   return (
     <span
       title={health.lastError ?? undefined}
-      className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-        live ? 'border-gain/40 bg-gain/10 text-gain' : 'border-flag/40 bg-flag/10 text-flag'
-      }`}
+      className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${tones[state.tone as keyof typeof tones]}`}
     >
-      {live ? `Futbin FC${health.futbin.year}` : 'dati demo'}
+      {state.label}
     </span>
   )
+}
+
+function navLinkClass({ isActive }: { isActive: boolean }) {
+  return `inline-block whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition ${
+    isActive ? 'bg-gain/15 font-semibold text-gain' : 'text-chalk-dim hover:text-chalk'
+  }`
 }
 
 export default function Layout() {
@@ -49,7 +68,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-pitch">
       <header className="sticky top-0 z-10 border-b border-pitch-line bg-pitch/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="font-mono text-base font-bold tracking-tight text-gain">FC27</span>
             <span className="text-base font-semibold tracking-tight">Trader</span>
@@ -70,19 +89,13 @@ export default function Layout() {
             </select>
           </label>
         </div>
-        <nav className="mx-auto max-w-5xl overflow-x-auto px-4">
+
+        {/* Da tablet in su la navigazione sta sotto l'intestazione… */}
+        <nav className="mx-auto hidden max-w-5xl px-4 sm:block">
           <ul className="flex gap-1 pb-2">
             {NAV.map((item) => (
               <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `inline-block whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition ${
-                      isActive ? 'bg-gain/15 font-semibold text-gain' : 'text-chalk-dim hover:text-chalk'
-                    }`
-                  }
-                >
+                <NavLink to={item.to} end={item.end} className={navLinkClass}>
                   {item.label}
                 </NavLink>
               </li>
@@ -91,9 +104,30 @@ export default function Layout() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-5 pb-16">
+      <main className="mx-auto max-w-5xl px-4 py-5 pb-28 sm:pb-16">
         <Outlet />
       </main>
+
+      {/* …sul telefono diventa una barra in basso, raggiungibile col pollice. */}
+      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-pitch-line bg-pitch/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
+        <ul className="flex items-stretch justify-between px-1 py-1.5">
+          {NAV.map((item) => (
+            <li key={item.to} className="flex-1">
+              <NavLink
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `flex h-full items-center justify-center rounded-lg px-1 py-2 text-center text-[11px] leading-tight transition ${
+                    isActive ? 'bg-gain/15 font-semibold text-gain' : 'text-chalk-dim'
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   )
 }

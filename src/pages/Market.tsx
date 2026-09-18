@@ -124,6 +124,7 @@ export default function Market() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {detail?.fromCache ? <Pill tone="flag">offline</Pill> : null}
               <Pill tone={detail?.source === 'futbin' ? 'gain' : 'flag'}>
                 {detail?.source === 'futbin' ? 'Futbin' : 'demo'}
               </Pill>
@@ -136,7 +137,11 @@ export default function Market() {
           ) : (
             <>
               <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <Stat label="Prezzo attuale" value={coins(price)} hint={quote?.updated} />
+                <Stat
+                  label="Prezzo attuale"
+                  value={coins(price)}
+                  hint={detail?.fromCache ? 'prezzo salvato, sei offline' : quote?.updated}
+                />
                 <Stat label="Min 24h" value={coins(quote?.minPrice ?? 0)} />
                 <Stat label="Max 24h" value={coins(quote?.maxPrice ?? 0)} />
                 <Stat

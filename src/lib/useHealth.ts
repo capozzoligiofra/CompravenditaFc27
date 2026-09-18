@@ -27,7 +27,7 @@ export function useHealth(): HealthState {
     }
 
     check()
-    const timer = setInterval(check, 60_000)
+    const timer = setInterval(check, 30_000)
     return () => {
       active = false
       controller.abort()

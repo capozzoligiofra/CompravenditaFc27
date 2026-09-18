@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#050b16"/>
+  <path d="M104 352 L200 224 L272 288 L408 144" fill="none" stroke="#34d399" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="408" cy="144" r="34" fill="#34d399"/>
+  <text x="256" y="452" font-family="Inter, system-ui, sans-serif" font-size="86" font-weight="700" fill="#e8eef7" text-anchor="middle">FC27</text>
+</svg>
