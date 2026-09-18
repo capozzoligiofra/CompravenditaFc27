@@ -57,17 +57,42 @@ await prova('DNS', 'Il computer non riesce nemmeno a tradurre il nome in un indi
   return `${host} → ${indirizzi.map((voce) => voce.address).join(', ')}`
 })
 
+/**
+ * Un 403 può arrivare da Futbin (protezione anti-bot) oppure da un filtro
+ * locale: antivirus, controllo genitori, rete aziendale. Sono due problemi
+ * diversi con due rimedi diversi, e si distinguono solo leggendo chi risponde.
+ */
+function riconosciBlocco(testo, intestazioni) {
+  const corpo = testo.toLowerCase()
+  const server = (intestazioni.get('server') ?? '').toLowerCase()
+  if (corpo.includes('cloudflare') || server.includes('cloudflare') || intestazioni.has('cf-ray')) {
+    return 'è Cloudflare, cioè la protezione anti-bot del sito'
+  }
+  if (/kaspersky|avast|eset|bitdefender|norton|mcafee|sophos|fortinet|zscaler|squid|proxy|blocked|bloccat/.test(corpo)) {
+    return 'sembra un filtro locale (antivirus, controllo genitori o rete)'
+  }
+  return 'origine non riconosciuta'
+}
+
 await prova('Connessione a Futbin', 'Il sito non risponde a questo computer: firewall, antivirus o blocco.', async () => {
+  let risposta
   try {
-    const risposta = await fetch(futbinConfig.base, {
+    risposta = await fetch(futbinConfig.base, {
       headers: { 'user-agent': process.env.FUTBIN_USER_AGENT ?? 'fc27-trader/0.1 (uso personale)' },
       signal: AbortSignal.timeout(9000),
     })
-    if (!risposta.ok) throw new Error(`HTTP ${risposta.status} ${risposta.statusText}: il sito rifiuta la richiesta`)
-    return `HTTP ${risposta.status}: il sito risponde`
   } catch (error) {
     throw new Error(describeFetchError(error))
   }
+  if (!risposta.ok) {
+    const testo = await risposta.text().catch(() => '')
+    const chi = riconosciBlocco(testo, risposta.headers)
+    const titolo = testo.match(/<title[^>]*>([^<]{0,80})/i)?.[1]?.trim()
+    throw new Error(
+      `HTTP ${risposta.status} ${risposta.statusText} — ${chi}${titolo ? ` · pagina: "${titolo}"` : ''}`,
+    )
+  }
+  return `HTTP ${risposta.status}: il sito risponde`
 })
 
 await prova('Internet in generale', 'Se fallisce anche questo, il problema non è Futbin ma la connessione o un proxy.', async () => {
@@ -158,7 +183,15 @@ if (falliti.length === 0) {
     console.log('Se funziona, usa la stessa variabile anche per "npm run dev" e "npm run mobile".')
   }
 
-  const bloccoFutbin = esiti.some((esito) => esito.errore && /40[13]|503/.test(esito.errore))
+  const bloccoLocale = esiti.some((esito) => esito.errore && /filtro locale/.test(esito.errore))
+  if (bloccoLocale) {
+    console.log('')
+    console.log('Il 403 sembra arrivare da un filtro sul tuo computer o sulla tua rete, non da Futbin.')
+    console.log('Controlla antivirus, controllo genitori o firewall: se il sito si apre nel browser')
+    console.log('ma non da qui, spesso basta escludere Node dalla scansione del traffico.')
+  }
+
+  const bloccoFutbin = esiti.some((esito) => esito.errore && /40[13]|503/.test(esito.errore)) && !bloccoLocale
   if (bloccoFutbin) {
     console.log('')
     console.log('Futbin risponde 403: rifiuta le richieste che non arrivano da un browser.')
