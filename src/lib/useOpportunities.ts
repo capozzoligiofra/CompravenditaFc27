@@ -5,10 +5,10 @@ import type { Catalyst } from '../../shared/catalysts.d.mts'
 import { currentPhase, upcomingEvents } from '../../shared/calendar.mjs'
 import type { CalendarEvent, Phase } from '../../shared/calendar.d.mts'
 import { demoRoster } from '../../shared/demo.mjs'
-import { mergeQuotes } from '../../shared/quotes.mjs'
+import { isLiveSource, mergeQuotes } from '../../shared/quotes.mjs'
 import type { Opportunity, ScoreInput, SellVerdict } from '../../shared/scoring.d.mts'
 import { rankOpportunities, scoreSell } from '../../shared/scoring.mjs'
-import type { Alert, Player, Quote } from '../types.ts'
+import type { Alert, DataSource, Player, Quote } from '../types.ts'
 import { getCatalysts, getPlayer, getQuotes } from './api.ts'
 import { notifyAlerts } from './notifications.ts'
 import { useStore } from './useStore.ts'
@@ -17,7 +17,7 @@ export interface OpportunitiesState {
   loading: boolean
   refining: boolean
   error: string | null
-  source: 'futbin' | 'demo' | null
+  source: DataSource | null
   opportunities: Opportunity[]
   /** Cosa fare con le carte che hai già: una per posizione aperta. */
   sellVerdicts: SellVerdict[]
@@ -37,7 +37,7 @@ export function useOpportunities(): OpportunitiesState {
   const [loading, setLoading] = useState(true)
   const [refining, setRefining] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [source, setSource] = useState<'futbin' | 'demo' | null>(null)
+  const [source, setSource] = useState<DataSource | null>(null)
   const [liveQuotes, setLiveQuotes] = useState<Record<string, Quote | null>>({})
   const [histories, setHistories] = useState<Record<string, { t: number; price: number }[]>>({})
   const [remote, setRemote] = useState<Catalyst[]>([])
@@ -158,7 +158,7 @@ export function useOpportunities(): OpportunitiesState {
   }, [quotes, loading, recordPrices])
 
   const visible = useMemo(
-    () => (source === 'futbin' ? candidates.filter((player) => !seeded.has(player.id)) : candidates),
+    () => (isLiveSource(source) ? candidates.filter((player) => !seeded.has(player.id)) : candidates),
     [candidates, seeded, source],
   )
 

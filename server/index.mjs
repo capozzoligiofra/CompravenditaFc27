@@ -7,7 +7,7 @@
 import { createServer } from 'node:http'
 import { networkInterfaces } from 'node:os'
 
-import { futbinConfig } from './futbin.mjs'
+import { providerConfig } from './providers.mjs'
 import { handleRequest } from './router.mjs'
 
 const PORT = Number(process.env.PORT ?? 8787)
@@ -25,7 +25,10 @@ const server = createServer((req, res) => handleRequest(req, res))
 
 server.listen(PORT, HOST, () => {
   console.log(`[fc27-trader] proxy attivo su http://${HOST}:${PORT}`)
-  console.log(`[fc27-trader] sorgente Futbin ${futbinConfig.enabled ? 'attiva' : 'disattivata'} (anno ${futbinConfig.year})`)
+  const dettaglio = providerConfig.name === 'futbin' ? ` (anno FC${providerConfig.year})` : ''
+  console.log(
+    `[fc27-trader] sorgente ${providerConfig.name}${dettaglio}: ${providerConfig.enabled ? 'attiva' : 'non configurata'}`,
+  )
   if (HOST === '0.0.0.0' || HOST === '::') {
     const addresses = localAddresses()
     if (addresses.length === 0) {

@@ -12,6 +12,7 @@ export interface MergedQuote {
   manual?: boolean
 }
 
+export function isLiveSource(source: string | null | undefined): boolean
 export function manualQuote(price: number, at?: number): MergedQuote
 export function mergeQuotes(
   quotes?: Record<string, MergedQuote | null>,

@@ -7,7 +7,7 @@
 
 import { lookup } from 'node:dns/promises'
 
-import { fetchGraph, fetchPrices, futbinConfig, searchPlayers } from '../server/futbin.mjs'
+import { fetchGraph, fetchPrices, providerConfig, searchPlayers } from '../server/providers.mjs'
 import { fetchCatalysts } from '../server/catalysts.mjs'
 import { describeFetchError } from '../server/util.mjs'
 
@@ -33,13 +33,24 @@ async function prova(nome, descrizione, azione) {
   }
 }
 
+const nome = providerConfig.name === 'futdb' ? 'FutDB' : 'Futbin'
+
 console.log('')
-console.log('Diagnosi del collegamento a Futbin')
-console.log(`sito: ${futbinConfig.base} · anno configurato: FC${futbinConfig.configuredYear}`)
+console.log(`Diagnosi della sorgente dati: ${nome}`)
+console.log(
+  `sito: ${providerConfig.base}${providerConfig.name === 'futbin' ? ` · anno configurato: FC${providerConfig.configuredYear}` : ''}`,
+)
 console.log('')
 
-if (!futbinConfig.enabled) {
-  console.log("Futbin è disattivato (FUTBIN_ENABLED=false): l'app userà solo il dataset demo.")
+if (!providerConfig.enabled) {
+  if (providerConfig.name === 'futdb') {
+    console.log('Manca la chiave FutDB. Crea la tua (gratuita) su https://futdb.app e poi:')
+    console.log('')
+    console.log('  Windows (PowerShell)   $env:FUTDB_KEY="la-tua-chiave"; npm run diagnosi')
+    console.log('  macOS e Linux          FUTDB_KEY=la-tua-chiave npm run diagnosi')
+  } else {
+    console.log("Futbin è disattivato (FUTBIN_ENABLED=false): l'app userà solo il dataset demo.")
+  }
   console.log('')
   process.exit(0)
 }
@@ -50,7 +61,7 @@ if (!futbinConfig.enabled) {
 console.log(`node ${process.version} · ${process.platform}`)
 console.log('')
 
-const host = new URL(futbinConfig.base).hostname
+const host = new URL(providerConfig.base).hostname
 
 await prova('DNS', 'Il computer non riesce nemmeno a tradurre il nome in un indirizzo.', async () => {
   const indirizzi = await lookup(host, { all: true })
@@ -74,10 +85,10 @@ function riconosciBlocco(testo, intestazioni) {
   return 'origine non riconosciuta'
 }
 
-await prova('Connessione a Futbin', 'Il sito non risponde a questo computer: firewall, antivirus o blocco.', async () => {
+await prova(`Connessione a ${nome}`, 'Il sito non risponde a questo computer: firewall, antivirus o blocco.', async () => {
   let risposta
   try {
-    risposta = await fetch(futbinConfig.base, {
+    risposta = await fetch(providerConfig.base, {
       headers: { 'user-agent': process.env.FUTBIN_USER_AGENT ?? 'fc27-trader/0.1 (uso personale)' },
       signal: AbortSignal.timeout(9000),
     })
@@ -114,9 +125,11 @@ await prova('Ricerca giocatori', "Se fallisce, l'app non trova nessuno e ricade 
   if (trovati.length === 0) throw new Error(`Nessun risultato per "${NOME_PROVA}"`)
   idTrovato = trovati[0].id
   const nota =
-    futbinConfig.year === futbinConfig.configuredYear
-      ? `anno FC${futbinConfig.year}`
-      : `anno FC${futbinConfig.year} (trovato da solo: il FC${futbinConfig.configuredYear} non risponde)`
+    providerConfig.name !== 'futbin'
+      ? nome
+      : providerConfig.year === providerConfig.configuredYear
+        ? `anno FC${providerConfig.year}`
+        : `anno FC${providerConfig.year} (trovato da solo: il FC${providerConfig.configuredYear} non risponde)`
   return `${trovati.length} risultati · primo: ${trovati[0].name} (${trovati[0].rating}, id ${trovati[0].id}) · ${nota}`
 })
 
@@ -128,16 +141,21 @@ if (idTrovato) {
     return `PS ${ps.price} · Xbox ${prezzi.xbox?.price ?? 0} · PC ${prezzi.pc?.price ?? 0} · aggiornato: ${ps.updated}`
   })
 
-  await prova('Storico prezzi', 'Senza storico i consigli restano ad affidabilità bassa.', async () => {
-    const storico = await fetchGraph(idTrovato, 'ps')
-    if (storico.length < 3) throw new Error(`Solo ${storico.length} punti: troppo pochi per i segnali`)
-    const ultimo = storico.at(-1)
-    return `${storico.length} punti · ultimo: ${ultimo.price} del ${new Date(ultimo.t).toLocaleDateString('it-IT')}`
-  })
+  if (providerConfig.hasHistory) {
+    await prova('Storico prezzi', 'Senza storico i consigli restano ad affidabilità bassa.', async () => {
+      const storico = await fetchGraph(idTrovato, 'ps')
+      if (storico.length < 3) throw new Error(`Solo ${storico.length} punti: troppo pochi per i segnali`)
+      const ultimo = storico.at(-1)
+      return `${storico.length} punti · ultimo: ${ultimo.price} del ${new Date(ultimo.t).toLocaleDateString('it-IT')}`
+    })
+  } else {
+    console.log(`[ -- ] Storico prezzi: ${nome} non lo fornisce, se lo costruisce l'app annotando un prezzo al giorno.`)
+  }
 } else {
   console.log('[ -- ] Prezzi e storico: saltati, serve prima un giocatore dalla ricerca.')
 }
 
+if (providerConfig.name === 'futbin') {
 await prova(
   'SBC e obiettivi',
   "Senza, i catalizzatori vanno inseriti a mano dall'app (che funziona comunque).",
@@ -148,11 +166,14 @@ await prova(
     return `${catalizzatori.length} riconosciuti · ${primi}`
   },
 )
+} else {
+  console.log('[ -- ] SBC e obiettivi: si leggono solo da Futbin, con FutDB si aggiungono a mano dall\'app.')
+}
 
 const falliti = esiti.filter((esito) => !esito.ok)
 console.log('')
 if (falliti.length === 0) {
-  console.log("Tutto a posto: l'app userà i prezzi veri di Futbin.")
+  console.log(`Tutto a posto: l'app userà i prezzi veri di ${nome}.`)
 } else {
   console.log(`${falliti.length} controlli su ${esiti.length} non passano: ${falliti.map((e) => e.nome).join(', ')}.`)
   console.log('')
@@ -191,7 +212,10 @@ if (falliti.length === 0) {
     console.log('ma non da qui, spesso basta escludere Node dalla scansione del traffico.')
   }
 
-  const bloccoFutbin = esiti.some((esito) => esito.errore && /40[13]|503/.test(esito.errore)) && !bloccoLocale
+  const bloccoFutbin =
+    providerConfig.name === 'futbin' &&
+    esiti.some((esito) => esito.errore && /40[13]|503/.test(esito.errore)) &&
+    !bloccoLocale
   if (bloccoFutbin) {
     console.log('')
     console.log('Futbin risponde 403: rifiuta le richieste che non arrivano da un browser.')
@@ -199,6 +223,9 @@ if (falliti.length === 0) {
     console.log('strada che vale la pena prendere. In compenso puoi scrivere i prezzi a mano:')
     console.log("nella scheda di un giocatore c'è il campo «Prezzo visto in gioco», e da lì")
     console.log('margini, target, occasioni e verdetti di vendita funzionano come sempre.')
+    console.log('')
+    console.log('In alternativa FutDB pubblica un\'API con chiave gratuita: crea la chiave su')
+    console.log('https://futdb.app e riprova con FUTDB_KEY impostata (vedi README).')
   }
 
   console.log('')

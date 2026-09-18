@@ -8,6 +8,11 @@
 // Regola: il prezzo scritto a mano vale quando non c'è una quotazione vera.
 // Se la sorgente automatica funziona, vince lei, perché è aggiornata.
 
+/** Sorgenti vere contro dataset demo: 'futbin', 'futdb' o quel che verrà. */
+export function isLiveSource(source) {
+  return Boolean(source) && source !== 'demo'
+}
+
 export function manualQuote(price, at) {
   const value = Math.max(0, Math.round(Number(price) || 0))
   return {
@@ -30,7 +35,7 @@ export function mergeQuotes(quotes = {}, manual = {}, source = 'demo') {
   for (const [id, entry] of Object.entries(manual)) {
     if (!entry || !entry.price) continue
     const esistente = out[id]
-    const hasLive = source === 'futbin' && esistente && esistente.price > 0
+    const hasLive = isLiveSource(source) && esistente && esistente.price > 0
     if (!hasLive) out[id] = manualQuote(entry.price, entry.at)
   }
   return out

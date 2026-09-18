@@ -11,7 +11,7 @@ import { extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { fetchCatalysts } from './catalysts.mjs'
-import { fetchGraph, fetchPrices, futbinConfig, normalizePlatform, searchPlayers } from './futbin.mjs'
+import { fetchGraph, fetchPrices, normalizePlatform, providerConfig, searchPlayers } from './providers.mjs'
 import { demoHistory, demoPlayer, demoPrices, demoRoster, demoSearch } from '../shared/demo.mjs'
 import { sendJson } from './util.mjs'
 
@@ -36,19 +36,34 @@ function noteSuccess() {
   state.cooldownUntil = 0
 }
 
-/** Prova Futbin e, se fallisce, ricade sulla demo senza far esplodere la rotta. */
-async function withFallback(live, demo) {
-  if (!futbinConfig.enabled) return { source: 'demo', data: demo(), reason: 'Futbin disattivato (FUTBIN_ENABLED=false)' }
+/**
+ * Prova la sorgente e, se fallisce, ricade sulla demo senza far esplodere la
+ * rotta.
+ *
+ * `emptyIsFailure` distingue due casi che sembrano uguali: per i prezzi una
+ * risposta vuota è un guasto, per una ricerca no — cercare un nome che non
+ * esiste dà zero risultati ed è normale. Confonderli metteva in pausa la
+ * sorgente a ogni ricerca a vuoto, compresa quella che parte a schermo
+ * appena aperto.
+ */
+async function withFallback(live, demo, { emptyIsFailure = true } = {}) {
+  if (!providerConfig.enabled) {
+    const motivo =
+      providerConfig.name === 'futdb'
+        ? 'Manca la chiave FutDB (FUTDB_KEY)'
+        : 'Futbin disattivato (FUTBIN_ENABLED=false)'
+    return { source: 'demo', data: demo(), reason: motivo }
+  }
   if (Date.now() < state.cooldownUntil) {
     const seconds = Math.ceil((state.cooldownUntil - Date.now()) / 1000)
     return { source: 'demo', data: demo(), reason: `${state.lastError} — nuovo tentativo fra ${seconds}s` }
   }
   try {
     const data = await live()
-    const empty = Array.isArray(data) ? data.length === 0 : data === null || data === undefined
-    if (empty) throw new Error('Futbin ha restituito una risposta vuota')
+    const vuoto = Array.isArray(data) ? data.length === 0 : data === null || data === undefined
+    if (vuoto && emptyIsFailure) throw new Error(`${providerConfig.name}: risposta vuota`)
     noteSuccess()
-    return { source: 'futbin', data }
+    return { source: providerConfig.name, data }
   } catch (error) {
     noteFailure(error)
     return { source: 'demo', data: demo(), reason: state.lastError }
@@ -90,7 +105,7 @@ export async function handleApi(req, res, url) {
   if (path === '/api/health') {
     sendJson(res, 200, {
       ok: true,
-      futbin: { ...futbinConfig, reachable: state.futbinOk },
+      futbin: { ...providerConfig, reachable: state.futbinOk },
       lastError: state.lastError,
       lastErrorAt: state.lastErrorAt,
       retryInSeconds: Math.max(0, Math.ceil((state.cooldownUntil - Date.now()) / 1000)),
@@ -104,6 +119,7 @@ export async function handleApi(req, res, url) {
     const result = await withFallback(
       () => searchPlayers(query),
       () => demoSearch(query),
+      { emptyIsFailure: false },
     )
     sendJson(res, 200, { source: result.source, reason: result.reason ?? null, players: result.data })
     return
@@ -115,12 +131,16 @@ export async function handleApi(req, res, url) {
       () => fetchPrices(id),
       () => demoPrices(id) ?? {},
     )
-    const history = await withFallback(
-      () => fetchGraph(id, platform),
-      () => demoHistory(id, platform),
-    )
+    // Con una sorgente senza storico non si finge un fallimento: si risponde
+    // vuoto e ci pensa lo storico costruito dall'app.
+    const history = providerConfig.hasHistory
+      ? await withFallback(
+          () => fetchGraph(id, platform),
+          () => demoHistory(id, platform),
+        )
+      : { source: prices.source, data: prices.source === 'demo' ? demoHistory(id, platform) : [] }
     sendJson(res, 200, {
-      source: prices.source === 'futbin' && history.source === 'futbin' ? 'futbin' : prices.source,
+      source: prices.source === 'demo' || history.source === 'demo' ? 'demo' : prices.source,
       reason: prices.reason ?? history.reason ?? null,
       player: demoPlayer(id),
       prices: prices.data,
@@ -135,8 +155,15 @@ export async function handleApi(req, res, url) {
     // calendario e i catalizzatori inseriti a mano.
     // Errori gestiti qui e non con withFallback di proposito: un elenco
     // vuoto di SBC non deve mettere in pausa anche le richieste dei prezzi.
-    if (!futbinConfig.enabled) {
-      sendJson(res, 200, { source: 'demo', reason: 'Futbin disattivato (FUTBIN_ENABLED=false)', catalysts: [] })
+    if (providerConfig.name !== 'futbin' || !providerConfig.enabled) {
+      sendJson(res, 200, {
+        source: 'demo',
+        reason:
+          providerConfig.name === 'futbin'
+            ? 'Futbin disattivato (FUTBIN_ENABLED=false)'
+            : 'Le SBC si leggono solo da Futbin: con FutDB vanno inserite a mano',
+        catalysts: [],
+      })
       return
     }
     try {
@@ -163,7 +190,7 @@ export async function handleApi(req, res, url) {
       .filter(Boolean)
       .slice(0, 40)
     const quotes = {}
-    let source = 'futbin'
+    let source = providerConfig.name
     for (const id of ids) {
       const result = await withFallback(
         () => fetchPrices(id),

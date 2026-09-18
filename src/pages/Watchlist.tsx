@@ -6,7 +6,7 @@ import { getQuotes } from '../lib/api.ts'
 import { coins, dateTime } from '../lib/format.ts'
 import { profit, signalFor, type Signal } from '../../shared/market.mjs'
 import { useStore } from '../lib/useStore.ts'
-import type { Quote } from '../types.ts'
+import type { DataSource, Quote } from '../types.ts'
 
 const SIGNAL_TONE: Record<Signal, 'gain' | 'loss' | 'flag' | 'neutral'> = {
   compra: 'gain',
@@ -25,7 +25,7 @@ const SIGNAL_LABEL: Record<Signal, string> = {
 export default function Watchlist() {
   const { data, settings, updateWatch, removeWatch } = useStore()
   const [liveQuotes, setLiveQuotes] = useState<Record<string, Quote | null>>({})
-  const [source, setSource] = useState<'futbin' | 'demo'>('demo')
+  const [source, setSource] = useState<DataSource>('demo')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null)

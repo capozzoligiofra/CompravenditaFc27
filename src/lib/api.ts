@@ -67,7 +67,16 @@ async function withLocalFallback<T>(load: () => Promise<T>, local: () => T, sign
 export interface HealthResponse {
   ok: boolean
   mode: 'proxy' | 'statico'
-  futbin: { enabled: boolean; year: string; configuredYear?: string; base: string; reachable: boolean | null }
+  futbin: {
+    /** Sorgente in uso: 'futbin' oppure 'futdb'. */
+    name?: string
+    enabled: boolean
+    year: string
+    configuredYear?: string
+    base: string
+    hasHistory?: boolean
+    reachable: boolean | null
+  }
   lastError: string | null
   lastErrorAt: string | null
   retryInSeconds: number
@@ -79,7 +88,7 @@ function staticHealth(): HealthResponse {
   return {
     ok: true,
     mode: 'statico',
-    futbin: { enabled: false, year: '', base: '', reachable: false },
+    futbin: { name: 'demo', enabled: false, year: '', base: '', reachable: false },
     lastError: STATIC_REASON,
     lastErrorAt: null,
     retryInSeconds: 0,

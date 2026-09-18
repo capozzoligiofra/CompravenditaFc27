@@ -2,7 +2,7 @@ import type { Catalyst } from '../shared/catalysts.d.mts'
 
 export type Platform = 'ps' | 'xbox' | 'pc'
 
-export type DataSource = 'futbin' | 'demo'
+export type DataSource = 'futbin' | 'futdb' | 'demo'
 
 export interface Player {
   id: string

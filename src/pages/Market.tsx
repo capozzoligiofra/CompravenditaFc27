@@ -6,7 +6,7 @@ import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass, primaryButtonClas
 import { getPlayer, searchPlayers } from '../lib/api.ts'
 import { coins } from '../lib/format.ts'
 import { breakEvenSell, maxBuyForMargin, roundToMarketStep, sellForMargin } from '../../shared/market.mjs'
-import { mergeQuotes } from '../../shared/quotes.mjs'
+import { isLiveSource, mergeQuotes } from '../../shared/quotes.mjs'
 import { useStore } from '../lib/useStore.ts'
 import type { Player, PlayerDetail, Quote } from '../types.ts'
 
@@ -22,9 +22,15 @@ export default function Market() {
   const [detail, setDetail] = useState<PlayerDetail | null>(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
 
-  // Ricerca con debounce: una richiesta sola quando l'utente smette di digitare.
+  // Ricerca con debounce: una richiesta sola quando l'utente smette di
+  // digitare, e nessuna finché non ci sono almeno due lettere.
   useEffect(() => {
     const term = query.trim()
+    if (term.length < 2) {
+      setResults([])
+      setSearching(false)
+      return undefined
+    }
     const controller = new AbortController()
     const timer = setTimeout(() => {
       setSearching(true)
@@ -139,8 +145,8 @@ export default function Market() {
             </div>
             <div className="flex items-center gap-2">
               {detail?.fromCache ? <Pill tone="flag">offline</Pill> : null}
-              <Pill tone={detail?.source === 'futbin' ? 'gain' : 'flag'}>
-                {detail?.source === 'futbin' ? 'Futbin' : 'demo'}
+              <Pill tone={isLiveSource(detail?.source) ? 'gain' : 'flag'}>
+                {detail?.source === 'futdb' ? 'FutDB' : detail?.source === 'futbin' ? 'Futbin' : 'demo'}
               </Pill>
               <Pill>{PLATFORM_LABEL[settings.platform]}</Pill>
             </div>
@@ -169,7 +175,7 @@ export default function Market() {
                 <Sparkline points={detail?.history?.length ? detail.history : (data.priceHistory[selected.id] ?? [])} />
               </div>
 
-              {detail?.source !== 'futbin' ? (
+              {!isLiveSource(detail?.source) ? (
                 <div className="mt-4">
                   <ManualPrice playerId={selected.id} />
                 </div>
