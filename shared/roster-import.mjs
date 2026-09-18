@@ -107,9 +107,11 @@ export function parseRoster(text) {
 }
 
 /**
- * Fra i risultati della ricerca sceglie la carta più probabile: prima la
+ * Fra i risultati di una ricerca sceglie la carta più probabile: prima la
  * corrispondenza esatta del nome, poi la valutazione più alta (di norma la
- * versione che si possiede davvero è quella più nota).
+ * versione che si possiede davvero è quella più nota). Qui il ripiego sulla
+ * valutazione ha senso perché i risultati arrivano già filtrati dal nome
+ * cercato.
  */
 export function pickBestMatch(name, players) {
   if (!Array.isArray(players) || players.length === 0) return null
@@ -121,4 +123,38 @@ export function pickBestMatch(name, players) {
   return [...pool].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0] ?? null
 }
 
+/**
+ * Cerca invece dentro un elenco che NON è filtrato per nome, come i giocatori
+ * già conosciuti dall'app: qui un nome che non corrisponde deve restituire
+ * niente. Ripiegare sulla valutazione più alta assegnerebbe il prezzo alla
+ * carta sbagliata, che è molto peggio che non trovarla.
+ */
+export function matchKnownPlayer(name, players) {
+  if (!Array.isArray(players) || players.length === 0) return null
+  const target = normalizeName(name)
+  if (target.length < 2) return null
+  const esatta = players.find((player) => normalizeName(player.name) === target)
+  if (esatta) return esatta
+  const contiene = players.filter((player) => {
+    const candidato = normalizeName(player.name)
+    return candidato.includes(target) || target.includes(candidato)
+  })
+  if (contiene.length === 0) return null
+  return [...contiene].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0]
+}
+
 export const MAX_RIGHE_IMPORT = MAX_RIGHE
+
+/**
+ * Elenco di prezzi incollato: "Nome 30000" per riga. Riusa la lettura delle
+ * righe della rosa, dove il numero grande è il prezzo. Le righe senza prezzo
+ * si scartano: qui senza cifra non c'è niente da aggiornare.
+ */
+export function parsePriceList(text) {
+  return String(text ?? '')
+    .split(/\r?\n/)
+    .map(parseRosterLine)
+    .filter((riga) => riga && riga.buyPrice > 0)
+    .map((riga) => ({ name: riga.name, price: riga.buyPrice }))
+    .slice(0, MAX_RIGHE)
+}

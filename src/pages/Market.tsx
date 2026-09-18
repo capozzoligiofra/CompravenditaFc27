@@ -166,7 +166,7 @@ export default function Market() {
               </div>
 
               <div className="mt-4">
-                <Sparkline points={detail?.history ?? []} />
+                <Sparkline points={detail?.history?.length ? detail.history : (data.priceHistory[selected.id] ?? [])} />
               </div>
 
               {detail?.source !== 'futbin' ? (

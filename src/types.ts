@@ -99,4 +99,6 @@ export interface AppData {
   seen: Player[]
   /** Prezzi scritti a mano, quando la sorgente automatica non è disponibile. */
   manualPrices: Record<string, { price: number; at: number }>
+  /** Storico costruito dall'app: un prezzo al giorno per carta. */
+  priceHistory: Record<string, HistoryPoint[]>
 }

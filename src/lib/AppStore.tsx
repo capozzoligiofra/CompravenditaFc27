@@ -2,7 +2,8 @@ import { createContext, useCallback, useEffect, useMemo, useState, type ReactNod
 
 import type { Catalyst } from '../../shared/catalysts.d.mts'
 import { normalizeCatalyst } from '../../shared/catalysts.mjs'
-import type { Alert, AppData, Player, Position, Settings, WatchItem } from '../types.ts'
+import { needsSnapshot, recordSnapshot } from '../../shared/history.mjs'
+import type { Alert, AppData, HistoryPoint, Player, Position, Quote, Settings, WatchItem } from '../types.ts'
 import { defaultData, loadData, saveData } from './storage.ts'
 
 export interface Store {
@@ -20,6 +21,7 @@ export interface Store {
   rememberPlayer: (player: Player) => void
   setManualPrice: (playerId: string, price: number) => void
   clearManualPrices: () => void
+  recordPrices: (quotes: Record<string, Quote | null>) => void
   addCatalyst: (raw: Partial<Catalyst> & { title: string }) => void
   removeCatalyst: (id: string) => void
   pushAlerts: (alerts: Alert[]) => Alert[]
@@ -119,6 +121,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const clearManualPrices = useCallback(() => setData((current) => ({ ...current, manualPrices: {} })), [])
 
+  /**
+   * Annota i prezzi visti, uno al giorno per carta: è lo storico su cui si
+   * basano i segnali quando nessuna sorgente lo fornisce. Scrive solo se
+   * qualcosa è davvero cambiato, altrimenti si innescherebbe un ciclo.
+   */
+  const recordPrices = useCallback((quotes: Record<string, Quote | null>) => {
+    setData((current) => {
+      const now = Date.now()
+      let cambiato = false
+      const next: Record<string, HistoryPoint[]> = { ...current.priceHistory }
+      for (const [id, quote] of Object.entries(quotes)) {
+        const price = quote?.price ?? 0
+        if (!needsSnapshot(next[id] ?? [], price, now)) continue
+        next[id] = recordSnapshot(next[id] ?? [], price, now)
+        cambiato = true
+      }
+      return cambiato ? { ...current, priceHistory: next } : current
+    })
+  }, [])
+
   const addCatalyst = useCallback((raw: Partial<Catalyst> & { title: string }) => {
     const catalyst = normalizeCatalyst({ ...raw, id: raw.id ?? `manuale-${newId()}`, source: 'manuale' })
     setData((current) => ({ ...current, catalysts: [catalyst, ...current.catalysts] }))
@@ -175,6 +197,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       rememberPlayer,
       setManualPrice,
       clearManualPrices,
+      recordPrices,
       addCatalyst,
       removeCatalyst,
       pushAlerts,
@@ -197,6 +220,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       rememberPlayer,
       setManualPrice,
       clearManualPrices,
+      recordPrices,
       addCatalyst,
       removeCatalyst,
       pushAlerts,

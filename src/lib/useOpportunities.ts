@@ -33,7 +33,7 @@ export interface OpportunitiesState {
 const REFINE_TOP = 6
 
 export function useOpportunities(): OpportunitiesState {
-  const { data, settings, pushAlerts } = useStore()
+  const { data, settings, pushAlerts, recordPrices } = useStore()
   const [loading, setLoading] = useState(true)
   const [refining, setRefining] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -150,6 +150,13 @@ export function useOpportunities(): OpportunitiesState {
     [liveQuotes, data.manualPrices, source],
   )
 
+  // Ogni prezzo visto diventa un punto di storia: è ciò che permette ai
+  // segnali di funzionare anche senza una sorgente che fornisca lo storico.
+  useEffect(() => {
+    if (loading) return
+    recordPrices(quotes)
+  }, [quotes, loading, recordPrices])
+
   const visible = useMemo(
     () => (source === 'futbin' ? candidates.filter((player) => !seeded.has(player.id)) : candidates),
     [candidates, seeded, source],
@@ -162,14 +169,14 @@ export function useOpportunities(): OpportunitiesState {
     const inputs: ScoreInput[] = visible.map((player) => ({
       player,
       quote: quotes[player.id] ?? null,
-      history: histories[player.id] ?? [],
+      history: histories[player.id]?.length ? histories[player.id] : (data.priceHistory[player.id] ?? []),
       catalysts,
       phase,
       settings,
       position: openPositions.get(player.id) ?? null,
     }))
     return rankOpportunities(inputs, 12)
-  }, [visible, quotes, histories, catalysts, phase, settings, data.positions])
+  }, [visible, quotes, histories, catalysts, phase, settings, data.positions, data.priceHistory])
 
   // Le carte in rosa: per ognuna il verdetto su tenere o vendere.
   const sellVerdicts = useMemo(() => {
@@ -190,7 +197,9 @@ export function useOpportunities(): OpportunitiesState {
         return scoreSell({
           player,
           quote: quotes[entry.playerId] ?? null,
-          history: histories[entry.playerId] ?? [],
+          history: histories[entry.playerId]?.length
+            ? histories[entry.playerId]
+            : (data.priceHistory[entry.playerId] ?? []),
           catalysts,
           phase,
           settings,
@@ -198,7 +207,7 @@ export function useOpportunities(): OpportunitiesState {
         })
       })
       .sort((a, b) => b.score - a.score)
-  }, [data.positions, visible, quotes, histories, catalysts, phase, settings])
+  }, [data.positions, visible, quotes, histories, catalysts, phase, settings, data.priceHistory])
 
   // Storico solo per i primi della lista: una richiesta per giocatore costa,
   // e per gli altri bastano i segnali del prezzo corrente.

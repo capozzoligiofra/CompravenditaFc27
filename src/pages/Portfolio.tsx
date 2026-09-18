@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import ManualPrice from '../components/ManualPrice.tsx'
+import PriceListImport from '../components/PriceListImport.tsx'
 import RosterImport from '../components/RosterImport.tsx'
 import { Card, CardTitle, EmptyState, NumberField, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
 import type { SellAction, SellVerdict } from '../../shared/scoring.d.mts'
@@ -159,6 +160,8 @@ export default function Portfolio() {
       </Card>
 
       <RosterImport />
+
+      <PriceListImport />
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-chalk-dim">

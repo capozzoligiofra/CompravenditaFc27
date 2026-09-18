@@ -331,6 +331,15 @@ Quello che si fa invece:
   verdetti di vendita, avvisi — funziona esattamente come con il prezzo
   automatico. Il prezzo scritto resta finché non ne arriva uno vero, e
   l'interfaccia lo dichiara («inserito da te il …»).
+- **Aggiornarli in blocco.** In *Conti* c'è «Aggiorna i prezzi in blocco»:
+  si incolla un elenco `Nome prezzo`, una riga per carta, e si sistemano tutti
+  insieme. I nomi vengono cercati fra i giocatori che l'app già conosce, senza
+  rete; quelli che non corrispondono vengono elencati invece di essere
+  assegnati alla carta sbagliata.
+- **Lo storico se lo costruisce l'app.** Ogni prezzo che vede — automatico o
+  scritto da te — diventa un punto di storia, uno al giorno per carta. Dopo
+  qualche giorno tornano a funzionare i segnali che hanno bisogno del passato:
+  «costa meno della media della settimana», «è vicino al minimo», il grafico.
 - **Controllare il perché** con `npm run diagnosi`, che distingue il blocco di
   Futbin da un problema del computer.
 

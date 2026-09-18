@@ -122,6 +122,12 @@ Serve quando Futbin risponde `403` (succede spesso) e i prezzi restano demo.
       e premi Salva: il prezzo in alto diventa quello, con scritto «inserito
       da te», e il piano di trade si ricalcola su quella cifra.
 - [ ] Lo stesso prezzo compare in Watchlist e nei verdetti della rosa.
+- [ ] In *Conti* → «Aggiorna i prezzi in blocco» incolla
+      `Lautaro Martinez 175000` e `Tizio Inesistente 9000`: il primo viene
+      aggiornato, il secondo **deve** finire fra i «non trovati» e non essere
+      assegnato a nessuno.
+- [ ] Riaprendo l'app il giorno dopo, il grafico di una carta mostra un
+      secondo punto: l'app si costruisce lo storico da sola.
 
 ### Conti (la tua rosa)
 

@@ -10,6 +10,7 @@ export const defaultData: AppData = {
   alerts: [],
   seen: [],
   manualPrices: {},
+  priceHistory: {},
 }
 
 /** Lo stato vive solo nel browser: nessun account, nessun dato inviato altrove. */
@@ -26,6 +27,7 @@ export function loadData(): AppData {
       alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
       seen: Array.isArray(parsed.seen) ? parsed.seen : [],
       manualPrices: isRecord(parsed.manualPrices) ? parsed.manualPrices : {},
+      priceHistory: isPlainObject(parsed.priceHistory) ? parsed.priceHistory : {},
     }
   } catch {
     return defaultData
@@ -54,7 +56,12 @@ export function importData(raw: string): AppData {
     alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
     seen: Array.isArray(parsed.seen) ? parsed.seen : [],
     manualPrices: isRecord(parsed.manualPrices) ? parsed.manualPrices : {},
+    priceHistory: isPlainObject(parsed.priceHistory) ? parsed.priceHistory : {},
   }
+}
+
+function isPlainObject<T>(value: unknown): value is Record<string, T> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
 function isRecord(value: unknown): value is Record<string, { price: number; at: number }> {

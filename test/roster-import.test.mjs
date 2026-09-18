@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { parseRoster, parseRosterLine, pickBestMatch } from '../shared/roster-import.mjs'
+import { matchKnownPlayer, parsePriceList, parseRoster, parseRosterLine, pickBestMatch } from '../shared/roster-import.mjs'
 
 test('legge il solo nome', () => {
   assert.deepEqual(parseRosterLine('Lautaro Martinez'), { name: 'Lautaro Martinez', quantity: 1, buyPrice: 0 })
@@ -59,4 +59,28 @@ test('trova i giocatori anche scrivendo i nomi senza accenti', () => {
   const trovati = [{ name: 'Lautaro Martínez', rating: 88 }, { name: 'Rafael Leão', rating: 86 }]
   assert.equal(pickBestMatch('Lautaro Martinez', trovati).name, 'Lautaro Martínez')
   assert.equal(pickBestMatch('Leao', trovati).name, 'Rafael Leão')
+})
+
+test('legge un elenco di prezzi incollato', () => {
+  const prezzi = parsePriceList('Lautaro Martinez 150k\nBastoni 44000\nRafael Leao, 1, 58000\nKean')
+  assert.deepEqual(prezzi, [
+    { name: 'Lautaro Martinez', price: 150_000 },
+    { name: 'Bastoni', price: 44_000 },
+    { name: 'Rafael Leao', price: 58_000 },
+  ])
+})
+
+test('le righe senza prezzo non entrano nell\'elenco', () => {
+  assert.deepEqual(parsePriceList('Kean\nBarella x2'), [])
+})
+
+test('fra i giocatori conosciuti un nome che non corrisponde non aggancia nessuno', () => {
+  const conosciuti = [
+    { id: '1', name: 'Lautaro Martínez', rating: 88 },
+    { id: '2', name: 'Alessandro Bastoni', rating: 86 },
+  ]
+  // Il rischio da evitare: assegnare il prezzo alla carta più forte per ripiego.
+  assert.equal(matchKnownPlayer('Tizio Inesistente', conosciuti), null)
+  assert.equal(matchKnownPlayer('Bastoni', conosciuti).id, '2')
+  assert.equal(matchKnownPlayer('lautaro martinez', conosciuti).id, '1')
 })
