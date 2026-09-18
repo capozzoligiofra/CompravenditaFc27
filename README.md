@@ -278,7 +278,12 @@ l'app legga la rosa da sola? Ecco la situazione, senza giri di parole.
 condividere i dati del proprio club, ma è riservata a pochi partner
 autorizzati: al lancio soltanto **FUT.GG, FUTBIN e FUTWIZ**. EA avverte
 esplicitamente di non fidarsi di nessun altro sito che mostri un login EA.
-Un'app personale come questa non può ottenere quell'accesso.
+Un'app personale come questa non può ottenere quell'accesso: **EA ha
+dichiarato di non accettare altre richieste di partnership**, non pubblica
+indirizzi né specifiche, e in ogni caso quell'API espone i dati del proprio
+club, non le quotazioni del mercato. Verificato a settembre 2026: se un giorno
+il programma si riaprisse, l'app è già pronta a collegarsi a qualsiasi API con
+due variabili d'ambiente.
 
 **La strada non ufficiale è pericolosa, non scomoda.** Gli endpoint interni
 della Web App (quelli che usano i vari tool "FUT") funzionano con il token di
