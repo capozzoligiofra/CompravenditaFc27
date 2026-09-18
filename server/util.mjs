@@ -84,6 +84,22 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * Node nasconde il motivo vero dietro un laconico "fetch failed": il codice
+ * utile (ENOTFOUND, ECONNREFUSED, certificato non verificabile…) sta in
+ * error.cause. Senza tirarlo fuori, diagnosticare è impossibile.
+ */
+export function describeFetchError(error) {
+  if (!(error instanceof Error)) return String(error)
+  const cause = error.cause
+  if (!cause) return error.message
+  const code = cause.code ?? cause.errno ?? null
+  const extra = [code, cause.hostname, cause.message && cause.message !== error.message ? cause.message : null]
+    .filter(Boolean)
+    .join(' · ')
+  return extra ? `${error.message} — ${extra}` : error.message
+}
+
 export function sendJson(res, status, payload) {
   const body = JSON.stringify(payload)
   res.writeHead(status, {

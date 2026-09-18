@@ -6,7 +6,7 @@
 // viene letta in modo difensivo. Se qualcosa non torna, il server ricade sul
 // dataset demo invece di rompersi.
 
-import { parseCoins, parsePercent, RateLimiter, TtlCache } from './util.mjs'
+import { describeFetchError, parseCoins, parsePercent, RateLimiter, TtlCache } from './util.mjs'
 
 // L'anno del gioco compare negli indirizzi di Futbin (/26/, /27/…) e cambia
 // ogni settembre. Invece di darlo per scontato si parte dal valore
@@ -59,8 +59,9 @@ async function fetchJson(url, params) {
   }
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  let response
   try {
-    const response = await fetch(target, {
+    response = await fetch(target, {
       signal: controller.signal,
       headers: {
         accept: 'application/json, text/javascript, */*; q=0.01',
@@ -70,6 +71,11 @@ async function fetchJson(url, params) {
         'user-agent': process.env.FUTBIN_USER_AGENT ?? 'fc27-trader/0.1 (uso personale)',
       },
     })
+  } catch (error) {
+    clearTimeout(timer)
+    throw new Error(describeFetchError(error))
+  }
+  try {
     if (!response.ok) throw new Error(`Futbin ha risposto ${response.status}`)
     const text = await response.text()
     try {

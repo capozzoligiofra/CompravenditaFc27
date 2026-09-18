@@ -5,8 +5,11 @@
 // dataset demo: questo comando invece mostra l'errore vero, così si capisce
 // se è la rete, un endpoint cambiato o un blocco di Futbin.
 
+import { lookup } from 'node:dns/promises'
+
 import { fetchGraph, fetchPrices, futbinConfig, searchPlayers } from '../server/futbin.mjs'
 import { fetchCatalysts } from '../server/catalysts.mjs'
+import { describeFetchError } from '../server/util.mjs'
 
 const NOME_PROVA = process.env.DIAGNOSI_PLAYER ?? 'haaland'
 
@@ -40,6 +43,44 @@ if (!futbinConfig.enabled) {
   console.log('')
   process.exit(0)
 }
+
+// Prima di tutto: il computer arriva a Futbin? Senza questa distinzione un
+// "fetch failed" può essere tutto, dal DNS all'antivirus che ispeziona il
+// traffico cifrato.
+console.log(`node ${process.version} · ${process.platform}`)
+console.log('')
+
+const host = new URL(futbinConfig.base).hostname
+
+await prova('DNS', 'Il computer non riesce nemmeno a tradurre il nome in un indirizzo.', async () => {
+  const indirizzi = await lookup(host, { all: true })
+  return `${host} → ${indirizzi.map((voce) => voce.address).join(', ')}`
+})
+
+await prova('Connessione a Futbin', 'Il sito non risponde a questo computer: firewall, antivirus o blocco.', async () => {
+  try {
+    const risposta = await fetch(futbinConfig.base, {
+      headers: { 'user-agent': process.env.FUTBIN_USER_AGENT ?? 'fc27-trader/0.1 (uso personale)' },
+      signal: AbortSignal.timeout(9000),
+    })
+    if (!risposta.ok) throw new Error(`HTTP ${risposta.status} ${risposta.statusText}: il sito rifiuta la richiesta`)
+    return `HTTP ${risposta.status}: il sito risponde`
+  } catch (error) {
+    throw new Error(describeFetchError(error))
+  }
+})
+
+await prova('Internet in generale', 'Se fallisce anche questo, il problema non è Futbin ma la connessione o un proxy.', async () => {
+  try {
+    const risposta = await fetch('https://example.com', { signal: AbortSignal.timeout(9000) })
+    if (!risposta.ok) throw new Error(`example.com risponde HTTP ${risposta.status}`)
+    return 'la connessione funziona'
+  } catch (error) {
+    throw new Error(describeFetchError(error))
+  }
+})
+
+console.log('')
 
 let idTrovato = null
 
@@ -91,10 +132,17 @@ if (falliti.length === 0) {
   console.log(`${falliti.length} controlli su ${esiti.length} non passano: ${falliti.map((e) => e.nome).join(', ')}.`)
   console.log('')
   console.log('Cosa vogliono dire gli errori più comuni:')
-  console.log('  403 / 503             Futbin sta bloccando la richiesta (protezione anti-bot).')
-  console.log("  non in formato JSON   L'indirizzo risponde una pagina: endpoint cambiato.")
-  console.log("  404                   L'indirizzo non esiste più: prova FUT_YEAR=25 npm run diagnosi.")
-  console.log('  timeout / ENOTFOUND   Problema di rete o DNS dal tuo computer.')
+  console.log('  403 / 503                  Futbin blocca le richieste automatiche (protezione anti-bot).')
+  console.log("  non in formato JSON        L'indirizzo risponde una pagina: endpoint cambiato.")
+  console.log("  404                        L'indirizzo non esiste più: prova FUT_YEAR=26 npm run diagnosi.")
+  console.log('  ENOTFOUND / EAI_AGAIN      Il DNS non risolve: connessione o DNS del computer.')
+  console.log('  ECONNREFUSED / ECONNRESET  Qualcosa chiude la connessione: firewall o rete.')
+  console.log('  ETIMEDOUT / TimeoutError   Nessuna risposta in tempo: rete lenta o traffico filtrato.')
+  console.log('  UNABLE_TO_VERIFY_LEAF_SIGNATURE, SELF_SIGNED_CERT_IN_CHAIN')
+  console.log("                             Un antivirus o la rete aziendale ispezionano il traffico cifrato.")
+  console.log('                             Disattiva la scansione HTTPS oppure indica il certificato con')
+  console.log('                             NODE_EXTRA_CA_CERTS.')
+  console.log('  UND_ERR_CONNECT_TIMEOUT    Connessione bloccata prima di partire: spesso un proxy.')
   console.log('')
   console.log("L'app resta usabile: mostra il badge DATI DEMO e lavora sul dataset incluso.")
 }

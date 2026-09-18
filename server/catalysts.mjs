@@ -10,7 +10,7 @@
 // del calendario e quelli inseriti a mano nell'app.
 
 import { futbinConfig } from './futbin.mjs'
-import { RateLimiter, TtlCache } from './util.mjs'
+import { describeFetchError, RateLimiter, TtlCache } from './util.mjs'
 
 const BASE = (process.env.FUTBIN_BASE ?? 'https://www.futbin.com').replace(/\/$/, '')
 // L'anno lo decide il client dei prezzi, che lo verifica sul campo.
@@ -55,8 +55,9 @@ const NAZIONI = [
 async function fetchHtml(url) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  let response
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       signal: controller.signal,
       headers: {
         accept: 'text/html,application/xhtml+xml',
@@ -64,6 +65,11 @@ async function fetchHtml(url) {
         'user-agent': process.env.FUTBIN_USER_AGENT ?? 'fc27-trader/0.1 (uso personale)',
       },
     })
+  } catch (error) {
+    clearTimeout(timer)
+    throw new Error(describeFetchError(error))
+  }
+  try {
     if (!response.ok) throw new Error(`Futbin ha risposto ${response.status}`)
     return await response.text()
   } finally {
