@@ -11,7 +11,7 @@ import { extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { fetchGraph, fetchPrices, futbinConfig, normalizePlatform, searchPlayers } from './futbin.mjs'
-import { demoHistory, demoPlayer, demoPrices, demoRoster, demoSearch } from './demo.mjs'
+import { demoHistory, demoPlayer, demoPrices, demoRoster, demoSearch } from '../shared/demo.mjs'
 import { sendJson } from './util.mjs'
 
 const DIST = resolve(fileURLToPath(new URL('../dist', import.meta.url)))

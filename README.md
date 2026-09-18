@@ -73,9 +73,31 @@ computer devono essere sulla stessa Wi-Fi. In questa modalità il server
 risponde a chiunque sia sulla tua rete e non ha password: tienilo per la rete
 di casa, non su Wi-Fi pubbliche.
 
-### 2. Online, da qualunque rete
+### 2. GitHub Pages: l'app online, senza prezzi live
 
-Il repo è già configurato per un deploy su Vercel (piano gratuito): il proxy
+Il repository pubblica da solo la versione statica su GitHub Pages a ogni push
+su `main` (workflow `.github/workflows/pages.yml`, che attiva Pages da sé alla
+prima esecuzione). L'indirizzo è:
+
+```
+https://capozzoligiofra.github.io/CompravenditaFc27/
+```
+
+Da lì l'app si apre ovunque e si installa sul telefono come le altre versioni.
+Il limite è strutturale, non un dettaglio: **Pages serve solo file statici**,
+quindi non può ospitare il proxy e non esistono prezzi live. L'app se ne
+accorge da sola, mostra il badge `DATI DEMO` e lavora con il dataset demo che
+si porta dietro. Restano pienamente funzionanti calcolatore, watchlist,
+portafoglio e tutti i conti, perché avvengono nel telefono.
+
+Se hai un proxy raggiungibile in https (per esempio un tunnel verso il tuo
+computer), puoi indicarne l'indirizzo in **Opzioni → Indirizzo del proxy dati**
+e anche la versione su Pages mostrerà i prezzi veri. Un indirizzo `http://…`
+non funziona: il browser blocca le chiamate non cifrate da una pagina https.
+
+### 3. Online con i prezzi, su un hosting con funzioni
+
+Il repo è già configurato anche per un deploy su Vercel (piano gratuito): il proxy
 diventa una funzione serverless (`api/`) e l'interfaccia viene servita come
 sito statico. Basta collegare il repository su <https://vercel.com/new>,
 lasciare le impostazioni proposte e fare Deploy: ottieni un indirizzo
@@ -141,6 +163,8 @@ club, non per rivendere i dati.
 ## Struttura
 
 ```
+shared/
+  demo.mjs    dataset demo, usato sia dal proxy sia dall'app statica
 server/
   index.mjs   avvio del server locale e indirizzi per il telefono
   router.mjs  rotte HTTP (/api/health, /api/search, /api/player/:id, /api/quotes)

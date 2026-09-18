@@ -9,6 +9,8 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const DIST = resolve(fileURLToPath(new URL('../dist', import.meta.url)))
+// Stessa base usata da Vite: su GitHub Pages i file stanno in /nome-repo/.
+const BASE = (process.env.VITE_BASE ?? '/').replace(/\/*$/, '/')
 const SW = join(DIST, 'sw.js')
 
 if (!existsSync(SW)) {
@@ -28,8 +30,10 @@ function walk(dir, prefix = '') {
 // Il service worker non mette in cache sé stesso, e index.html è già coperto
 // dalla voce '/' (la navigazione passa sempre da lì).
 const skip = new Set(['/sw.js', '/index.html'])
-const files = walk(DIST).filter((file) => !skip.has(file))
-const precache = ['/', ...files].sort()
+const files = walk(DIST)
+  .filter((file) => !skip.has(file))
+  .map((file) => `${BASE}${file.replace(/^\//, '')}`)
+const precache = [BASE, ...files].sort()
 const version = createHash('sha1').update(precache.join('|')).digest('hex').slice(0, 8)
 
 const source = readFileSync(SW, 'utf8')

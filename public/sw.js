@@ -8,7 +8,10 @@
 // finirebbero in cache (la pagina non era ancora controllata dal worker) e
 // l'app offline resterebbe bianca.
 const VERSION = '__BUILD_VERSION__'
-const PRECACHE = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png']
+// Il sito può stare in una sottocartella (GitHub Pages): la base si ricava
+// da dove è stato installato il worker, non si dà per scontata la radice.
+const BASE = new URL('./', self.location).pathname
+const PRECACHE = [BASE]
 const SHELL_CACHE = `fc27-shell-${VERSION}`
 const ASSET_CACHE = `fc27-assets-${VERSION}`
 const API_CACHE = `fc27-api-${VERSION}`
@@ -72,14 +75,14 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
 
-  if (url.pathname.startsWith('/api/')) {
+  if (url.pathname.includes('/api/')) {
     event.respondWith(networkFirst(request, API_CACHE))
     return
   }
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      networkFirst(request, SHELL_CACHE).catch(() => caches.match('/').then((cached) => cached ?? Response.error())),
+      networkFirst(request, SHELL_CACHE).catch(() => caches.match(BASE).then((cached) => cached ?? Response.error())),
     )
     return
   }

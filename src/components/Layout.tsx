@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
+import type { HealthResponse } from '../lib/api.ts'
 import { useHealth } from '../lib/useHealth.ts'
 import { useStore } from '../lib/useStore.ts'
 import type { Platform } from '../types.ts'
@@ -18,6 +19,26 @@ const PLATFORMS: { value: Platform; label: string }[] = [
   { value: 'pc', label: 'PC' },
 ]
 
+const BADGE_TONES = {
+  gain: 'border-gain/40 bg-gain/10 text-gain',
+  flag: 'border-flag/40 bg-flag/10 text-flag',
+  loss: 'border-loss/40 bg-loss/10 text-loss',
+  neutral: 'border-pitch-line text-chalk-dim',
+} as const
+
+type BadgeTone = keyof typeof BADGE_TONES
+
+/** Il badge non promette mai più di quello che l'app ha davvero in mano. */
+function badgeState(health: HealthResponse): { label: string; tone: BadgeTone } {
+  if (health.fromCache) return { label: 'offline', tone: 'loss' }
+  if (health.mode === 'statico') return { label: 'dati demo', tone: 'flag' }
+  if (!health.futbin.enabled) return { label: 'dati demo', tone: 'flag' }
+  if (health.futbin.reachable === true) return { label: `Futbin FC${health.futbin.year}`, tone: 'gain' }
+  if (health.futbin.reachable === false) return { label: 'dati demo', tone: 'flag' }
+  // Nessuna richiesta ancora partita: non sappiamo se Futbin risponde.
+  return { label: 'sorgente da verificare', tone: 'neutral' }
+}
+
 function SourceBadge() {
   const { loading, health, error } = useHealth()
 
@@ -25,31 +46,16 @@ function SourceBadge() {
   if (error || !health) {
     return (
       <span className="rounded-full border border-loss/40 bg-loss/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-loss">
-        proxy offline
+        sorgente non disponibile
       </span>
     )
   }
 
-  // `reachable` resta null finché non parte la prima richiesta vera: in quel
-  // caso il badge non promette prezzi veri, dice solo che deve ancora provarci.
-  const state = !health.futbin.enabled
-    ? { label: 'dati demo', tone: 'flag' }
-    : health.futbin.reachable === true
-      ? { label: `Futbin FC${health.futbin.year}`, tone: 'gain' }
-      : health.futbin.reachable === false
-        ? { label: 'dati demo', tone: 'flag' }
-        : { label: 'sorgente da verificare', tone: 'neutral' }
-
-  const tones = {
-    gain: 'border-gain/40 bg-gain/10 text-gain',
-    flag: 'border-flag/40 bg-flag/10 text-flag',
-    neutral: 'border-pitch-line text-chalk-dim',
-  } as const
-
+  const state = badgeState(health)
   return (
     <span
       title={health.lastError ?? undefined}
-      className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${tones[state.tone as keyof typeof tones]}`}
+      className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${BADGE_TONES[state.tone]}`}
     >
       {state.label}
     </span>

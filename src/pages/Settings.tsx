@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 
 import { Card, CardTitle, NumberField, Pill, buttonClass } from '../components/ui.tsx'
+import { getCustomApiBase, setCustomApiBase } from '../lib/apiBase.ts'
 import { exportData, importData } from '../lib/storage.ts'
 import { useHealth } from '../lib/useHealth.ts'
 import { useStore } from '../lib/useStore.ts'
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   const { health, error } = useHealth()
   const fileInput = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [apiBase, setApiBase] = useState(() => getCustomApiBase())
 
   const download = () => {
     const blob = new Blob([exportData(data)], { type: 'application/json' })
@@ -85,40 +87,97 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <CardTitle hint="L'app non parla mai con Futbin dal browser: passa sempre dal proxy locale, che limita le richieste e mette in cache le risposte.">
+        <CardTitle hint="L'app non parla mai con Futbin dal browser: passa sempre da un proxy, che limita le richieste e mette in cache le risposte.">
           Sorgente dati
         </CardTitle>
         {error || !health ? (
           <div className="space-y-2 text-sm">
-            <Pill tone="loss">proxy non raggiungibile</Pill>
-            <p className="text-chalk-dim">
-              Avvia il proxy con <code className="font-mono text-chalk">npm run dev</code> (oppure{' '}
-              <code className="font-mono text-chalk">npm run server</code> se usi la build di produzione).
-            </p>
+            <Pill tone="loss">sorgente non disponibile</Pill>
+            <p className="text-chalk-dim">Ricarica la pagina: non riesco nemmeno a leggere i dati demo.</p>
           </div>
         ) : (
-          <div className="space-y-2 text-sm">
+          <div className="space-y-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <Pill tone={health.futbin.enabled && health.futbin.reachable !== false ? 'gain' : 'flag'}>
-                {health.futbin.enabled ? (health.futbin.reachable === false ? 'fallback demo' : 'Futbin attivo') : 'Futbin disattivato'}
+              <Pill tone={health.mode === 'statico' ? 'flag' : health.futbin.reachable === true ? 'gain' : 'flag'}>
+                {health.mode === 'statico'
+                  ? 'versione statica'
+                  : health.futbin.enabled
+                    ? health.futbin.reachable === false
+                      ? 'fallback demo'
+                      : 'Futbin attivo'
+                    : 'Futbin disattivato'}
               </Pill>
               <span className="text-chalk-dim">
-                anno gioco FC{health.futbin.year} · {health.demoPlayers} giocatori nel dataset demo
+                {health.mode === 'statico'
+                  ? `${health.demoPlayers} giocatori nel dataset demo incluso nell’app`
+                  : `anno gioco FC${health.futbin.year} · ${health.demoPlayers} giocatori nel dataset demo`}
               </span>
             </div>
-            {health.lastError ? (
+
+            {health.mode === 'statico' ? (
+              <p className="text-chalk-dim">
+                Qui non c’è nessun proxy dati, quindi i prezzi mostrati sono quelli del dataset demo: calcolatore,
+                watchlist e portafoglio funzionano comunque, perché i conti si fanno nel telefono. Per i prezzi veri di
+                Futbin serve il proxy, avviato sul computer con <code className="font-mono text-chalk">npm run mobile</code>.
+              </p>
+            ) : null}
+
+            {health.lastError && health.mode !== 'statico' ? (
               <p className="text-xs text-flag">
                 Ultimo errore: {health.lastError}
                 {health.lastErrorAt ? ` (${new Date(health.lastErrorAt).toLocaleString('it-IT')})` : ''}
                 {health.retryInSeconds > 0 ? ` · nuovo tentativo fra ${health.retryInSeconds}s` : ''}
               </p>
             ) : null}
+
+            <div className="border-t border-pitch-line pt-3">
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
+                  Indirizzo del proxy dati (facoltativo)
+                </span>
+                <input
+                  value={apiBase}
+                  onChange={(event) => setApiBase(event.target.value)}
+                  placeholder="/api"
+                  className="mt-1 w-full rounded-xl border border-pitch-line bg-pitch px-3 py-2 font-mono text-sm outline-none focus:border-gain/60"
+                />
+              </label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={buttonClass}
+                  onClick={() => {
+                    setCustomApiBase(apiBase)
+                    setMessage('Indirizzo salvato: ricarica la pagina per usarlo.')
+                  }}
+                >
+                  Salva indirizzo
+                </button>
+                <button
+                  type="button"
+                  className={buttonClass}
+                  onClick={() => {
+                    setApiBase('')
+                    setCustomApiBase('')
+                    setMessage('Torno all’indirizzo predefinito (/api).')
+                  }}
+                >
+                  Ripristina
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-chalk-dim">
+                Serve solo se il proxy gira altrove rispetto all’app. Attenzione: se questa pagina è aperta in https
+                (per esempio su GitHub Pages) il browser blocca gli indirizzi http, quindi il proxy dovrebbe essere
+                raggiungibile anch’esso in https.
+              </p>
+            </div>
+
             <p className="text-xs text-chalk-dim">
-              Futbin non ha un'API pubblica: se cambiano gli endpoint puoi sovrascriverli con le variabili
-              d'ambiente <code className="font-mono">FUTBIN_SEARCH_URL</code>,{' '}
+              Futbin non ha un’API pubblica: se cambiano gli endpoint puoi sovrascriverli con le variabili
+              d’ambiente <code className="font-mono">FUTBIN_SEARCH_URL</code>,{' '}
               <code className="font-mono">FUTBIN_PRICES_URL</code>, <code className="font-mono">FUTBIN_GRAPH_URL</code>{' '}
               e <code className="font-mono">FC27_YEAR</code>. Con{' '}
-              <code className="font-mono">FUTBIN_ENABLED=false</code> l'app lavora solo sul dataset demo.
+              <code className="font-mono">FUTBIN_ENABLED=false</code> il proxy lavora solo sul dataset demo.
             </p>
           </div>
         )}
@@ -161,7 +220,8 @@ export default function SettingsPage() {
         </div>
         {message ? <p className="mt-2 text-xs text-gain">{message}</p> : null}
         <p className="mt-3 text-xs text-chalk-dim">
-          {data.watchlist.length} giocatori in watchlist · {data.positions.length} posizioni registrate
+          {data.watchlist.length} {data.watchlist.length === 1 ? 'giocatore' : 'giocatori'} in watchlist ·{' '}
+          {data.positions.length} {data.positions.length === 1 ? 'posizione registrata' : 'posizioni registrate'}
         </p>
       </Card>
 
