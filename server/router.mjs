@@ -211,7 +211,22 @@ export async function handleApi(req, res, url) {
   }
 
   if (path === '/api/archivio') {
-    sendJson(res, 200, archivio.statistiche())
+    sendJson(res, 200, { ...archivio.statistiche(), motore: archivio.motore })
+    return
+  }
+
+  // Le carte che si sono mosse di più fra tutte quelle archiviate: è la
+  // domanda per cui serviva un database vero.
+  if (path === '/api/movimenti') {
+    const giorni = Math.max(1, Math.min(30, Number(url.searchParams.get('giorni') ?? 3)))
+    const limite = Math.max(1, Math.min(50, Number(url.searchParams.get('limite') ?? 15)))
+    const verso = url.searchParams.get('verso') === 'rialzo' ? 'rialzo' : 'calo'
+    sendJson(res, 200, {
+      motore: archivio.motore,
+      giorni,
+      verso,
+      carte: archivio.movimenti({ piattaforma: platform, giorni, limite, verso }),
+    })
     return
   }
 

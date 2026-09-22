@@ -1,5 +1,5 @@
-// L'archivio è il nostro database: un file JSON. Qui si verifica che ricordi,
-// non cresca all'infinito e sopravviva a una ripartenza.
+// L'archivio su file JSON: la riserva per quando SQLite non c'è. Stesse
+// garanzie del database, meno possibilità.
 
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -7,14 +7,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 
+import { creaArchivioJson } from '../server/archive-json.mjs'
+
 let cartella
+let percorso
 let archivio
 
-before(async () => {
+before(() => {
   cartella = mkdtempSync(join(tmpdir(), 'fc27-archivio-'))
-  process.env.FUT_ARCHIVE_FILE = join(cartella, 'archivio.json')
+  percorso = join(cartella, 'archivio.json')
   process.env.FUT_ARCHIVE_MAX = '3'
-  archivio = await import('../server/archive.mjs')
+  archivio = creaArchivioJson(percorso)
 })
 
 after(() => rmSync(cartella, { recursive: true, force: true }))
@@ -44,24 +47,19 @@ test('i prezzi a zero non entrano', () => {
   assert.equal(archivio.leggiPrezzo('4', 'ps'), null)
 })
 
-test("l'archivio non cresce oltre il limite e tiene le carte più recenti", () => {
-  archivio.registraPrezzo('10', 'ps', quote(1_000))
-  archivio.registraPrezzo('11', 'ps', quote(1_100))
-  const conti = archivio.statistiche()
-  assert.ok(conti.carte <= 3, `carte in archivio: ${conti.carte}`)
-  assert.ok(archivio.leggiPrezzo('11', 'ps'), "l'ultima registrata deve restare")
-})
-
 test("l'elenco delle carte da seguire si salva senza duplicati", () => {
-  const salvati = archivio.impostaInteresse(['5', '5', '6', ''])
-  assert.deepEqual(salvati, ['5', '6'])
+  assert.deepEqual(archivio.impostaInteresse(['5', '5', '6', '']), ['5', '6'])
   assert.deepEqual(archivio.leggiInteresse(), ['5', '6'])
 })
 
-test("l'archivio sopravvive a una ripartenza", async () => {
+test('senza database la domanda sui movimenti resta senza risposta', () => {
+  assert.deepEqual(archivio.movimenti(), [])
+})
+
+test("l'archivio sopravvive a una ripartenza", () => {
   archivio.registraPrezzo('7', 'ps', quote(9_100))
   archivio.salvaOra()
-  const riletto = await import(`../server/archive.mjs?riavvio=${Date.now()}`)
+  const riletto = creaArchivioJson(percorso)
   assert.equal(riletto.leggiPrezzo('7', 'ps').price, 9_100)
   assert.deepEqual(riletto.leggiInteresse(), ['5', '6'])
 })

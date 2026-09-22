@@ -418,22 +418,33 @@ obiettivi**, che si aggiungono a mano dalla pagina Occasioni.
 
 Con `FUT_PROVIDER=futbin` si torna a Futbin anche avendo configurato un'API.
 
-## L'archivio dei prezzi (il database dell'app)
+## Il database dei prezzi
 
-Il proxy tiene un proprio archivio in `dati/archivio.json`: nessun database da
-installare, un file che puoi copiare, ispezionare o cancellare. Non inventa
-prezzi — quelli arrivano da una sorgente o li scrivi tu — ma risolve tre
-problemi concreti:
+Il proxy tiene un **database SQLite** (`dati/archivio.sqlite`), usando
+`node:sqlite` integrato in Node: nessuna dipendenza da installare, nessun
+servizio da pagare, un file che puoi copiare o cancellare. Su versioni di Node
+troppo vecchie ricade su un file JSON con la stessa interfaccia
+(`FUT_DB_DRIVER=json` per forzarlo).
 
-- **le richieste si pagano**: con un'API a consumo la quotazione si chiede una
-  volta e resta, invece di ripartire a ogni schermata;
+Tabelle: `giocatori` (anagrafica), `prezzi` (ultima quotazione per carta e
+piattaforma), `storico` (un prezzo al giorno), `interesse` (le carte che segui).
+
+Non inventa prezzi — quelli arrivano da una sorgente o li scrivi tu — ma
+risolve quattro problemi concreti:
+
+- **le richieste si pagano**: la quotazione si chiede una volta e resta,
+  invece di ripartire a ogni schermata;
 - **lo storico non lo regala nessuno**: ogni prezzo registrato diventa un
-  punto, uno al giorno per carta, ed è su quello storico che funzionano i
-  segnali «sotto la media della settimana» e «vicino al minimo»;
-- **i dispositivi sono due**: un prezzo scritto sul telefono finisce
-  nell'archivio del proxy e lo ritrovi sul computer.
+  punto, ed è su quello che funzionano i segnali «sotto la media della
+  settimana» e «vicino al minimo»;
+- **i dispositivi sono due**: un prezzo scritto sul telefono finisce nel
+  database del proxy e lo ritrovi sul computer;
+- **le domande d'insieme**: con un database si può chiedere *quali fra tutte
+  le carte raccolte sono scese di più negli ultimi tre giorni*
+  (`GET /api/movimenti?giorni=3&verso=calo`). È la domanda che un file non
+  regge, ed è quella che fa nascere le occasioni fuori dalla watchlist.
 
-L'ordine con cui l'app cerca un prezzo è: *sorgente automatica → archivio →
+L'ordine con cui l'app cerca un prezzo è: *sorgente automatica → database →
 dataset demo*. Un prezzo vero di ieri vale più di uno inventato oggi, e
 l'interfaccia dice sempre quale dei tre sta usando.
 
@@ -445,22 +456,37 @@ L'app dichiara al proxy quali carte segui (watchlist e rosa). Poi:
 npm run aggiorna     # aggiorna adesso quelle carte e chiude
 ```
 
-Oppure si lascia fare al server mentre è acceso:
+Oppure lo fa il server mentre è acceso:
 
 ```powershell
 $env:FUT_REFRESH_MINUTES="180"; npm run dev    # ogni tre ore
 ```
 
 Di default l'aggiornamento automatico è **spento**, perché consuma richieste:
-vale la pena accenderlo solo con una sorgente che le concede.
+ha senso accenderlo con una sorgente che le concede.
 
 | Variabile | Default | A cosa serve |
 | --- | --- | --- |
-| `FUT_ARCHIVE_FILE` | `dati/archivio.json` | dove tenere l'archivio |
-| `FUT_ARCHIVE_MAX` | `400` | quante carte conservare (si tengono le più recenti) |
+| `FUT_DB_DRIVER` | automatico | `json` per non usare SQLite |
+| `FUT_ARCHIVE_FILE` | `dati/archivio.sqlite` | dove tenere il database |
+| `FUT_ARCHIVE_MAX` | `400` | quante carte conservare |
 | `FUT_REFRESH_MINUTES` | `0` (spento) | ogni quanto aggiornare mentre il server è acceso |
-| `FUT_REFRESH_MAX` | `40` | quante carte per giro di aggiornamento |
+| `FUT_REFRESH_MAX` | `40` | quante carte per giro |
 | `FUT_REFRESH_PLATFORMS` | `ps` | piattaforme da aggiornare |
+
+### Da dove arrivano i dati (e perché non facciamo scraping)
+
+Il database si riempie da tre rubinetti: una **sorgente con API** consentita,
+i **prezzi che scrivi tu**, e il tempo che passa (lo storico).
+
+Quello che non fa, e non farà, è **raschiare i siti che lo vietano**. Futbin
+risponde 403 a qualsiasi richiesta che non venga da un browser: è un controllo
+di accesso, e aggirarlo — fingendosi Chrome, ruotando indirizzi, risolvendo i
+controlli anti-bot — significa violare i loro termini, rischiare il blocco
+della tua connessione e costruire una cosa che si rompe alla prima contromossa.
+Lo stesso vale per gli endpoint interni della Web App di EA, che portano al ban
+dell'account di gioco. Se un domani una fonte consente l'accesso, si collega
+con due variabili d'ambiente e il database si riempie da solo.
 
 ## Come funziona il collegamento a Futbin
 
@@ -529,7 +555,9 @@ server/
   index.mjs   avvio del server locale e indirizzi per il telefono
   providers.mjs  sceglie la sorgente dati fra Futbin e l'API configurata
   rest-provider.mjs  client generico per un'API REST con chiave
-  archive.mjs    archivio dei prezzi su file, con storico e prezzi a mano
+  archive.mjs    sceglie il motore del database
+  db.mjs         database SQLite: prezzi, storico, movimenti
+  archive-json.mjs  riserva su file JSON con la stessa interfaccia
   router.mjs  rotte HTTP (/api/health, /api/search, /api/player/:id, /api/quotes, /api/catalysts)
   futbin.mjs  client Futbin: fetch, normalizzazione, cache, rate limit
   catalysts.mjs  lettura delle pagine SBC e obiettivi di Futbin
