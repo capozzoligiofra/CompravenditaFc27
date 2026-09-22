@@ -10,6 +10,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs'
 import { extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import * as archivio from './archive.mjs'
 import { fetchCatalysts } from './catalysts.mjs'
 import { fetchGraph, fetchPrices, normalizePlatform, providerConfig, searchPlayers } from './providers.mjs'
 import { demoHistory, demoPlayer, demoPrices, demoRoster, demoSearch } from '../shared/demo.mjs'
@@ -129,8 +130,9 @@ export async function handleApi(req, res, url) {
     const id = decodeURIComponent(path.slice('/api/player/'.length))
     const prices = await withFallback(
       () => fetchPrices(id),
-      () => demoPrices(id) ?? {},
+      () => prezziDaArchivioOppureDemo(id),
     )
+    if (prices.source !== 'demo') annotaPrezzi(id, prices.data)
     // Con una sorgente senza storico non si finge un fallimento: si risponde
     // vuoto e ci pensa lo storico costruito dall'app.
     const history = providerConfig.hasHistory
@@ -139,12 +141,16 @@ export async function handleApi(req, res, url) {
           () => demoHistory(id, platform),
         )
       : { source: prices.source, data: prices.source === 'demo' ? demoHistory(id, platform) : [] }
+    // Lo storico dell'archivio vale più di quello demo: è fatto di prezzi veri.
+    const storicoArchivio = archivio.leggiStorico(id, platform)
+    const storico = history.data?.length ? history.data : storicoArchivio.length ? storicoArchivio : history.data
+
     sendJson(res, 200, {
       source: prices.source === 'demo' || history.source === 'demo' ? 'demo' : prices.source,
       reason: prices.reason ?? history.reason ?? null,
-      player: demoPlayer(id),
+      player: archivio.leggiGiocatore(id) ?? demoPlayer(id),
       prices: prices.data,
-      history: history.data,
+      history: storico,
     })
     return
   }
@@ -194,16 +200,91 @@ export async function handleApi(req, res, url) {
     for (const id of ids) {
       const result = await withFallback(
         () => fetchPrices(id),
-        () => demoPrices(id) ?? {},
+        () => prezziDaArchivioOppureDemo(id),
       )
       if (result.source === 'demo') source = 'demo'
+      else annotaPrezzi(id, result.data)
       quotes[id] = result.data?.[platform] ?? null
     }
     sendJson(res, 200, { source: ids.length ? source : 'demo', platform, quotes })
     return
   }
 
+  if (path === '/api/archivio') {
+    sendJson(res, 200, archivio.statistiche())
+    return
+  }
+
+  // L'app dichiara quali carte le interessano: sono quelle che il comando di
+  // aggiornamento terrà fresche.
+  if (path === '/api/interesse' && req.method === 'POST') {
+    const corpo = await leggiCorpo(req)
+    const ids = Array.isArray(corpo?.ids) ? corpo.ids : []
+    sendJson(res, 200, { interesse: archivio.impostaInteresse(ids).length })
+    return
+  }
+
+  // Prezzo scritto a mano dall'utente: entra nell'archivio, così vale anche
+  // sugli altri dispositivi.
+  if (path === '/api/prezzo' && req.method === 'POST') {
+    const corpo = await leggiCorpo(req)
+    const id = String(corpo?.id ?? '')
+    const price = Number(corpo?.price ?? 0)
+    if (!id || !(price > 0)) {
+      sendJson(res, 400, { error: 'Servono id e price' })
+      return
+    }
+    archivio.registraPrezzo(id, normalizePlatform(corpo?.platform), { price, updated: 'scritto da te' }, 'manuale')
+    if (corpo?.player) archivio.ricordaGiocatore(corpo.player)
+    sendJson(res, 200, { ok: true })
+    return
+  }
+
   sendJson(res, 404, { error: 'Rotta non trovata' })
+}
+
+/** Prima l'archivio, poi la demo: un prezzo vero vecchio batte uno inventato. */
+function prezziDaArchivioOppureDemo(id) {
+  const perPiattaforma = {}
+  let trovato = false
+  for (const piattaforma of ['ps', 'xbox', 'pc']) {
+    const voce = archivio.leggiPrezzo(id, piattaforma)
+    if (voce) {
+      perPiattaforma[piattaforma] = voce
+      trovato = true
+    }
+  }
+  return trovato ? perPiattaforma : (demoPrices(id) ?? {})
+}
+
+function annotaPrezzi(id, prezzi) {
+  for (const [piattaforma, quote] of Object.entries(prezzi ?? {})) {
+    archivio.registraPrezzo(id, piattaforma, quote)
+  }
+}
+
+function leggiCorpo(req) {
+  return new Promise((resolve) => {
+    const pezzi = []
+    let dimensione = 0
+    req.on('data', (pezzo) => {
+      dimensione += pezzo.length
+      if (dimensione > 64 * 1024) {
+        req.destroy()
+        resolve(null)
+        return
+      }
+      pezzi.push(pezzo)
+    })
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(pezzi).toString() || '{}'))
+      } catch {
+        resolve(null)
+      }
+    })
+    req.on('error', () => resolve(null))
+  })
 }
 
 /**

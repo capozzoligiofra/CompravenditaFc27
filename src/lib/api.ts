@@ -175,3 +175,40 @@ export function getCatalysts(signal?: AbortSignal): Promise<CatalystsResponse> {
     signal,
   )
 }
+
+/**
+ * Manda al proxy un prezzo scritto a mano, così finisce nell'archivio e vale
+ * anche sugli altri dispositivi. Senza proxy (versione statica) fallisce in
+ * silenzio: il prezzo resta comunque salvato in locale.
+ */
+export async function sendManualPrice(
+  id: string,
+  platform: Platform,
+  price: number,
+  player?: Player | null,
+): Promise<void> {
+  if (!id || !(price > 0) || proxyLikelyDown()) return
+  try {
+    await fetch(`${getApiBase()}/prezzo`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id, platform, price, player: player ?? undefined }),
+    })
+  } catch {
+    // Nessun proxy: pazienza, il prezzo resta nel telefono.
+  }
+}
+
+/** Dice al proxy quali carte seguire, per tenerle aggiornate in archivio. */
+export async function declareInterest(ids: string[]): Promise<void> {
+  if (ids.length === 0 || proxyLikelyDown()) return
+  try {
+    await fetch(`${getApiBase()}/interesse`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
+  } catch {
+    // Vale lo stesso discorso: è un di più, non un requisito.
+  }
+}

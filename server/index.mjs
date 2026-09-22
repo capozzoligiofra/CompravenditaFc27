@@ -7,6 +7,7 @@
 import { createServer } from 'node:http'
 import { networkInterfaces } from 'node:os'
 
+import { statistiche } from './archive.mjs'
 import { providerConfig } from './providers.mjs'
 import { handleRequest } from './router.mjs'
 
@@ -23,12 +24,36 @@ export function localAddresses() {
 
 const server = createServer((req, res) => handleRequest(req, res))
 
+/**
+ * Aggiornamento periodico dell'archivio: spento di default, perché consuma
+ * richieste. Con FUT_REFRESH_MINUTES=180 l'app si tiene aggiornata da sola
+ * ogni tre ore mentre il server è acceso.
+ */
+const MINUTI_AGGIORNAMENTO = Number(process.env.FUT_REFRESH_MINUTES ?? 0)
+if (MINUTI_AGGIORNAMENTO > 0) {
+  const { aggiornaArchivio } = await import('../scripts/aggiorna.mjs')
+  const esegui = () => {
+    aggiornaArchivio({ silenzioso: true })
+      .then((esito) => {
+        if (esito.aggiornate > 0) console.log(`[fc27-trader] archivio aggiornato: ${esito.aggiornate} carte`)
+      })
+      .catch(() => undefined)
+  }
+  setTimeout(esegui, 30_000).unref?.()
+  setInterval(esegui, MINUTI_AGGIORNAMENTO * 60_000).unref?.()
+}
+
 server.listen(PORT, HOST, () => {
   console.log(`[fc27-trader] proxy attivo su http://${HOST}:${PORT}`)
   const dettaglio = providerConfig.name === 'futbin' ? ` (anno FC${providerConfig.year})` : ''
   console.log(
     `[fc27-trader] sorgente ${providerConfig.name}${dettaglio}: ${providerConfig.enabled ? 'attiva' : 'non configurata'}`,
   )
+  const conti = statistiche()
+  console.log(`[fc27-trader] archivio: ${conti.carte} carte, ${conti.puntiStorico} punti di storico`)
+  if (MINUTI_AGGIORNAMENTO > 0) {
+    console.log(`[fc27-trader] aggiornamento automatico ogni ${MINUTI_AGGIORNAMENTO} minuti`)
+  }
   if (HOST === '0.0.0.0' || HOST === '::') {
     const addresses = localAddresses()
     if (addresses.length === 0) {

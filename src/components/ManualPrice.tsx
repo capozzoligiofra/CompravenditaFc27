@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { sendManualPrice } from '../lib/api.ts'
 import { coins } from '../lib/format.ts'
 import { useStore } from '../lib/useStore.ts'
 import { buttonClass } from './ui.tsx'
@@ -10,7 +11,7 @@ import { buttonClass } from './ui.tsx'
  * di vendita tornano a funzionare come se arrivasse da Futbin.
  */
 export default function ManualPrice({ playerId, compact = false }: { playerId: string; compact?: boolean }) {
-  const { data, setManualPrice } = useStore()
+  const { data, settings, setManualPrice } = useStore()
   const salvato = data.manualPrices[playerId]
   const [value, setValue] = useState(() => (salvato ? String(salvato.price) : ''))
 
@@ -22,7 +23,12 @@ export default function ManualPrice({ playerId, compact = false }: { playerId: s
     return <p className="text-xs text-chalk-dim">Carta non collegata a un giocatore: il prezzo non si può salvare.</p>
   }
 
-  const salva = () => setManualPrice(playerId, Number.parseInt(value, 10) || 0)
+  const salva = () => {
+    const price = Number.parseInt(value, 10) || 0
+    setManualPrice(playerId, price)
+    // Finisce anche nell'archivio del proxy, così vale su tutti i dispositivi.
+    void sendManualPrice(playerId, settings.platform, price, data.seen.find((voce) => voce.id === playerId) ?? null)
+  }
 
   return (
     <div className={compact ? '' : 'rounded-xl border border-pitch-line bg-pitch/60 p-3'}>

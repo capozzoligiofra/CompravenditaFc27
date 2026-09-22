@@ -418,6 +418,50 @@ obiettivi**, che si aggiungono a mano dalla pagina Occasioni.
 
 Con `FUT_PROVIDER=futbin` si torna a Futbin anche avendo configurato un'API.
 
+## L'archivio dei prezzi (il database dell'app)
+
+Il proxy tiene un proprio archivio in `dati/archivio.json`: nessun database da
+installare, un file che puoi copiare, ispezionare o cancellare. Non inventa
+prezzi — quelli arrivano da una sorgente o li scrivi tu — ma risolve tre
+problemi concreti:
+
+- **le richieste si pagano**: con un'API a consumo la quotazione si chiede una
+  volta e resta, invece di ripartire a ogni schermata;
+- **lo storico non lo regala nessuno**: ogni prezzo registrato diventa un
+  punto, uno al giorno per carta, ed è su quello storico che funzionano i
+  segnali «sotto la media della settimana» e «vicino al minimo»;
+- **i dispositivi sono due**: un prezzo scritto sul telefono finisce
+  nell'archivio del proxy e lo ritrovi sul computer.
+
+L'ordine con cui l'app cerca un prezzo è: *sorgente automatica → archivio →
+dataset demo*. Un prezzo vero di ieri vale più di uno inventato oggi, e
+l'interfaccia dice sempre quale dei tre sta usando.
+
+### Tenerlo aggiornato
+
+L'app dichiara al proxy quali carte segui (watchlist e rosa). Poi:
+
+```bash
+npm run aggiorna     # aggiorna adesso quelle carte e chiude
+```
+
+Oppure si lascia fare al server mentre è acceso:
+
+```powershell
+$env:FUT_REFRESH_MINUTES="180"; npm run dev    # ogni tre ore
+```
+
+Di default l'aggiornamento automatico è **spento**, perché consuma richieste:
+vale la pena accenderlo solo con una sorgente che le concede.
+
+| Variabile | Default | A cosa serve |
+| --- | --- | --- |
+| `FUT_ARCHIVE_FILE` | `dati/archivio.json` | dove tenere l'archivio |
+| `FUT_ARCHIVE_MAX` | `400` | quante carte conservare (si tengono le più recenti) |
+| `FUT_REFRESH_MINUTES` | `0` (spento) | ogni quanto aggiornare mentre il server è acceso |
+| `FUT_REFRESH_MAX` | `40` | quante carte per giro di aggiornamento |
+| `FUT_REFRESH_PLATFORMS` | `ps` | piattaforme da aggiornare |
+
 ## Come funziona il collegamento a Futbin
 
 Futbin **non ha un'API pubblica** e il browser non può interrogarlo
@@ -485,6 +529,7 @@ server/
   index.mjs   avvio del server locale e indirizzi per il telefono
   providers.mjs  sceglie la sorgente dati fra Futbin e l'API configurata
   rest-provider.mjs  client generico per un'API REST con chiave
+  archive.mjs    archivio dei prezzi su file, con storico e prezzi a mano
   router.mjs  rotte HTTP (/api/health, /api/search, /api/player/:id, /api/quotes, /api/catalysts)
   futbin.mjs  client Futbin: fetch, normalizzazione, cache, rate limit
   catalysts.mjs  lettura delle pagine SBC e obiettivi di Futbin
@@ -510,6 +555,7 @@ npm run build     # typecheck + build
 npm run lint      # oxlint
 npm run diagnosi  # prova i collegamenti alla sorgente dalla tua connessione
 npm run esplora   # scopre la forma dell'API di un servizio con chiave
+npm run aggiorna  # aggiorna l'archivio dei prezzi delle carte che segui
 ```
 
 `npm run diagnosi` è il comando da usare quando i prezzi non arrivano: prova

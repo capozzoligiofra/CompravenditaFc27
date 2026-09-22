@@ -9,7 +9,7 @@ import { isLiveSource, mergeQuotes } from '../../shared/quotes.mjs'
 import type { Opportunity, ScoreInput, SellVerdict } from '../../shared/scoring.d.mts'
 import { rankOpportunities, scoreSell } from '../../shared/scoring.mjs'
 import type { Alert, DataSource, Player, Quote } from '../types.ts'
-import { getCatalysts, getPlayer, getQuotes } from './api.ts'
+import { declareInterest, getCatalysts, getPlayer, getQuotes } from './api.ts'
 import { notifyAlerts } from './notifications.ts'
 import { useStore } from './useStore.ts'
 
@@ -110,6 +110,16 @@ export function useOpportunities(): OpportunitiesState {
     const timer = setInterval(() => setClock(Date.now()), 5 * 60_000)
     return () => clearInterval(timer)
   }, [])
+
+  // Il proxy tiene aggiornate in archivio le carte che seguiamo davvero.
+  useEffect(() => {
+    const ids = [
+      ...data.watchlist.map((item) => item.id),
+      ...data.positions.filter((entry) => entry.sellPrice === null).map((entry) => entry.playerId),
+    ].filter(Boolean)
+    if (ids.length === 0) return
+    void declareInterest([...new Set(ids)])
+  }, [data.watchlist, data.positions])
 
   // Prezzi di tutti i candidati in una sola richiesta.
   useEffect(() => {
