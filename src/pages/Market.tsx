@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import ManualPrice from '../components/ManualPrice.tsx'
+import PriceEstimate from '../components/PriceEstimate.tsx'
 import Sparkline from '../components/Sparkline.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
 import { getPlayer, searchPlayers } from '../lib/api.ts'
@@ -176,7 +177,12 @@ export default function Market() {
               </div>
 
               {!isLiveSource(detail?.source) ? (
-                <div className="mt-4">
+                <div className="mt-4 space-y-3">
+                  <PriceEstimate
+                    history={detail?.history?.length ? detail.history : (data.priceHistory[selected.id] ?? [])}
+                    quote={quote}
+                    osservatoIl={data.manualPrices[selected.id]?.at}
+                  />
                   <ManualPrice playerId={selected.id} />
                 </div>
               ) : null}

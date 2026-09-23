@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import ManualPrice from '../components/ManualPrice.tsx'
+import PriceEstimate from '../components/PriceEstimate.tsx'
 import PriceListImport from '../components/PriceListImport.tsx'
 import RosterImport from '../components/RosterImport.tsx'
 import { Card, CardTitle, EmptyState, NumberField, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
@@ -213,7 +214,12 @@ export default function Portfolio() {
                     ) : null}
 
                     {!market || quotes[position.playerId]?.manual ? (
-                      <div className="mt-3">
+                      <div className="mt-3 space-y-3">
+                        <PriceEstimate
+                          history={data.priceHistory[position.playerId] ?? []}
+                          quote={quotes[position.playerId] ?? null}
+                          osservatoIl={data.manualPrices[position.playerId]?.at}
+                        />
                         <ManualPrice playerId={position.playerId} />
                       </div>
                     ) : null}

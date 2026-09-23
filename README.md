@@ -20,6 +20,10 @@ strumento di analisi e di contabilità personale.
 - **Mercato** — ricerca giocatori, prezzo attuale, minimo/massimo, variazione,
   grafico dello storico e «piano di trade» già pronto: a quanto comprare per
   ottenere il margine che hai impostato e a quanto rivendere.
+- **Prezzo stimato** — se i prezzi li scrivi tu, quello che hai segnato
+  invecchia mentre il mercato si muove: sotto a ogni carta l'app dice quanto
+  dovrebbe costare *adesso*, con quanto ci si può contare e i due momenti
+  della settimana in cui conviene comprare e vendere.
 - **Watchlist** — i giocatori che segui con target di acquisto e di vendita.
   Ogni riga mostra il segnale: *compra ora*, *vendi ora* o *attendi*.
 - **Calcolatore** — margine su un singolo trade (tassa, incasso netto, ROI,
@@ -345,9 +349,58 @@ Quello che si fa invece:
   scritto da te — diventa un punto di storia, uno al giorno per carta. Dopo
   qualche giorno tornano a funzionare i segnali che hanno bisogno del passato:
   «costa meno della media della settimana», «è vicino al minimo», il grafico.
+- **Stimare i giorni in mezzo.** Il prezzo che hai segnato invecchia; il
+  mercato no. L'app calcola quanto dovrebbe costare *adesso* quella carta —
+  vedi qui sotto.
 - **Controllare il perché** con `npm run diagnosi`, che distingue il blocco di
   Futbin da un problema del computer.
 - **Cambiare sorgente**: collegare un'API che consenta l'accesso, qui sotto.
+
+### Il prezzo stimato fra un'osservazione e l'altra
+
+Se segni i prezzi a mano, li segni quando puoi: martedì sera, poi sabato
+mattina. In mezzo il mercato si muove lo stesso, e un prezzo di tre giorni fa
+letto come se fosse di adesso porta a comprare male.
+
+Sotto al prezzo di ogni carta, nella scheda del *Mercato* e su ogni carta della
+rosa, compare quindi **PREZZO STIMATO ORA**: quanto dovrebbe costare in questo
+momento, partendo dall'ultimo prezzo che hai osservato.
+
+Il calcolo mette insieme tre cose:
+
+1. **La fase della settimana** di quando l'hai segnato e quella di adesso. Il
+   giovedì dei premi e la vigilia della promo riempiono il mercato e i prezzi
+   scendono; l'uscita della promo e la Weekend League li tirano su. Sono gli
+   stessi tempi che l'app usa per le occasioni.
+2. **I tuoi prezzi.** Con almeno sei punti di storico su quella carta — e
+   almeno tre nella stessa fase — l'app smette di usare i valori generali e
+   impara quanto vale ogni fase *per quella carta specifica*, perché un fodder
+   83 e una carta da un milione non si muovono allo stesso modo. Finché i dati
+   sono pochi, i tuoi pesano in proporzione: non decidono da soli.
+3. **La tendenza recente**, che però si smorza col passare dei giorni:
+   estrapolare una settimana in avanti sarebbe inventare.
+
+Due regole che la stima rispetta sempre, perché una stima non è un prezzo:
+
+- **non si allontana mai più del 25%** dall'ultimo prezzo osservato, e più
+  l'osservazione è vecchia meno si muove;
+- **dice sempre di essere una stima**, con l'affidabilità accanto (*alta*,
+  *media*, *bassa*, *molto bassa*, in base a quanto è vecchio il prezzo di
+  partenza e a quanti punti di storico ci sono) e la frase che spiega da dove
+  nasce. Se non hai mai segnato un prezzo, non compare: senza dati non si
+  inventa niente.
+
+Sotto la stima ci sono i due momenti utili dei sette giorni successivi:
+
+```
+▼ Atteso più basso  giovedì alle 08:00 · premi in consegna (-5,0%)
+▲ Atteso più alto   venerdì alle 19:00 · uscita promo e champions (+3,0%)
+```
+
+Il primo è quando conviene comprare, il secondo quando conviene vendere, con
+la variazione attesa rispetto ad adesso. Il numero vale quanto vale
+l'affidabilità che sta scritta sopra: è un'indicazione su *quando* muoversi,
+non una promessa su *quanto*.
 
 ### Sorgente alternativa: un'API con chiave
 
@@ -544,6 +597,7 @@ club, non per rivendere i dati.
 shared/          logica pura, condivisa fra proxy e browser e coperta da test
   market.mjs     tassa, margine, BIN massimo, prezzo di pareggio
   calendar.mjs   il ciclo settimanale di Ultimate Team e le sue fasi
+  forecast.mjs   prezzo stimato fra un'osservazione e l'altra, e finestre utili
   catalysts.mjs  forma dei catalizzatori e regole di corrispondenza
   scoring.mjs    punteggio delle occasioni e ragioni in chiaro
   alerts.mjs     regole degli avvisi

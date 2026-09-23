@@ -136,6 +136,25 @@ Serve quando Futbin risponde `403` (succede spesso) e i prezzi restano demo.
 - [ ] Riaprendo l'app il giorno dopo, il grafico di una carta mostra un
       secondo punto: l'app si costruisce lo storico da sola.
 
+### Prezzo stimato
+
+Il seguito naturale dei prezzi scritti a mano: quello che hai segnato
+invecchia, e l'app dice quanto dovrebbe costare adesso.
+
+- [ ] Sotto al prezzo di una carta per cui hai scritto una cifra compare
+      **PREZZO STIMATO ORA** con accanto l'affidabilità (*alta*, *media*,
+      *bassa*, *molto bassa*) e la frase che spiega da dove nasce il numero.
+- [ ] La frase dice da quanto tempo parte: «segnato 2 giorni fa» se hai
+      scritto quel prezzo l'altro ieri, non «segnato poco fa».
+- [ ] Sotto ci sono i due momenti utili della settimana: uno **▼ atteso più
+      basso** (quando comprare) e uno **▲ atteso più alto** (quando vendere),
+      con giorno, ora e variazione attesa.
+- [ ] Su una carta di cui non hai mai segnato un prezzo e senza storico la
+      stima **non** compare: senza dati non si inventa niente.
+- [ ] La stessa stima compare sulle carte della rosa in *Conti*.
+- [ ] La stima non si allontana mai più del 25% dal prezzo che hai segnato,
+      per quanto vecchio sia.
+
 ### Conti (la tua rosa)
 
 - [ ] Incolla nel riquadro «Importa la rosa»:
