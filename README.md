@@ -20,6 +20,9 @@ strumento di analisi e di contabilità personale.
 - **Mercato** — ricerca giocatori, prezzo attuale, minimo/massimo, variazione,
   grafico dello storico e «piano di trade» già pronto: a quanto comprare per
   ottenere il margine che hai impostato e a quanto rivendere.
+- **Prezzi** — il pannello per aggiornare le quotazioni in fretta: una riga
+  per carta, si scrive la cifra e si preme Invio per salvare e passare alla
+  successiva. In cima quelle senza prezzo e quelle più vecchie.
 - **Prezzo stimato** — se i prezzi li scrivi tu, quello che hai segnato
   invecchia mentre il mercato si muove: sotto a ogni carta l'app dice quanto
   dovrebbe costare *adesso*, con quanto ci si può contare e i due momenti
@@ -174,8 +177,9 @@ quindi è probabile che dall'hosting le richieste vengano respinte e l'app
 mostri il badge `DATI DEMO`. Calcolatore, watchlist e portafoglio funzionano
 comunque al 100% (i conti sono locali); per i prezzi aggiornati serve la
 modalità Wi-Fi qui sopra. L'indirizzo pubblico è raggiungibile da chiunque lo
-conosca, ma i tuoi dati restano sul tuo telefono: sul server non viene salvato
-nulla.
+conosca, ma la tua rosa, la watchlist e i tuoi conti restano sul telefono. Sul
+proxy finiscono soltanto le quotazioni delle carte (l'archivio dei prezzi),
+che non dicono niente di te.
 
 ### Cosa funziona senza rete
 
@@ -183,6 +187,32 @@ Watchlist, portafoglio e calcolatore vivono nel telefono, quindi funzionano
 sempre. I prezzi invece no: l'app mostra l'ultima risposta ricevuta e la
 segnala con l'etichetta **OFFLINE** e la scritta «prezzi salvati in memoria,
 non aggiornati», così non rischi di comprare guardando un prezzo di ieri.
+
+## Darla a qualcun altro
+
+L'indirizzo pubblico è <https://capozzoligiofra.github.io/CompravenditaFc27/>:
+si manda com'è, in chat. Chi lo apre trova una scheda di benvenuto che dice in
+tre righe cos'è l'app, che i prezzi se li scrive lui e che i dati restano nel
+suo telefono. Il link porta con sé un'anteprima (`public/social.png`, disegnata
+in `scripts/social-card.html`: per rifarla basta aprire quel file nel browser e
+catturarlo a 1200×630).
+
+Un punto che conviene dire a voce, perché sorprende: **ognuno ha la sua copia**.
+Rosa, prezzi e watchlist vivono nel browser di chi apre il link, quindi non si
+mescolano con i tuoi e tu non vedi i suoi. Non è un'app con account: è la stessa
+pagina, con dati diversi su ogni dispositivo. In *Opzioni → Condividi l'app* c'è
+il pulsante che apre il foglio di condivisione del telefono (o copia
+l'indirizzo).
+
+Prima di mandarla in giro, tre controlli che valgono un minuto:
+
+- [ ] *Settings → Pages → Source* è su **GitHub Actions** (altrimenti esce una
+      pagina bianca);
+- [ ] l'indirizzo si apre in una finestra anonima, dove non ci sono i tuoi
+      dati: è quello che vedrà l'altra persona;
+- [ ] se l'indirizzo che stai per mandare comincia per `192.168.`, non
+      funzionerà fuori da casa tua: quello è il server locale, vale solo sulla
+      tua rete e solo a computer acceso.
 
 ## Come sceglie i giocatori da comprare
 
@@ -340,7 +370,13 @@ Quello che si fa invece:
   verdetti di vendita, avvisi — funziona esattamente come con il prezzo
   automatico. Il prezzo scritto resta finché non ne arriva uno vero, e
   l'interfaccia lo dichiara («inserito da te il …»).
-- **Aggiornarli in blocco.** In *Conti* c'è «Aggiorna i prezzi in blocco»:
+- **Farlo in serie, dal pannello *Prezzi*.** È la via più veloce: l'elenco di
+  tutte le carte che segui, ordinato per urgenza (prima quelle senza prezzo,
+  poi quelle più vecchie), un campo per riga, e **Invio** che salva e sposta
+  il cursore sulla carta dopo. Si scrive anche `44k` o `1,2M`. I filtri
+  *Da aggiornare / La mia rosa / Watchlist* servono a fare un giro per volta,
+  e il contatore in alto dice quante ne restano.
+- **Aggiornarli in blocco.** In *Prezzi* (e in *Conti*) c'è «Aggiorna i prezzi in blocco»:
   si incolla un elenco `Nome prezzo`, una riga per carta, e si sistemano tutti
   insieme. I nomi vengono cercati fra i giocatori che l'app già conosce, senza
   rete; quelli che non corrispondono vengono elencati invece di essere
@@ -527,6 +563,49 @@ ha senso accenderlo con una sorgente che le concede.
 | `FUT_REFRESH_MAX` | `40` | quante carte per giro |
 | `FUT_REFRESH_PLATFORMS` | `ps` | piattaforme da aggiornare |
 
+### Dove gira, e se serve tenere il computer acceso
+
+Domanda giusta, e la risposta è a strati, perché i dati non stanno tutti nello
+stesso posto.
+
+**1. I tuoi dati stanno nel dispositivo.** Rosa, watchlist, prezzi scritti a
+mano, storico, avvisi e impostazioni vivono nel `localStorage` del browser che
+usi: il telefono o il computer. Non passano da nessun server, non c'è un
+account, e **funzionano con il computer spento** — anche in aereo. Se apri
+l'app su un secondo dispositivo, quello parte vuoto: i dati si spostano con
+*Opzioni → Esporta backup* e *Importa backup*.
+
+**2. Il database SQLite gira dove gira il proxy: sul tuo computer.** È un file
+(`dati/archivio.sqlite`) creato dal processo Node che avvii con `npm run dev`.
+Quando spegni il computer il file resta sul disco, ma nessuno lo interroga: è
+acceso quanto il computer. Serve per tre cose — condividere i prezzi fra i tuoi
+dispositivi sulla rete di casa, aggiornarsi da solo con `FUT_REFRESH_MINUTES`,
+e rispondere alle domande d'insieme tipo «chi è sceso di più» — e **l'app
+funziona benissimo senza**: senza proxy usa i suoi dati locali e i prezzi che
+scrivi.
+
+**3. Su GitHub Pages il database non c'è.** Pages serve file statici — HTML,
+CSS, JavaScript — e non esegue né Node né un database: è un contenitore di
+pagine, non un server. Quindi sull'indirizzo `github.io` l'app gira tutta nel
+browser di chi la apre, con i dati di quel dispositivo. È il motivo per cui là
+compare il badge `DATI DEMO` finché non scrivi i prezzi tu.
+
+Riassunto in una riga: **no, non devi tenere il computer acceso** — a meno che
+tu non voglia i prezzi automatici, l'archivio condiviso fra telefono e computer
+o l'aggiornamento periodico, che sono le tre cose che stanno nel proxy.
+
+E se un archivio sempre acceso servisse davvero? Due strade oneste, nessuna
+delle quali è GitHub Pages:
+
+- un **hosting con funzioni** (Vercel & simili) esegue il codice del proxy, ma
+  il suo disco è temporaneo: un file SQLite lì non sopravvive ai riavvii.
+  Servirebbe un database gestito (Turso, Neon, Supabase hanno un piano
+  gratuito) e una manciata di righe in `server/archive.mjs`;
+- una **macchina sempre accesa** in casa, anche un Raspberry Pi: `npm run dev`
+  e il proxy c'è ventiquattr'ore su ventiquattro.
+
+Per un uso personale non serve nessuna delle due: i dati sul telefono bastano.
+
 ### Da dove arrivano i dati (e perché non facciamo scraping)
 
 Il database si riempie da tre rubinetti: una **sorgente con API** consentita,
@@ -598,6 +677,7 @@ shared/          logica pura, condivisa fra proxy e browser e coperta da test
   market.mjs     tassa, margine, BIN massimo, prezzo di pareggio
   calendar.mjs   il ciclo settimanale di Ultimate Team e le sue fasi
   forecast.mjs   prezzo stimato fra un'osservazione e l'altra, e finestre utili
+  price-entry.mjs  l'elenco delle carte a cui serve un prezzo, per urgenza
   catalysts.mjs  forma dei catalizzatori e regole di corrispondenza
   scoring.mjs    punteggio delle occasioni e ragioni in chiaro
   alerts.mjs     regole degli avvisi
@@ -620,13 +700,14 @@ test/          test della logica (node --test)
 api/
   index.mjs   stesse rotte come funzione serverless per il deploy
 public/
+  social.png  anteprima del link (sorgente: scripts/social-card.html)
   sw.js       service worker: installazione sul telefono e uso offline
   manifest.webmanifest  nome, icone e colori dell'app installata
 src/
   lib/market.ts   tutta la matematica: tassa, margine, BIN massimo, pareggio
   lib/api.ts      client delle rotte del proxy
   lib/AppStore.tsx  stato persistito in localStorage
-  pages/          Occasioni, Mercato, Watchlist, Calcolatore, Portafoglio, Avvisi, Impostazioni
+  pages/          Occasioni, Prezzi, Mercato, Watchlist, Calcolatore, Portafoglio, Avvisi, Impostazioni
 ```
 
 ## Verifiche

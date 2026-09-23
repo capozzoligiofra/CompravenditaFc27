@@ -6,13 +6,15 @@ import { useHealth } from '../lib/useHealth.ts'
 import { useStore } from '../lib/useStore.ts'
 import type { Platform } from '../types.ts'
 
+// Sei voci: è il massimo che la barra del telefono regge senza stringere i
+// nomi. Le Opzioni stanno dietro l'ingranaggio, si aprono di rado.
 const NAV = [
   { to: '/', label: 'Occasioni', end: true },
+  { to: '/prezzi', label: 'Prezzi' },
   { to: '/mercato', label: 'Mercato' },
   { to: '/watchlist', label: 'Watchlist' },
   { to: '/calcolatore', label: 'Calcoli' },
   { to: '/portafoglio', label: 'Conti' },
-  { to: '/impostazioni', label: 'Opzioni' },
 ]
 
 const PLATFORMS: { value: Platform; label: string }[] = [
@@ -96,6 +98,14 @@ export default function Layout() {
             {nonLetti > 0 ? (
               <span className="rounded-full bg-gain px-1.5 font-mono text-[11px] font-bold text-pitch">{nonLetti}</span>
             ) : null}
+          </NavLink>
+          <NavLink
+            to="/impostazioni"
+            className="flex items-center gap-1.5 rounded-lg border border-pitch-line px-2 py-1 text-xs text-chalk-dim transition hover:text-chalk"
+            title="Opzioni"
+          >
+            <span aria-hidden>⚙</span>
+            <span className="sr-only">Opzioni</span>
           </NavLink>
           <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
             Piattaforma

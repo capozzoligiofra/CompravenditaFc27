@@ -30,6 +30,27 @@ export default function SettingsPage() {
     URL.revokeObjectURL(url)
   }
 
+  /**
+   * Passare l'app a qualcun altro: sul telefono si apre il foglio di
+   * condivisione del sistema, altrove si copia l'indirizzo. Quello che si
+   * condivide è l'app, non i propri dati: chi apre il link parte da vuoto.
+   */
+  const condividi = () => {
+    const url = window.location.href.split('#')[0]
+    const testo = 'FC27 Trader: margini, prezzi e momento giusto per comprare e vendere su EA FC 27.'
+    const share = navigator.share
+    if (typeof share === 'function') {
+      void share.call(navigator, { title: 'FC27 Trader', text: testo, url }).catch(() => {
+        // Condivisione annullata: non è un errore da mostrare.
+      })
+      return
+    }
+    navigator.clipboard
+      ?.writeText(url)
+      .then(() => setMessage('Indirizzo copiato: incollalo dove vuoi.'))
+      .catch(() => setMessage(`Copia questo indirizzo: ${url}`))
+  }
+
   const upload = (file: File) => {
     file
       .text()
@@ -231,6 +252,25 @@ export default function SettingsPage() {
           ) : null}
           {data.watchlist.length} {data.watchlist.length === 1 ? 'giocatore' : 'giocatori'} in watchlist ·{' '}
           {data.positions.length} {data.positions.length === 1 ? 'posizione registrata' : 'posizioni registrate'}
+        </p>
+      </Card>
+
+      <Card>
+        <CardTitle hint="Chi apre il link trova la sua copia vuota: i tuoi prezzi, la tua rosa e la tua watchlist restano su questo dispositivo.">
+          Condividi l'app
+        </CardTitle>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" className={buttonClass} onClick={condividi}>
+            Condividi il link
+          </button>
+          <code className="truncate rounded-lg border border-pitch-line bg-pitch px-2 py-1 font-mono text-xs text-chalk-dim">
+            {window.location.href.split('#')[0]}
+          </code>
+        </div>
+        <p className="mt-3 text-xs text-chalk-dim">
+          Se l'indirizzo comincia per <code className="font-mono">192.168.</code> vale solo dentro la tua rete di casa,
+          e solo mentre il computer è acceso. Per darla a qualcuno che sta altrove serve la versione pubblicata su
+          GitHub Pages: là i prezzi automatici non ci sono, ma tutto il resto funziona.
         </p>
       </Card>
 

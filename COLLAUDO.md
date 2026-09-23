@@ -136,6 +136,26 @@ Serve quando Futbin risponde `403` (succede spesso) e i prezzi restano demo.
 - [ ] Riaprendo l'app il giorno dopo, il grafico di una carta mostra un
       secondo punto: l'app si costruisce lo storico da sola.
 
+### Il pannello *Prezzi*
+
+È la schermata da tenere aperta accanto al gioco.
+
+- [ ] La pagina si apre da **Prezzi** nella barra in basso e mostra l'elenco
+      delle carte che segui, con in cima quelle senza prezzo e quelle più
+      vecchie.
+- [ ] Scrivi una cifra nel primo campo e premi **Invio**: il prezzo si salva e
+      il cursore passa da solo alla carta successiva, senza toccare il mouse.
+- [ ] Funzionano le scorciatoie: `44k` diventa 44.000 e `1,2M` diventa
+      1.200.000.
+- [ ] La riga appena salvata **resta al suo posto** (diventa «fatto») invece di
+      sparire: se saltasse via, scriveresti sulla carta sbagliata.
+- [ ] I contatori in alto si aggiornano: «segnate oggi» sale, «da aggiornare»
+      scende.
+- [ ] I filtri *Da aggiornare / La mia rosa / Watchlist / Tutte* e il campo
+      «filtra per nome» restringono l'elenco.
+- [ ] «Aggiungi una carta»: cerchi un giocatore, premi Aggiungi e compare
+      nell'elenco con il suo campo prezzo.
+
 ### Prezzo stimato
 
 Il seguito naturale dei prezzi scritti a mano: quello che hai segnato
@@ -226,6 +246,23 @@ autorizza Node sulla rete privata quando Windows o macOS lo chiede.
       finisce dopo «Pubblica su GitHub Pages».
 - [ ] Calcoli, watchlist, rosa e avvisi funzionano.
 - [ ] Si installa sul telefono come la versione locale.
+
+---
+
+## 7. Prima di condividerla
+
+Da fare in una **finestra anonima**, che è quello che vede chi riceve il link.
+
+- [ ] Si apre la scheda **«Benvenuto: cos'è questa app»** con le tre righe di
+      spiegazione, e i pulsanti «Inizia dai prezzi» e «Ho capito».
+- [ ] «Inizia dai prezzi» porta al pannello; ricaricando, il benvenuto non
+      ricompare.
+- [ ] Nessun tuo dato è visibile: rosa e watchlist sono vuote.
+- [ ] *Opzioni → Condividi l'app*: il pulsante apre la condivisione del
+      telefono, o copia l'indirizzo sul computer.
+- [ ] Incollando il link in una chat compare l'anteprima con il titolo e
+      l'immagine (se resta grigia, il servizio di messaggistica ha in cache la
+      versione vecchia: aspetta qualche ora o aggiungi `?v=2` in fondo).
 
 ---
 

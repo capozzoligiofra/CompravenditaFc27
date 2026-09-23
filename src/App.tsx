@@ -7,6 +7,7 @@ import Calculator from './pages/Calculator.tsx'
 import Market from './pages/Market.tsx'
 import Opportunities from './pages/Opportunities.tsx'
 import Portfolio from './pages/Portfolio.tsx'
+import Prices from './pages/Prices.tsx'
 import SettingsPage from './pages/Settings.tsx'
 import Watchlist from './pages/Watchlist.tsx'
 
@@ -17,6 +18,7 @@ export default function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Opportunities />} />
+            <Route path="/prezzi" element={<Prices />} />
             <Route path="/mercato" element={<Market />} />
             <Route path="/avvisi" element={<Alerts />} />
             <Route path="/watchlist" element={<Watchlist />} />

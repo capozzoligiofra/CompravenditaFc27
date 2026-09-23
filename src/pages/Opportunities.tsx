@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import Welcome from '../components/Welcome.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
 import type { Opportunity, OpportunityAction } from '../../shared/scoring.d.mts'
 import { coins, signedCoins } from '../lib/format.ts'
@@ -202,10 +203,15 @@ function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
 export default function Opportunities() {
   const { loading, refining, error, source, opportunities, catalysts, catalystsReason, phase, events } =
     useOpportunities()
-  const { removeCatalyst } = useStore()
+  const { data, removeCatalyst } = useStore()
+  // Chi apre il link la prima volta non ha niente: prima di tutto gli si dice
+  // cos'ha davanti e da dove si comincia.
+  const vuota =
+    data.seen.length === 0 && data.watchlist.length === 0 && data.positions.length === 0
 
   return (
     <div className="space-y-5">
+      <Welcome vuota={vuota} />
       <Card>
         <CardTitle hint="Il ciclo settimanale di Ultimate Team è la prima causa dei movimenti di prezzo.">
           Momento del mercato
