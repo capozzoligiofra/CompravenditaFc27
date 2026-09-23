@@ -14,7 +14,8 @@
     "build": "tsc -b && vite build && node scripts/postbuild-sw.mjs",
     "lint": "oxlint",
     "test": "node --test test/*.test.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sonda": "node scripts/sonda.mjs"
   },
   "dependencies": {
     "react": "^19.2.7",

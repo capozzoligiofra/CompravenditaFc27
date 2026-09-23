@@ -448,6 +448,29 @@ la variazione attesa rispetto ad adesso. Il numero vale quanto vale
 l'affidabilità che sta scritta sopra: è un'indicazione su *quando* muoversi,
 non una promessa su *quanto*.
 
+### Chi ci lascia entrare? `npm run sonda`
+
+Futbin dice no, ma non è detto che valga per tutti: fut.gg, FUTWIZ e gli altri
+hanno politiche loro, e cambiano nel tempo. Invece di indovinare, si chiede:
+
+```bash
+npm run sonda
+```
+
+Per ogni sito la sonda guarda se il nome si risolve, **cosa dice il suo
+`robots.txt`** — che è il posto dove un sito scrive nero su bianco cosa
+concede ai programmi — se risponde a una richiesta onesta o c'è una protezione
+anti-bot, e solo dove è consentito prova l'indirizzo dei dati e dice se c'è un
+prezzo dentro. Si presenta con il proprio nome e non finge di essere un
+browser; davanti a un divieto scrive «no» e passa oltre.
+
+Va lanciata **dalla tua connessione**: da un datacenter le risposte sono
+diverse (e quasi sempre peggiori). Con `SONDA_SITI=https://tal.dev npm run sonda`
+si prova un indirizzo qualsiasi.
+
+Se trova una porta aperta, collegarla non richiede codice nuovo: bastano le
+variabili qui sotto.
+
 ### Sorgente alternativa: un'API con chiave
 
 Se trovi un servizio di dati FUT che **consente l'accesso programmatico** —

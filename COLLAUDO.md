@@ -81,6 +81,21 @@ esattamente cosa correggere.
 
 ---
 
+## 3-bis. Chi ci lascia entrare
+
+```bash
+npm run sonda
+```
+
+- [ ] Stampa un riquadro per ogni sito (fut.gg, FUTWIZ, FUTBIN, futdatabase,
+      fut-db) con dns, robots.txt, stato del sito ed eventuali indirizzi dati.
+- [ ] Dove c'è una protezione anti-bot o un divieto nel `robots.txt`, si ferma
+      e lo scrive: è il comportamento giusto, non un errore.
+- [ ] In fondo c'è il riepilogo con il verdetto per ciascuno: quello va
+      copiato e mandato, così si ragiona sui risultati veri.
+
+---
+
 ## 4. L'app sul computer
 
 ```bash
