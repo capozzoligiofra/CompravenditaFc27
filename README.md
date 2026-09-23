@@ -466,7 +466,29 @@ browser; davanti a un divieto scrive «no» e passa oltre.
 
 Va lanciata **dalla tua connessione**: da un datacenter le risposte sono
 diverse (e quasi sempre peggiori). Con `SONDA_SITI=https://tal.dev npm run sonda`
-si prova un indirizzo qualsiasi.
+si prova un indirizzo qualsiasi, e con la chiave si vede anche cosa c'è oltre
+la serratura:
+
+```powershell
+$env:FUT_API_KEY="la-tua-chiave"; npm run sonda
+```
+
+**Com'è andata finora** (prova del 23 settembre 2026, da una connessione
+domestica italiana):
+
+| Sito | Esito |
+| --- | --- |
+| fut.gg | HTTP 200 ma pagina di verifica Cloudflare |
+| FUTWIZ | HTTP 403, sfida Cloudflare |
+| FUTBIN | HTTP 403, pagina di verifica Cloudflare |
+| futdatabase.com | HTTP 429 già sulla pagina iniziale |
+| fut-db.com | risponde; i dati chiedono la chiave (HTTP 401) |
+
+Tre porte chiuse di proposito e una che vuole una chiave: è la ragione per
+cui l'app è fatta per funzionare **senza** sorgente automatica, con i prezzi
+che scrivete voi nel listino condiviso. Vale la pena rilanciare la sonda ogni
+tanto: le politiche cambiano, e il giorno che una si apre bastano due
+variabili per collegarla.
 
 Se trova una porta aperta, collegarla non richiede codice nuovo: bastano le
 variabili qui sotto.

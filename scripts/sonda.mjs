@@ -25,6 +25,11 @@ import { describeFetchError } from '../server/util.mjs'
 
 const AGENTE = process.env.SONDA_AGENTE ?? 'fc27-trader/0.1 (uso personale; +https://github.com/capozzoligiofra/compravenditafc27)'
 const TIMEOUT = Number(process.env.SONDA_TIMEOUT ?? 9000)
+const PAUSA = Number(process.env.SONDA_PAUSA ?? 700)
+
+// Se hai una chiave la si usa: un'API a pagamento risponde 401 a chi bussa a
+// mani vuote, e senza chiave non sapremmo mai se il piano comprende i prezzi.
+const CHIAVE = process.env.FUT_API_KEY ?? process.env.FUTDB_KEY ?? ''
 
 /**
  * I candidati. Gli indirizzi dati sono *tentativi*: percorsi plausibili da
@@ -47,12 +52,38 @@ function siti() {
   })
 }
 
+function attesa(ms) {
+  return new Promise((esegui) => setTimeout(esegui, ms))
+}
+
+/**
+ * Le chiavi viaggiano in intestazioni diverse a seconda del servizio: si
+ * mandano entrambe le forme più comuni, che è quello che fa anche il client
+ * dell'app quando configuri una sorgente.
+ */
+function conChiave() {
+  if (!CHIAVE) return {}
+  return { 'X-AUTH-TOKEN': CHIAVE, authorization: `Bearer ${CHIAVE}` }
+}
+
 async function chiedi(url, extra = {}) {
-  const risposta = await fetch(url, {
-    headers: { 'user-agent': AGENTE, accept: extra.accept ?? '*/*' },
-    redirect: 'follow',
-    signal: AbortSignal.timeout(TIMEOUT),
-  })
+  // Una pausa fra una richiesta e l'altra: bussare educatamente evita di
+  // farsi rispondere «troppe richieste» e di disturbare chi ci ospita.
+  await attesa(PAUSA)
+  const richiedi = () =>
+    fetch(url, {
+      headers: { 'user-agent': AGENTE, accept: extra.accept ?? '*/*', ...(extra.autenticata ? conChiave() : {}) },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(TIMEOUT),
+    })
+
+  let risposta = await richiedi()
+  // Un 429 può essere passeggero: si riprova una volta sola, dopo qualche
+  // secondo. Se torna, è un limite vero e ci si ferma.
+  if (risposta.status === 429) {
+    await attesa(Number(process.env.SONDA_ATTESA_429 ?? 5000))
+    risposta = await richiedi()
+  }
   const testo = await risposta.text().catch(() => '')
   return { status: risposta.status, testo, intestazioni: risposta.headers }
 }
@@ -70,6 +101,8 @@ function protezione(status, testo, intestazioni) {
   }
   if (status === 403) return 'accesso negato dal sito'
   if (status === 429) return 'troppe richieste (limite del servizio)'
+  // Il 401 non è un muro: è una porta con la serratura, e la chiave può
+  // esistere. Non è un blocco e non ferma la sonda.
   return null
 }
 
@@ -135,15 +168,23 @@ const esiti = []
 console.log('')
 console.log('Sonda delle sorgenti dati FUT')
 console.log(`mi presento come: ${AGENTE}`)
+console.log(CHIAVE ? `chiave: ${CHIAVE.slice(0, 4)}… (${CHIAVE.length} caratteri)` : 'nessuna chiave: gli indirizzi protetti risponderanno 401')
 console.log('')
 
 for (const sito of siti()) {
   const host = new URL(sito.base).hostname
   console.log(`── ${sito.nome} (${host})`)
 
+  // La risoluzione del nome è l'unico passo che può restare appeso a lungo
+  // (su Windows capita con IPv6): le si dà un tempo massimo, e se scade si
+  // prova lo stesso — la richiesta HTTP ha una scadenza sua.
   try {
-    const indirizzi = await lookup(host, { all: true })
-    console.log(`   dns      ${indirizzi.map((voce) => voce.address).join(', ')}`)
+    const indirizzi = await Promise.race([
+      lookup(host, { all: true }),
+      attesa(Number(process.env.SONDA_TIMEOUT_DNS ?? 6000)).then(() => 'lento'),
+    ])
+    if (indirizzi === 'lento') console.log('   dns      lento a rispondere, proseguo lo stesso')
+    else console.log(`   dns      ${indirizzi.map((voce) => voce.address).join(', ')}`)
   } catch (errore) {
     console.log(`   dns      NON risolve — ${describeFetchError(errore)}`)
     console.log('')
@@ -194,16 +235,24 @@ for (const sito of siti()) {
   }
 
   let buono = null
+  let senzaChiave = false
   for (const percorso of sito.dati) {
     if (!robots.consente(percorso)) {
       console.log(`   dati     ${percorso} — vietato dal robots.txt, non lo chiedo`)
       continue
     }
     try {
-      const risposta = await chiedi(`${sito.base}${percorso}`, { accept: 'application/json' })
+      const risposta = await chiedi(`${sito.base}${percorso}`, { accept: 'application/json', autenticata: true })
       const fermo = protezione(risposta.status, risposta.testo, risposta.intestazioni)
       if (fermo) {
         console.log(`   dati     ${percorso} — HTTP ${risposta.status} · ${fermo}`)
+        continue
+      }
+      if (risposta.status === 401) {
+        console.log(
+          `   dati     ${percorso} — HTTP 401 · ${CHIAVE ? 'la chiave non è stata accettata' : 'serve una chiave (rilancia con FUT_API_KEY)'}`,
+        )
+        senzaChiave = !CHIAVE
         continue
       }
       let json = null
@@ -226,7 +275,8 @@ for (const sito of siti()) {
   }
 
   console.log('')
-  esiti.push({ nome: sito.nome, verdetto: buono ? 'prezzi accessibili' : 'raggiungibile, prezzi no', percorso: buono })
+  const verdetto = buono ? 'prezzi accessibili' : senzaChiave ? 'aperto, ma serve la chiave' : 'raggiungibile, prezzi no'
+  esiti.push({ nome: sito.nome, verdetto, percorso: buono })
 }
 
 console.log('───────────────────────────────')
@@ -241,6 +291,11 @@ if (vincente) {
   console.log('Per collegarlo servono due variabili (indirizzo e, se richiesta, chiave):')
   console.log('vedi "Sorgente alternativa: un\'API con chiave" nel README, oppure lanciami')
   console.log('"npm run esplora" per farmi trovare i percorsi esatti.')
+} else if (esiti.some((esito) => esito.verdetto === 'aperto, ma serve la chiave')) {
+  console.log("Qualcuno risponde ma vuole una chiave. Se ce l'hai, rilancia così:")
+  console.log('')
+  console.log('  Windows (PowerShell)   $env:FUT_API_KEY="la-tua-chiave"; npm run sonda')
+  console.log('  macOS e Linux          FUT_API_KEY=la-tua-chiave npm run sonda')
 } else {
   console.log('Nessuna porta aperta, per ora: i prezzi restano quelli che scrivete voi')
   console.log('nel listino condiviso — che intanto funziona e non dipende da nessuno.')
