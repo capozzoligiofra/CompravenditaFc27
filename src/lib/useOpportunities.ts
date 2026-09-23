@@ -33,7 +33,7 @@ export interface OpportunitiesState {
 const REFINE_TOP = 6
 
 export function useOpportunities(): OpportunitiesState {
-  const { data, settings, pushAlerts, recordPrices } = useStore()
+  const { data, settings, prezzi, pushAlerts, recordPrices } = useStore()
   const [loading, setLoading] = useState(true)
   const [refining, setRefining] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -154,10 +154,11 @@ export function useOpportunities(): OpportunitiesState {
     return () => controller.abort()
   }, [tick])
 
-  // I prezzi scritti a mano coprono i buchi lasciati dalla sorgente.
+  // I prezzi scritti a mano — i tuoi e quelli del listino condiviso —
+  // coprono i buchi lasciati dalla sorgente.
   const quotes = useMemo(
-    () => mergeQuotes(liveQuotes, data.manualPrices, source ?? 'demo') as Record<string, Quote | null>,
-    [liveQuotes, data.manualPrices, source],
+    () => mergeQuotes(liveQuotes, prezzi, source ?? 'demo') as Record<string, Quote | null>,
+    [liveQuotes, prezzi, source],
   )
 
   // Ogni prezzo visto diventa un punto di storia: è ciò che permette ai

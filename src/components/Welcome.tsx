@@ -50,9 +50,9 @@ export default function Welcome({ vuota }: { vuota: boolean }) {
           proposte.
         </li>
         <li>
-          <strong className="text-chalk">I tuoi dati restano tuoi.</strong> Rosa, watchlist e prezzi vivono in questo
-          browser: niente account, niente server, nessuno li vede. Cambiando telefono si portano via con il backup in
-          Opzioni.
+          <strong className="text-chalk">I tuoi dati restano tuoi.</strong> Rosa, watchlist e conti vivono in questo
+          browser e nessuno li vede. Se c'è un listino condiviso da collegare (in Opzioni), i soli prezzi diventano
+          comuni — quelli sono un fatto, non un segreto.
         </li>
       </ul>
       <div className="mt-3 flex flex-wrap gap-2">

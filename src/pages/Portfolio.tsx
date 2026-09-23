@@ -23,7 +23,7 @@ function toCsv(rows: string[][]): string {
 }
 
 export default function Portfolio() {
-  const { data, settings, addPosition, closePosition, reopenPosition, removePosition } = useStore()
+  const { data, settings, prezzi, addPosition, closePosition, reopenPosition, removePosition } = useStore()
   const { quotes, sellVerdicts, loading } = useOpportunities()
   const [name, setName] = useState('')
   const [buyPrice, setBuyPrice] = useState(0)
@@ -218,7 +218,7 @@ export default function Portfolio() {
                         <PriceEstimate
                           history={data.priceHistory[position.playerId] ?? []}
                           quote={quotes[position.playerId] ?? null}
-                          osservatoIl={data.manualPrices[position.playerId]?.at}
+                          osservatoIl={prezzi[position.playerId]?.at}
                         />
                         <ManualPrice playerId={position.playerId} />
                       </div>

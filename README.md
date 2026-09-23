@@ -20,6 +20,10 @@ strumento di analisi e di contabilità personale.
 - **Mercato** — ricerca giocatori, prezzo attuale, minimo/massimo, variazione,
   grafico dello storico e «piano di trade» già pronto: a quanto comprare per
   ottenere il margine che hai impostato e a quanto rivendere.
+- **Listino condiviso** — i prezzi sono in comune: quello che segni tu lo
+  vedono gli altri e viceversa, con il nome di chi l'ha scritto. Rosa e
+  watchlist restano tue, ma ti seguono su tutti i dispositivi. Serve un
+  servizio da mettere online una volta sola: sta in `server-php/`.
 - **Prezzi** — il pannello per aggiornare le quotazioni in fretta: una riga
   per carta, si scrive la cifra e si preme Invio per salvare e passare alla
   successiva. In cima quelle senza prezzo e quelle più vecchie.
@@ -197,12 +201,18 @@ suo telefono. Il link porta con sé un'anteprima (`public/social.png`, disegnata
 in `scripts/social-card.html`: per rifarla basta aprire quel file nel browser e
 catturarlo a 1200×630).
 
-Un punto che conviene dire a voce, perché sorprende: **ognuno ha la sua copia**.
-Rosa, prezzi e watchlist vivono nel browser di chi apre il link, quindi non si
-mescolano con i tuoi e tu non vedi i suoi. Non è un'app con account: è la stessa
-pagina, con dati diversi su ogni dispositivo. In *Opzioni → Condividi l'app* c'è
-il pulsante che apre il foglio di condivisione del telefono (o copia
-l'indirizzo).
+Cosa trova chi la apre dipende da una cosa sola: se si collega al listino
+condiviso o no.
+
+- **Senza collegarsi** ha la sua copia: rosa, watchlist e prezzi vivono nel suo
+  browser, non si mescolano con i tuoi e tu non vedi i suoi.
+- **Collegandosi** (*Opzioni → Listino condiviso*, indirizzo e nome) entra nel
+  listino comune: vede i prezzi che avete segnato voi e i suoi li vedete voi,
+  con il nome accanto. La sua rosa resta sua.
+
+In *Opzioni → Condividi l'app* c'è il pulsante che apre il foglio di
+condivisione del telefono (o copia l'indirizzo). Se dai anche l'indirizzo del
+listino, ricordati che chi ce l'ha può scrivere prezzi.
 
 Prima di mandarla in giro, tre controlli che valgono un minuto:
 
@@ -507,6 +517,45 @@ obiettivi**, che si aggiungono a mano dalla pagina Occasioni.
 
 Con `FUT_PROVIDER=futbin` si torna a Futbin anche avendo configurato un'API.
 
+## Il listino condiviso
+
+I prezzi di Ultimate Team sono un fatto: se una carta sta a 42.000, sta a
+42.000 per tutti. Tenerli su un dispositivo solo significa riscriverli su ogni
+telefono e non sapere mai quale sia il più fresco. Con il listino condiviso
+si scrivono una volta e valgono per tutti.
+
+Il servizio sta in **`server-php/`** e vive su un hosting Linux qualunque
+(PHP + MySQL): tre file da caricare via FTP, un database da creare dal
+pannello, e il passo per passo è in `server-php/LEGGIMI.md`. Poi, nell'app:
+*Opzioni → Listino condiviso*, indirizzo e nome, **Collegati**.
+
+Cosa è in comune e cosa no:
+
+| | Dove vive | Chi lo vede |
+| --- | --- | --- |
+| Prezzi e storico | sul server | tutti, con il nome di chi li ha scritti |
+| Rosa, watchlist, impostazioni | sul server, legate al tuo nome | solo tu, su tutti i tuoi dispositivi |
+| Avvisi | nel dispositivo | solo quel dispositivo |
+
+**Come si decide chi ha ragione.** Due persone possono segnare la stessa carta
+a dieci secondi di distanza, e un telefono può restare offline per un giorno.
+La regola è una sola e vale nei due sensi: **vince l'osservazione più
+recente** — non «vince il server», altrimenti il prezzo che hai appena visto
+in gioco perderebbe contro quello di ieri sera. Per i dati personali vale la
+stessa regola, con una cautela: una copia vuota non cancella una copia piena,
+così il telefono nuovo riceve la rosa invece di azzerarla.
+
+**Quando non c'è linea** si continua a scrivere: i prezzi restano nel telefono
+e partono da soli appena la connessione torna. In alto, accanto al nome
+dell'app, una scritta dice come sta il listino (`LISTINO IN COMUNE`,
+`SINCRONIZZO…`, `LISTINO NON RAGGIUNGIBILE`).
+
+**Il nome non è una password**, ed è bene saperlo: chi conosce l'indirizzo può
+scrivere, e scrivendo il tuo nome scriverebbe a nome tuo. È la scelta fatta
+per non dover gestire registrazioni e password — va bene fra persone che si
+conoscono. Il punto da cambiare, se un domani servisse, è uno solo: l'azione
+`entra` in `api.php`.
+
 ## Il database dei prezzi
 
 Il proxy tiene un **database SQLite** (`dati/archivio.sqlite`), usando
@@ -563,48 +612,35 @@ ha senso accenderlo con una sorgente che le concede.
 | `FUT_REFRESH_MAX` | `40` | quante carte per giro |
 | `FUT_REFRESH_PLATFORMS` | `ps` | piattaforme da aggiornare |
 
-### Dove gira, e se serve tenere il computer acceso
+### Dove stanno i dati, e se serve tenere il computer acceso
 
 Domanda giusta, e la risposta è a strati, perché i dati non stanno tutti nello
 stesso posto.
 
-**1. I tuoi dati stanno nel dispositivo.** Rosa, watchlist, prezzi scritti a
-mano, storico, avvisi e impostazioni vivono nel `localStorage` del browser che
-usi: il telefono o il computer. Non passano da nessun server, non c'è un
-account, e **funzionano con il computer spento** — anche in aereo. Se apri
-l'app su un secondo dispositivo, quello parte vuoto: i dati si spostano con
-*Opzioni → Esporta backup* e *Importa backup*.
+**1. Il listino dei prezzi sta sul server condiviso.** È il servizio PHP in
+`server-php/`, caricato una volta sul tuo spazio Aruba: lì vivono i prezzi di
+tutti, lo storico e i dati personali di ciascuno. Gira solo quando qualcuno lo
+chiama — è un hosting, non una macchina da tenere accesa — e non costa niente
+più dello spazio web che hai già. Istruzioni: `server-php/LEGGIMI.md`.
 
-**2. Il database SQLite gira dove gira il proxy: sul tuo computer.** È un file
-(`dati/archivio.sqlite`) creato dal processo Node che avvii con `npm run dev`.
-Quando spegni il computer il file resta sul disco, ma nessuno lo interroga: è
-acceso quanto il computer. Serve per tre cose — condividere i prezzi fra i tuoi
-dispositivi sulla rete di casa, aggiornarsi da solo con `FUT_REFRESH_MINUTES`,
-e rispondere alle domande d'insieme tipo «chi è sceso di più» — e **l'app
-funziona benissimo senza**: senza proxy usa i suoi dati locali e i prezzi che
-scrivi.
+**2. Ogni dispositivo ne tiene una copia.** Prezzi, rosa e watchlist restano
+anche nel `localStorage` del browser, così l'app funziona in aereo, in
+metropolitana e col server spento: quello che scrivi offline parte da solo
+appena torna la linea. **Non serve tenere acceso nessun computer.**
 
-**3. Su GitHub Pages il database non c'è.** Pages serve file statici — HTML,
-CSS, JavaScript — e non esegue né Node né un database: è un contenitore di
-pagine, non un server. Quindi sull'indirizzo `github.io` l'app gira tutta nel
-browser di chi la apre, con i dati di quel dispositivo. È il motivo per cui là
-compare il badge `DATI DEMO` finché non scrivi i prezzi tu.
+**3. Il database SQLite del proxy è un'altra cosa ancora.** Quello
+(`dati/archivio.sqlite`) nasce solo se avvii `npm run dev` sul tuo computer, e
+serve ai prezzi automatici quando una sorgente è configurata. È acceso quanto
+il computer, e con il listino condiviso attivo non è più necessario a niente
+di essenziale.
 
-Riassunto in una riga: **no, non devi tenere il computer acceso** — a meno che
-tu non voglia i prezzi automatici, l'archivio condiviso fra telefono e computer
-o l'aggiornamento periodico, che sono le tre cose che stanno nel proxy.
+**4. Su GitHub Pages non gira nulla di tutto questo.** Pages serve file
+statici — HTML, CSS, JavaScript — e non esegue né PHP né Node né un database.
+L'app scaricata da lì gira nel browser e chiama il listino su Aruba: è per
+questo che il listino sta là e non qui.
 
-E se un archivio sempre acceso servisse davvero? Due strade oneste, nessuna
-delle quali è GitHub Pages:
-
-- un **hosting con funzioni** (Vercel & simili) esegue il codice del proxy, ma
-  il suo disco è temporaneo: un file SQLite lì non sopravvive ai riavvii.
-  Servirebbe un database gestito (Turso, Neon, Supabase hanno un piano
-  gratuito) e una manciata di righe in `server/archive.mjs`;
-- una **macchina sempre accesa** in casa, anche un Raspberry Pi: `npm run dev`
-  e il proxy c'è ventiquattr'ore su ventiquattro.
-
-Per un uso personale non serve nessuna delle due: i dati sul telefono bastano.
+Riassunto: **no, non devi tenere il computer acceso.** Il pezzo che deve stare
+sempre in piedi è il servizio su Aruba, e quello è un hosting.
 
 ### Da dove arrivano i dati (e perché non facciamo scraping)
 
@@ -678,6 +714,7 @@ shared/          logica pura, condivisa fra proxy e browser e coperta da test
   calendar.mjs   il ciclo settimanale di Ultimate Team e le sue fasi
   forecast.mjs   prezzo stimato fra un'osservazione e l'altra, e finestre utili
   price-entry.mjs  l'elenco delle carte a cui serve un prezzo, per urgenza
+  sync.mjs       chi ha ragione quando due dispositivi hanno prezzi diversi
   catalysts.mjs  forma dei catalizzatori e regole di corrispondenza
   scoring.mjs    punteggio delle occasioni e ragioni in chiaro
   alerts.mjs     regole degli avvisi
@@ -685,6 +722,10 @@ shared/          logica pura, condivisa fra proxy e browser e coperta da test
   text.mjs       confronto dei nomi senza accenti
   quotes.mjs     unione fra prezzi automatici e prezzi scritti a mano
   demo.mjs       dataset demo, usato sia dal proxy sia dall'app statica
+server-php/     il listino condiviso da caricare su un hosting Linux
+  api.php     tutte le chiamate del listino (prezzi, storico, dati personali)
+  schema.sql  le tabelle MySQL, da eseguire una volta
+  LEGGIMI.md  come metterlo online su Aruba, passo per passo
 server/
   index.mjs   avvio del server locale e indirizzi per il telefono
   providers.mjs  sceglie la sorgente dati fra Futbin e l'API configurata
@@ -707,6 +748,8 @@ src/
   lib/market.ts   tutta la matematica: tassa, margine, BIN massimo, pareggio
   lib/api.ts      client delle rotte del proxy
   lib/AppStore.tsx  stato persistito in localStorage
+  lib/cloud.ts      client del listino condiviso
+  lib/CloudSync.tsx il ciclo di sincronizzazione, in sottofondo
   pages/          Occasioni, Prezzi, Mercato, Watchlist, Calcolatore, Portafoglio, Avvisi, Impostazioni
 ```
 

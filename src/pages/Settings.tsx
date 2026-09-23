@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 
+import SharedList from '../components/SharedList.tsx'
 import { Card, CardTitle, NumberField, Pill, buttonClass } from '../components/ui.tsx'
 import { getCustomApiBase, setCustomApiBase } from '../lib/apiBase.ts'
 import { exportData, importData } from '../lib/storage.ts'
@@ -204,8 +205,10 @@ export default function SettingsPage() {
         )}
       </Card>
 
+      <SharedList />
+
       <Card>
-        <CardTitle hint="Watchlist, portafoglio e impostazioni vivono solo in questo browser. Nessun account, nessun server.">
+        <CardTitle hint="Senza listino condiviso questi dati vivono solo in questo browser; collegandolo, rosa e watchlist ti seguono sugli altri dispositivi.">
           Dati locali
         </CardTitle>
         <div className="flex flex-wrap gap-2">

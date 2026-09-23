@@ -40,7 +40,7 @@ function anzianita(osservatoIl: number, adesso: number): string {
  * accanto al gioco mentre si gira il mercato.
  */
 export default function Prices() {
-  const { data, settings, setManualPrice, rememberPlayer } = useStore()
+  const { data, settings, prezzi, setManualPrice, rememberPlayer } = useStore()
   const [gruppo, setGruppo] = useState<GruppoPrezzo>('da-aggiornare')
   const [testo, setTesto] = useState('')
   const [bozze, setBozze] = useState<Record<string, string>>({})
@@ -62,11 +62,13 @@ export default function Prices() {
         seen: data.seen,
         watchlist: data.watchlist,
         positions: data.positions,
-        manualPrices: data.manualPrices,
+        // Il listino condiviso e i tuoi prezzi, già fusi: quello che vale
+        // adesso, chiunque l'abbia segnato.
+        manualPrices: prezzi,
         priceHistory: data.priceHistory,
         now: adesso,
       }) as VocePrezzo[],
-    [data.seen, data.watchlist, data.positions, data.manualPrices, data.priceHistory, adesso],
+    [data.seen, data.watchlist, data.positions, prezzi, data.priceHistory, adesso],
   )
 
   // Le righe sistemate poco fa restano dove sono e restano visibili, anche
@@ -162,6 +164,8 @@ export default function Prices() {
               <RigaPrezzo
                 voce={voce}
                 adesso={adesso}
+                autore={prezzi[voce.id]?.autore ?? ''}
+                mio={Boolean(data.manualPrices[voce.id])}
                 storico={data.priceHistory[voce.id] ?? []}
                 bozza={bozze[voce.id] ?? ''}
                 appenaSalvato={salvati[voce.id]?.prezzo ?? 0}
@@ -195,6 +199,8 @@ export default function Prices() {
 function RigaPrezzo({
   voce,
   adesso,
+  autore,
+  mio,
   storico,
   bozza,
   appenaSalvato,
@@ -206,6 +212,10 @@ function RigaPrezzo({
 }: {
   voce: VocePrezzo
   adesso: number
+  /** Chi ha segnato questo prezzo sul listino condiviso, se non sei tu. */
+  autore: string
+  /** Il prezzo è ancora una tua nota locale: solo quelle si possono togliere. */
+  mio: boolean
   storico: { t: number; price: number }[]
   bozza: string
   appenaSalvato: number
@@ -246,6 +256,7 @@ function RigaPrezzo({
           {voce.prezzo > 0 ? (
             <>
               ultimo {coins(voce.prezzo)} · {anzianita(voce.osservatoIl, adesso)}
+              {autore ? ` · da ${autore}` : ''}
               {stima && Math.abs(scarto) >= 0.02 ? ` · stimato ora ${coins(stima.price)}` : ''}
             </>
           ) : (
@@ -271,7 +282,7 @@ function RigaPrezzo({
         <button type="button" className={`${buttonClass} shrink-0 px-2.5`} onClick={onSalva} disabled={!bozza.trim()}>
           Salva
         </button>
-        {voce.scrittoAMano ? (
+        {mio ? (
           <button type="button" className="shrink-0 text-xs text-chalk-dim hover:text-loss" onClick={onTogli}>
             togli
           </button>

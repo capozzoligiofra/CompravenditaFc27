@@ -13,21 +13,27 @@ export function isLiveSource(source) {
   return Boolean(source) && source !== 'demo'
 }
 
-export function manualQuote(price, at) {
+/**
+ * @param autore chi l'ha segnato, quando non sei tu: con il listino condiviso
+ *   il prezzo può arrivare da un'altra persona, ed è giusto vederlo scritto.
+ */
+export function manualQuote(price, at, autore = '') {
   const value = Math.max(0, Math.round(Number(price) || 0))
+  const chi = autore ? `da ${autore}` : 'da te'
   return {
     price: value,
     minPrice: value,
     maxPrice: value,
     changePercent: 0,
-    updated: at ? `inserito da te il ${new Date(at).toLocaleDateString('it-IT')}` : 'inserito da te',
+    updated: at ? `inserito ${chi} il ${new Date(at).toLocaleDateString('it-IT')}` : `inserito ${chi}`,
     manual: true,
+    autore,
   }
 }
 
 /**
  * @param quotes quotazioni ricevute dalla sorgente (possono mancare)
- * @param manual prezzi inseriti dall'utente, per identificativo
+ * @param manual prezzi scritti a mano (tuoi o del listino condiviso), per identificativo
  * @param source 'futbin' quando i prezzi sono veri, 'demo' altrimenti
  */
 export function mergeQuotes(quotes = {}, manual = {}, source = 'demo') {
@@ -36,7 +42,7 @@ export function mergeQuotes(quotes = {}, manual = {}, source = 'demo') {
     if (!entry || !entry.price) continue
     const esistente = out[id]
     const hasLive = isLiveSource(source) && esistente && esistente.price > 0
-    if (!hasLive) out[id] = manualQuote(entry.price, entry.at)
+    if (!hasLive) out[id] = manualQuote(entry.price, entry.at, entry.autore ?? '')
   }
   return out
 }

@@ -11,6 +11,10 @@ export const defaultData: AppData = {
   seen: [],
   manualPrices: {},
   priceHistory: {},
+  sharedPrices: {},
+  syncedAt: 0,
+  syncedPlatform: 'ps',
+  dataChangedAt: 0,
 }
 
 /** Lo stato vive solo nel browser: nessun account, nessun dato inviato altrove. */
@@ -28,6 +32,12 @@ export function loadData(): AppData {
       seen: Array.isArray(parsed.seen) ? parsed.seen : [],
       manualPrices: isRecord(parsed.manualPrices) ? parsed.manualPrices : {},
       priceHistory: isPlainObject(parsed.priceHistory) ? parsed.priceHistory : {},
+      // Il listino comune è una copia locale di quello del server: se manca,
+      // la prima sincronizzazione lo riporta.
+      sharedPrices: isRecord(parsed.sharedPrices) ? parsed.sharedPrices : {},
+      syncedAt: Number(parsed.syncedAt) || 0,
+      syncedPlatform: parsed.syncedPlatform ?? 'ps',
+      dataChangedAt: Number(parsed.dataChangedAt) || 0,
     }
   } catch {
     return defaultData
@@ -57,6 +67,10 @@ export function importData(raw: string): AppData {
     seen: Array.isArray(parsed.seen) ? parsed.seen : [],
     manualPrices: isRecord(parsed.manualPrices) ? parsed.manualPrices : {},
     priceHistory: isPlainObject(parsed.priceHistory) ? parsed.priceHistory : {},
+    sharedPrices: isRecord(parsed.sharedPrices) ? parsed.sharedPrices : {},
+    syncedAt: Number(parsed.syncedAt) || 0,
+    syncedPlatform: parsed.syncedPlatform ?? 'ps',
+    dataChangedAt: Number(parsed.dataChangedAt) || 0,
   }
 }
 
@@ -64,6 +78,6 @@ function isPlainObject<T>(value: unknown): value is Record<string, T> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
-function isRecord(value: unknown): value is Record<string, { price: number; at: number }> {
+function isRecord(value: unknown): value is Record<string, { price: number; at: number; autore?: string }> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }

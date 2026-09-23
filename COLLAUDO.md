@@ -249,7 +249,36 @@ autorizza Node sulla rete privata quando Windows o macOS lo chiede.
 
 ---
 
-## 7. Prima di condividerla
+## 7. Il listino condiviso
+
+Da fare dopo aver caricato `server-php/` su Aruba (istruzioni in
+`server-php/LEGGIMI.md`). Serve un secondo dispositivo, o anche solo una
+finestra anonima: per l'app è un altro dispositivo a tutti gli effetti.
+
+- [ ] `https://iltuosito.it/fc27/api.php?azione=salute` aperto nel browser
+      risponde con una riga che comincia per `{"ok":true`.
+- [ ] *Opzioni → Listino condiviso*: incolli l'indirizzo, scrivi il tuo nome,
+      premi Collegati. Compare **COLLEGATO come <nome>** e, in alto accanto al
+      logo, la scritta **LISTINO IN COMUNE**.
+- [ ] Segni un prezzo dalla pagina *Prezzi*. Dopo qualche secondo, in Opzioni
+      il conteggio «sul server» sale.
+- [ ] Sul secondo dispositivo ti colleghi con un **nome diverso**: i prezzi
+      sono già lì, con scritto **da <il tuo nome>**.
+- [ ] Dal secondo dispositivo correggi un prezzo; torni sul primo e, dopo una
+      sincronizzazione (o premendo «Sincronizza ora»), il prezzo è quello
+      nuovo, con l'altro nome accanto.
+- [ ] **Stesso nome, due dispositivi**: la rosa e la watchlist del primo
+      compaiono sul secondo. Il telefono nuovo **riceve** la rosa, non la
+      cancella.
+- [ ] **Senza rete**: metti il telefono in aereo, segni un prezzo (si salva lo
+      stesso, l'indicatore diventa giallo), riattivi la rete e dopo qualche
+      secondo il prezzo è sul server.
+- [ ] Cambiando piattaforma (PS → Xbox) il listino si ricarica per quella
+      piattaforma: non restano i prezzi PlayStation.
+
+---
+
+## 8. Prima di condividerla
 
 Da fare in una **finestra anonima**, che è quello che vede chi riceve il link.
 

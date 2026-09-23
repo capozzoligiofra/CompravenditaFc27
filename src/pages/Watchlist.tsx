@@ -23,7 +23,7 @@ const SIGNAL_LABEL: Record<Signal, string> = {
 }
 
 export default function Watchlist() {
-  const { data, settings, updateWatch, removeWatch } = useStore()
+  const { data, settings, prezzi, updateWatch, removeWatch } = useStore()
   const [liveQuotes, setLiveQuotes] = useState<Record<string, Quote | null>>({})
   const [source, setSource] = useState<DataSource>('demo')
   const [loading, setLoading] = useState(false)
@@ -65,8 +65,8 @@ export default function Watchlist() {
   }, [refresh])
 
   const quotes = useMemo(
-    () => mergeQuotes(liveQuotes, data.manualPrices, source) as Record<string, Quote | null>,
-    [liveQuotes, data.manualPrices, source],
+    () => mergeQuotes(liveQuotes, prezzi, source) as Record<string, Quote | null>,
+    [liveQuotes, prezzi, source],
   )
 
   const buySignals = data.watchlist.filter(

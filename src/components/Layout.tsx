@@ -4,6 +4,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import type { HealthResponse } from '../lib/api.ts'
 import { useHealth } from '../lib/useHealth.ts'
 import { useStore } from '../lib/useStore.ts'
+import { useSync } from '../lib/useSync.ts'
 import type { Platform } from '../types.ts'
 
 // Sei voci: è il massimo che la barra del telefono regge senza stringere i
@@ -69,6 +70,22 @@ function SourceBadge() {
   )
 }
 
+/** Lo stato del listino condiviso, quando è collegato: una parola, non di più. */
+function ListinoBadge() {
+  const sync = useSync()
+  if (!sync.attivo) return null
+  const tono = sync.errore ? 'loss' : sync.inAttesa > 0 || sync.inCorso ? 'flag' : 'gain'
+  const testo = sync.errore ? 'listino non raggiungibile' : sync.inCorso ? 'sincronizzo…' : 'listino in comune'
+  return (
+    <span
+      title={sync.errore ?? (sync.inAttesa > 0 ? `${sync.inAttesa} prezzi ancora da mandare` : 'prezzi condivisi')}
+      className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${BADGE_TONES[tono]}`}
+    >
+      {testo}
+    </span>
+  )
+}
+
 function navLinkClass({ isActive }: { isActive: boolean }) {
   return `inline-block whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition ${
     isActive ? 'bg-gain/15 font-semibold text-gain' : 'text-chalk-dim hover:text-chalk'
@@ -88,6 +105,7 @@ export default function Layout() {
             <span className="text-base font-semibold tracking-tight">Trader</span>
           </div>
           <SourceBadge />
+          <ListinoBadge />
           <NavLink
             to="/avvisi"
             className="ml-auto flex items-center gap-1.5 rounded-lg border border-pitch-line px-2 py-1 text-xs text-chalk-dim transition hover:text-chalk"

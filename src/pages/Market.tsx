@@ -14,7 +14,7 @@ import type { Player, PlayerDetail, Quote } from '../types.ts'
 const PLATFORM_LABEL = { ps: 'PlayStation', xbox: 'Xbox', pc: 'PC' } as const
 
 export default function Market() {
-  const { data, settings, addWatch, isWatched, addPosition, rememberPlayer } = useStore()
+  const { data, settings, prezzi, addWatch, isWatched, addPosition, rememberPlayer } = useStore()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Player[]>([])
   const [searching, setSearching] = useState(false)
@@ -77,12 +77,12 @@ export default function Market() {
   const quote = useMemo(() => {
     if (!selected) return null
     const dalla = detail?.prices?.[settings.platform] ?? null
-    const merged = mergeQuotes({ [selected.id]: dalla }, data.manualPrices, detail?.source ?? 'demo') as Record<
+    const merged = mergeQuotes({ [selected.id]: dalla }, prezzi, detail?.source ?? 'demo') as Record<
       string,
       Quote | null
     >
     return merged[selected.id] ?? null
-  }, [selected, detail, settings.platform, data.manualPrices])
+  }, [selected, detail, settings.platform, prezzi])
   const price = quote?.price ?? 0
   const maxBuy = price ? roundToMarketStep(maxBuyForMargin(price, settings.targetMarginPercent, settings.taxPercent)) : 0
   const suggestedSell = price ? sellForMargin(price, settings.targetMarginPercent, settings.taxPercent) : 0
@@ -181,7 +181,7 @@ export default function Market() {
                   <PriceEstimate
                     history={detail?.history?.length ? detail.history : (data.priceHistory[selected.id] ?? [])}
                     quote={quote}
-                    osservatoIl={data.manualPrices[selected.id]?.at}
+                    osservatoIl={prezzi[selected.id]?.at}
                   />
                   <ManualPrice playerId={selected.id} />
                 </div>

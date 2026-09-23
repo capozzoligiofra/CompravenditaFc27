@@ -101,4 +101,12 @@ export interface AppData {
   manualPrices: Record<string, { price: number; at: number }>
   /** Storico costruito dall'app: un prezzo al giorno per carta. */
   priceHistory: Record<string, HistoryPoint[]>
+  /** Il listino comune, come l'ha mandato il server condiviso. */
+  sharedPrices: Record<string, { price: number; at: number; autore?: string }>
+  /** Cursore della sincronizzazione: è l'orologio del server, non il nostro. */
+  syncedAt: number
+  /** A quale piattaforma appartiene il listino scaricato: cambiarla lo azzera. */
+  syncedPlatform: Platform
+  /** Quando sono cambiati l'ultima volta rosa, watchlist e impostazioni. */
+  dataChangedAt: number
 }
