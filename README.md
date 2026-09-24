@@ -427,9 +427,11 @@ Quello che si fa invece:
   nell'elenco non c'è la valutazione, la scrivi dalla scheda della carta.
 - **Aggiornarli in blocco.** In *Prezzi* (e in *Conti*) c'è «Aggiorna i prezzi in blocco»:
   si incolla un elenco `Nome prezzo`, una riga per carta, e si sistemano tutti
-  insieme. I nomi vengono cercati fra i giocatori che l'app già conosce, senza
-  rete; quelli che non corrispondono vengono elencati invece di essere
-  assegnati alla carta sbagliata.
+  insieme. I nomi vengono cercati fra le carte che l'app già conosce, senza
+  rete; **quelli che non esistono ancora diventano carte nuove**, perché il
+  catalogo cresce mentre lo usate. Il confronto fra nomi resta severo: un nome
+  che somiglia a un altro non viene assegnato alla carta sbagliata, casomai ne
+  nasce una in più che puoi correggere.
 - **Lo storico se lo costruisce l'app.** Ogni prezzo che vede — automatico o
   scritto da te — diventa un punto di storia, uno al giorno per carta. Dopo
   qualche giorno tornano a funzionare i segnali che hanno bisogno del passato:

@@ -155,10 +155,14 @@ li scrivete voi (e con il listino condiviso valgono per tutti).
       e premi Salva: il prezzo in alto diventa quello, con scritto «inserito
       da te», e il piano di trade si ricalcola su quella cifra.
 - [ ] Lo stesso prezzo compare in Watchlist e nei verdetti della rosa.
-- [ ] In *Conti* → «Aggiorna i prezzi in blocco» incolla
-      `Lautaro Martinez 175000` e `Tizio Inesistente 9000`: il primo viene
-      aggiornato, il secondo **deve** finire fra i «non trovati» e non essere
-      assegnato a nessuno.
+- [ ] In «Aggiorna i prezzi in blocco» incolla tre righe `Nome prezzo` di
+      carte che non hai mai visto: il pulsante annuncia «3 carte da creare» e
+      dopo l'applicazione le trovi nel pannello con il loro prezzo.
+- [ ] Reincollando lo stesso nome con un prezzo diverso dice «tutte già
+      conosciute» e aggiorna la carta esistente: nessun doppione.
+- [ ] Un nome che somiglia a un altro (`Lautaro Martinz`) **non** viene
+      assegnato alla carta sbagliata: nel peggiore dei casi ne nasce una in
+      più, che puoi togliere.
 - [ ] Riaprendo l'app il giorno dopo, il grafico di una carta mostra un
       secondo punto: l'app si costruisce lo storico da sola.
 - [ ] Un prezzo scritto due giorni fa continua a dire **«2 giorni fa»** anche

@@ -166,12 +166,13 @@ export default function CardSearch({
               aria-label="Valutazione"
               className="w-16 rounded-xl border border-pitch-line bg-pitch px-2 py-2 text-center font-mono text-sm outline-none focus:border-gain/60"
             />
-            <button type="button" className={primaryButtonClass} onClick={crea} disabled={!valutazione || creando}>
+            <button type="button" className={primaryButtonClass} onClick={crea} disabled={creando}>
               Crea la carta
             </button>
           </div>
           <p className="mt-2 text-[11px] text-chalk-dim">
-            Scrivi il nome come lo leggi in gioco: chi lo scriverà uguale ritroverà la stessa carta, non un doppione.
+            Scrivi il nome come lo leggi in gioco: chi lo scriverà uguale ritroverà la stessa carta, non un doppione. La
+            valutazione puoi anche lasciarla vuota e scriverla dopo, dalla scheda.
           </p>
         </div>
       ) : null}
