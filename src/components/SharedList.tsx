@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { chiCe, entra, normalizzaServer, salute, type Salute } from '../lib/cloud.ts'
+import { chiCe, diagnostica, entra, normalizzaServer, salute, type Diagnostica, type Salute } from '../lib/cloud.ts'
 import { useStore } from '../lib/useStore.ts'
 import { useSync } from '../lib/useSync.ts'
 import { Card, CardTitle, Pill, buttonClass, primaryButtonClass } from './ui.tsx'
@@ -41,6 +41,7 @@ export default function SharedList() {
   const [collegando, setCollegando] = useState(false)
   const [stato, setStato] = useState<Salute | null>(null)
   const [persone, setPersone] = useState<{ nome: string; visto: number; prezzi: number }[]>([])
+  const [esame, setEsame] = useState<Diagnostica | string | null>(null)
 
   // Con il listino collegato si mostra come sta: quante carte ha e chi lo usa.
   useEffect(() => {
@@ -120,6 +121,16 @@ export default function SharedList() {
             </p>
           ) : null}
 
+          {esame ? (
+            <p className="text-xs text-chalk-dim">
+              {typeof esame === 'string'
+                ? esame
+                : esame.pronto
+                  ? `Server a posto: PHP ${esame.php}, database ${esame.database}, tutte le tabelle presenti.`
+                  : `Mancano delle tabelle (${esame.mancanti.join(', ')}): riesegui schema.sql da phpMyAdmin. PHP ${esame.php}, database ${esame.database}.`}
+            </p>
+          ) : null}
+
           <div className="flex flex-wrap gap-2">
             <button type="button" className={buttonClass} onClick={sync.sincronizzaOra} disabled={sync.inCorso}>
               {sync.inCorso ? 'Sincronizzo…' : 'Sincronizza ora'}
@@ -149,6 +160,20 @@ export default function SharedList() {
               }}
             >
               Invita qualcuno
+            </button>
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={() => {
+                setEsame('controllo il server…')
+                diagnostica(account.server)
+                  .then(setEsame)
+                  .catch((problema: unknown) =>
+                    setEsame(problema instanceof Error ? problema.message : 'Il server non risponde.'),
+                  )
+              }}
+            >
+              Controlla il server
             </button>
             <button
               type="button"

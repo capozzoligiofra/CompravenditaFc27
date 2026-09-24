@@ -50,6 +50,9 @@ export default function CatalogImport() {
           versione,
           indice,
           blocchi,
+          // Il totale viaggia con ogni blocco: il server non deve contare le
+          // carte dentro al JSON, perché non tutti i database sanno farlo.
+          totale: carte.length,
           carte: carte.slice(indice * PER_BLOCCO, (indice + 1) * PER_BLOCCO),
         })
         setInvio(`Invio ${indice + 1} di ${blocchi}…`)

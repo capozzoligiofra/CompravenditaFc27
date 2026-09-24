@@ -17,6 +17,7 @@
 //
 // Chiamate (tutte su questo file):
 //   GET  api.php?azione=salute
+//   GET  api.php?azione=diagnostica   cosa manca all'installazione
 //   POST api.php?azione=entra          {nome}
 //   GET  api.php?azione=prezzi&piattaforma=ps&da=0
 //   POST api.php?azione=prezzi         {piattaforma, prezzi:[{id,price,at,giocatore}]}
@@ -197,6 +198,25 @@ try {
                 'ultimoAggiornamento' => (int) $conti['ultimo'],
             ]);
             // no break: rispondi() termina
+
+        case 'diagnostica':
+            // A che punto e' l'installazione: versioni e tabelle presenti.
+            // Serve a rispondere in dieci secondi alla domanda «perche' non
+            // funziona», invece di indovinare a distanza.
+            $attese = ['utenti', 'sessioni', 'giocatori', 'prezzi', 'storico', 'dati_utente', 'catalogo', 'catalogo_stato'];
+            $presenti = [];
+            foreach ($db->query('show tables')->fetchAll(PDO::FETCH_NUM) as $riga) {
+                $presenti[] = (string) $riga[0];
+            }
+            $mancanti = array_values(array_diff($attese, $presenti));
+            rispondi([
+                'php' => PHP_VERSION,
+                'database' => $db->getAttribute(PDO::ATTR_SERVER_VERSION),
+                'tabelle' => count($presenti),
+                'mancanti' => $mancanti,
+                'pronto' => count($mancanti) === 0,
+                'limiteCorpo' => ini_get('post_max_size'),
+            ]);
 
         case 'entra':
             if ($metodo !== 'POST') {
@@ -388,6 +408,7 @@ try {
             $versione = (int) ($dati['versione'] ?? 0);
             $indice = (int) ($dati['indice'] ?? -1);
             $blocchi = (int) ($dati['blocchi'] ?? 0);
+            $totale = (int) ($dati['totale'] ?? 0);
             $carte = is_array($dati['carte'] ?? null) ? $dati['carte'] : null;
             if ($versione <= 0 || $indice < 0 || $blocchi <= 0 || $indice >= $blocchi || $carte === null) {
                 errore('Blocco di catalogo non valido.');
@@ -399,10 +420,12 @@ try {
                  on duplicate key update contenuto = values(contenuto), aggiornato = values(aggiornato)'
             )->execute([$versione, $indice, json_encode($carte, JSON_UNESCAPED_UNICODE), $ora]);
 
-            $quanti = $db->prepare('select count(*) as n, coalesce(sum(json_length(contenuto)), 0) as carte from catalogo where versione = ?');
+            // Si contano le righe, non le carte dentro al JSON: json_length()
+            // non esiste sui MySQL piu' vecchi, e un hosting condiviso puo'
+            // benissimo averne uno. Il totale lo dichiara chi carica.
+            $quanti = $db->prepare('select count(*) as n from catalogo where versione = ?');
             $quanti->execute([$versione]);
-            $conteggio = $quanti->fetch();
-            $completo = ((int) $conteggio['n']) >= $blocchi;
+            $completo = ((int) $quanti->fetch()['n']) >= $blocchi;
 
             if ($completo) {
                 // Solo adesso il catalogo nuovo diventa quello buono, e i
@@ -411,7 +434,7 @@ try {
                     'insert into catalogo_stato (id, versione, blocchi, carte, aggiornato) values (1, ?, ?, ?, ?)
                      on duplicate key update versione = values(versione), blocchi = values(blocchi),
                        carte = values(carte), aggiornato = values(aggiornato)'
-                )->execute([$versione, $blocchi, (int) $conteggio['carte'], $ora]);
+                )->execute([$versione, $blocchi, max(0, $totale), $ora]);
                 $db->prepare('delete from catalogo where versione <> ?')->execute([$versione]);
             }
 
@@ -563,5 +586,18 @@ try {
         $db->rollBack();
     }
     error_log('[fc27] ' . $problema->getMessage());
-    errore('Errore del servizio. Riprova fra poco.', 500);
+
+    // Il messaggio del driver puo' contenere pezzi di query: non esce di qui.
+    // Escono il codice e, per i due inciampi tipici dell'installazione, la
+    // frase che dice cosa fare — perche' «errore del servizio, riprova» non
+    // ha mai aiutato nessuno a capire che mancava una tabella.
+    $codice = $problema instanceof PDOException ? (string) ($problema->errorInfo[0] ?? '') : '';
+    $testo = $problema->getMessage();
+    if (str_contains($testo, 'catalogo') && (str_contains($testo, "doesn't exist") || str_contains($testo, 'not exist'))) {
+        errore("Manca la tabella del catalogo: riesegui schema.sql da phpMyAdmin (azione: $azione).", 500);
+    }
+    if (stripos($testo, 'FUNCTION') !== false && stripos($testo, 'does not exist') !== false) {
+        errore("Il database non ha una funzione che serve a questa versione del servizio: ricarica api.php aggiornato (azione: $azione).", 500);
+    }
+    errore("Errore del servizio nell'azione \"$azione\"" . ($codice !== '' ? " (codice $codice)" : '') . '.', 500);
 }

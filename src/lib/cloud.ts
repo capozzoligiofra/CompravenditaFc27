@@ -202,6 +202,20 @@ export function registraCarta(account: Account, giocatore: Player): Promise<{ id
   return chiama(account.server, 'carta', { metodo: 'POST', token: account.token, corpo: { giocatore } })
 }
 
+export interface Diagnostica {
+  php: string
+  database: string
+  tabelle: number
+  mancanti: string[]
+  pronto: boolean
+  limiteCorpo: string
+}
+
+/** Cosa manca al servizio per funzionare: versioni e tabelle. */
+export function diagnostica(server: string, signal?: AbortSignal): Promise<Diagnostica> {
+  return chiama(server, 'diagnostica', { signal })
+}
+
 export interface StatoCatalogo {
   versione: number
   blocchi: number
@@ -228,7 +242,7 @@ export function scaricaBloccoCatalogo(
  */
 export function inviaBloccoCatalogo(
   account: Account,
-  blocco: { versione: number; indice: number; blocchi: number; carte: unknown[] },
+  blocco: { versione: number; indice: number; blocchi: number; totale: number; carte: unknown[] },
 ): Promise<{ completo: boolean }> {
   return chiama(account.server, 'catalogo', { metodo: 'POST', token: account.token, corpo: blocco })
 }

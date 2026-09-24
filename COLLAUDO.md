@@ -234,8 +234,12 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
 - [ ] Aprendo la scheda di una carta del catalogo si vedono ruolo, ruoli
       alternativi, club, campionato, nazione e le sei statistiche.
 - [ ] Ricaricando la pagina il catalogo è ancora lì.
+- [ ] **Controlla il server** (in *Opzioni → Listino condiviso*) risponde con
+      le versioni e dice se manca qualche tabella.
 - [ ] **Condividi con il gruppo**: il pulsante mostra l'avanzamento a blocchi
-      e finisce con «Catalogo condiviso: N carte».
+      e finisce con «Catalogo condiviso: N carte». Se le tabelle del catalogo
+      non ci sono, l'errore lo **dice** invece di parlare di «errore del
+      servizio».
 - [ ] Un secondo dispositivo che entra nel listino si ritrova lo stesso
       catalogo entro pochi secondi, **senza caricare nessun file**, e trova in
       ricerca un giocatore che non ha mai aperto.
