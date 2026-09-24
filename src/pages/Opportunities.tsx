@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import PlayerLink from '../components/PlayerLink.tsx'
 import Welcome from '../components/Welcome.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
 import type { Opportunity, OpportunityAction } from '../../shared/scoring.d.mts'
@@ -121,7 +122,9 @@ function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
           {player.rating || '—'}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{player.name}</p>
+          <p className="truncate text-sm font-semibold">
+            <PlayerLink id={player.id}>{player.name}</PlayerLink>
+          </p>
           <p className="truncate text-xs text-chalk-dim">
             {[player.position, player.club].filter(Boolean).join(' · ') || 'scheda da aprire'}
           </p>

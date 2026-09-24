@@ -114,6 +114,15 @@ export function ordinaVoci(voci, chiave = (voce) => voce.osservatoIl) {
 }
 
 /**
+ * Le carte che segui tu: rosa, watchlist, schede aperte. Non quelle che
+ * esistono solo perché qualcun altro ne ha segnato il prezzo — il listino dei
+ * prezzi è in comune, l'elenco delle carte seguite no.
+ */
+export function eTua(voce) {
+  return (voce?.gruppi ?? []).some((gruppo) => gruppo !== 'listino')
+}
+
+/**
  * Filtro del pannello: gruppo di appartenenza e ricerca per nome.
  *
  * `tieni` è l'elenco delle carte da mostrare comunque, qualunque sia il
@@ -126,6 +135,10 @@ export function filtraVoci(voci, { gruppo = 'tutte', testo = '', tieni = [] } = 
   return voci.filter((voce) => {
     if (cercato && !normalizeName(voce.name).includes(cercato)) return false
     if (salvate.has(voce.id)) return true
+    // Le carte del listino stanno nel loro scomparto: non si mescolano con
+    // le tue finché non ne apri una, che è il gesto con cui la segui.
+    if (gruppo === 'listino') return voce.gruppi.includes('listino')
+    if (!eTua(voce)) return false
     if (gruppo === 'rosa' && !voce.gruppi.includes('rosa')) return false
     if (gruppo === 'watchlist' && !voce.gruppi.includes('watchlist')) return false
     if (gruppo === 'da-aggiornare' && voce.stato === 'oggi') return false
@@ -133,12 +146,15 @@ export function filtraVoci(voci, { gruppo = 'tutte', testo = '', tieni = [] } = 
   })
 }
 
-/** Due numeri per sapere a che punto sei. */
+/** Due numeri per sapere a che punto sei: contano le tue carte, non il listino. */
 export function riepilogo(voci) {
+  const mie = voci.filter(eTua)
   return {
-    totale: voci.length,
-    aggiornate: voci.filter((voce) => voce.stato === 'oggi').length,
-    daAggiornare: voci.filter((voce) => voce.stato !== 'oggi').length,
-    mai: voci.filter((voce) => voce.stato === 'mai').length,
+    totale: mie.length,
+    aggiornate: mie.filter((voce) => voce.stato === 'oggi').length,
+    daAggiornare: mie.filter((voce) => voce.stato !== 'oggi').length,
+    mai: mie.filter((voce) => voce.stato === 'mai').length,
+    /** Quante carte ci sono nel listino e non fra le tue: si possono adottare. */
+    dalListino: voci.filter((voce) => !eTua(voce)).length,
   }
 }

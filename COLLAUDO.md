@@ -171,6 +171,22 @@ Serve quando Futbin risponde `403` (succede spesso) e i prezzi restano demo.
 - [ ] «Aggiungi una carta»: cerchi un giocatore, premi Aggiungi e compare
       nell'elenco con il suo campo prezzo.
 
+### La scheda della carta
+
+- [ ] In *Prezzi*, *Watchlist*, *Conti* e *Occasioni* i nomi dei giocatori
+      sono cliccabili (sottolineati) e aprono la stessa scheda.
+- [ ] La scheda mostra valutazione, ruolo, club, campionato, nazione e
+      versione, il prezzo attuale con scritto **chi** l'ha segnato e quando,
+      il grafico, il prezzo stimato e il piano di trade.
+- [ ] Dalla scheda si cambia il prezzo: scrivi una cifra in «Aggiorna il
+      prezzo» e premi Salva; il prezzo in alto e il piano di trade si
+      aggiornano subito, e con il listino collegato parte anche agli altri.
+- [ ] Il grafico **non** mostra lo storico demo quando il prezzo è tuo: o c'è
+      lo storico che hai costruito, o non c'è grafico.
+- [ ] «← indietro» riporta da dove sei arrivato (prezzi, watchlist o rosa).
+- [ ] Aprendo una carta che non seguivi, questa entra fra le tue: la ritrovi
+      in *Prezzi* → «Tutte le mie».
+
 ### Prezzo stimato
 
 Il seguito naturale dei prezzi scritti a mano: quello che hai segnato
@@ -290,6 +306,9 @@ finestra anonima: per l'app è un altro dispositivo a tutti gli effetti.
       secondo il prezzo è sul server.
 - [ ] Cambiando piattaforma (PS → Xbox) il listino si ricarica per quella
       piattaforma: non restano i prezzi PlayStation.
+- [ ] Le **carte seguite restano personali**: sul secondo dispositivo, con un
+      nome diverso, l'elenco «Tutte le mie» è vuoto e le carte dell'altro
+      stanno in «Dal listino». Aprendone una, passa fra le proprie.
 - [ ] **Invito**: *Opzioni → Invita qualcuno* copia (o condivide) un link.
       Aprendolo su un dispositivo nuovo compare «Ti hanno invitato a un
       listino» con l'indirizzo in chiaro; si scrive solo il nome e si entra.

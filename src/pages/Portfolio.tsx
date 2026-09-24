@@ -9,6 +9,7 @@ import type { SellAction, SellVerdict } from '../../shared/scoring.d.mts'
 import { coins, dateTime, percent, signedCoins } from '../lib/format.ts'
 import { profit, roiPercent } from '../../shared/market.mjs'
 import { useOpportunities } from '../lib/useOpportunities.ts'
+import PlayerLink from '../components/PlayerLink.tsx'
 import { useStore } from '../lib/useStore.ts'
 
 const SELL: Record<SellAction, { label: string; tone: 'gain' | 'loss' | 'flag' | 'neutral' }> = {
@@ -183,7 +184,9 @@ export default function Portfolio() {
                 <li key={position.id}>
                   <Card>
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="flex-1 text-sm font-semibold">{position.name}</p>
+                      <p className="flex-1 text-sm font-semibold">
+                        <PlayerLink id={position.playerId}>{position.name}</PlayerLink>
+                      </p>
                       <Pill>{position.quantity}×</Pill>
                       {verdict ? <Pill tone={SELL[verdict.action].tone}>{SELL[verdict.action].label}</Pill> : null}
                       <Pill tone={latent > 0 ? 'gain' : latent < 0 ? 'loss' : 'neutral'}>

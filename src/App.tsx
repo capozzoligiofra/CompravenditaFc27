@@ -8,6 +8,7 @@ import Calculator from './pages/Calculator.tsx'
 import Join from './pages/Join.tsx'
 import Market from './pages/Market.tsx'
 import Opportunities from './pages/Opportunities.tsx'
+import Player from './pages/Player.tsx'
 import Portfolio from './pages/Portfolio.tsx'
 import Prices from './pages/Prices.tsx'
 import SettingsPage from './pages/Settings.tsx'
@@ -25,6 +26,8 @@ export default function App() {
               <Route path="/" element={<Opportunities />} />
               <Route path="/prezzi" element={<Prices />} />
               <Route path="/mercato" element={<Market />} />
+              {/* Una scheda per carta, raggiungibile da ogni nome scritto a schermo. */}
+              <Route path="/carta/:id" element={<Player />} />
               <Route path="/avvisi" element={<Alerts />} />
               <Route path="/watchlist" element={<Watchlist />} />
               <Route path="/calcolatore" element={<Calculator />} />

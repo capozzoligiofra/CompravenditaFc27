@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import PlayerLink from '../components/PlayerLink.tsx'
 import PriceListImport from '../components/PriceListImport.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass } from '../components/ui.tsx'
 import { searchPlayers, sendManualPrice } from '../lib/api.ts'
@@ -15,7 +16,9 @@ const GRUPPI: { value: GruppoPrezzo; label: string }[] = [
   { value: 'da-aggiornare', label: 'Da aggiornare' },
   { value: 'rosa', label: 'La mia rosa' },
   { value: 'watchlist', label: 'Watchlist' },
-  { value: 'tutte', label: 'Tutte' },
+  { value: 'tutte', label: 'Tutte le mie' },
+  // Le carte che esistono solo nel listino: non sono tue finché non le apri.
+  { value: 'listino', label: 'Dal listino' },
 ]
 
 const STATO = {
@@ -141,6 +144,7 @@ export default function Prices() {
               }`}
             >
               {voce.label}
+              {voce.value === 'listino' && conti.dalListino > 0 ? ` (${conti.dalListino})` : ''}
             </button>
           ))}
           <input
@@ -152,11 +156,20 @@ export default function Prices() {
         </div>
       </Card>
 
+      {gruppo === 'listino' ? (
+        <p className="text-xs text-chalk-dim">
+          Carte di cui qualcun altro ha segnato il prezzo. Non sono fra le tue: aprine una per seguirla, così entra
+          nel tuo elenco e nelle tue proposte.
+        </p>
+      ) : null}
+
       {elenco.length === 0 ? (
         <EmptyState title={conti.totale === 0 ? 'Nessuna carta da prezzare' : 'Qui è tutto a posto'}>
           {conti.totale === 0
-            ? 'Aggiungi qui sotto le carte che ti interessano, oppure importa la rosa da Conti: appariranno in questo elenco.'
-            : 'Non ci sono carte che rispondono al filtro. Prova con «Tutte».'}
+            ? conti.dalListino > 0
+              ? `Non segui ancora nessuna carta. Nel listino ce ne sono ${conti.dalListino}: guarda «Dal listino» e apri quelle che ti interessano.`
+              : 'Aggiungi qui sotto le carte che ti interessano, oppure importa la rosa da Conti: appariranno in questo elenco.'
+            : 'Non ci sono carte che rispondono al filtro. Prova con «Tutte le mie».'}
         </EmptyState>
       ) : (
         <ul className="space-y-2">
@@ -245,7 +258,9 @@ function RigaPrezzo({
           verrebbe tagliato dopo tre lettere. */}
       <div className="flex items-center gap-2">
         <span className="font-mono text-xs text-chalk-dim">{voce.rating || '—'}</span>
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold">{voce.name}</span>
+        <PlayerLink id={voce.id} className="min-w-0 flex-1 truncate text-sm font-semibold">
+          {voce.name}
+        </PlayerLink>
         {voce.quantita > 1 ? <span className="text-xs text-chalk-dim">×{voce.quantita}</span> : null}
         <span className="whitespace-nowrap">
           <Pill tone={stato.tone}>{stato.label}</Pill>

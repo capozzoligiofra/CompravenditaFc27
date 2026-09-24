@@ -120,7 +120,7 @@ test('«da aggiornare» lascia fuori solo le carte segnate oggi', () => {
     filtraVoci(voci, { gruppo: 'da-aggiornare' }).map((voce) => voce.id),
     ['mai', 'vecchia'],
   )
-  assert.deepEqual(riepilogo(voci), { totale: 3, aggiornate: 1, daAggiornare: 2, mai: 1 })
+  assert.deepEqual(riepilogo(voci), { totale: 3, aggiornate: 1, daAggiornare: 2, mai: 1, dalListino: 0 })
 })
 
 test('a parità di anzianità conta la valutazione, e l\'ordine non muta l\'originale', () => {
@@ -176,19 +176,36 @@ test('il filtro per nome vale anche sulle carte appena sistemate', () => {
   )
 })
 
-test('chi entra in un listino già avviato vede le carte degli altri', () => {
+test('le carte del listino esistono, ma nel loro scomparto', () => {
   const voci = vociPrezzo({
     // Dispositivo nuovo: niente rosa, niente watchlist, nessuna scheda aperta.
     condivise: { 1001: { name: 'Lautaro Martínez', rating: 89 }, 1003: { name: 'Rafael Leão', rating: 86 } },
     manualPrices: { 1001: { price: 150_000, at: ADESSO - 2 * GIORNO } },
     now: ADESSO,
   })
-  assert.deepEqual(
-    voci.map((voce) => voce.name),
-    ['Rafael Leão', 'Lautaro Martínez'],
-  )
   assert.deepEqual(voci[0].gruppi, ['listino'])
   assert.equal(voci.find((voce) => voce.id === '1001').prezzo, 150_000)
+
+  // Le carte seguite sono tue: quelle degli altri non entrano negli elenchi
+  // normali, e si vedono solo chiedendole.
+  assert.deepEqual(filtraVoci(voci, { gruppo: 'tutte' }), [])
+  assert.deepEqual(filtraVoci(voci, { gruppo: 'da-aggiornare' }), [])
+  assert.equal(filtraVoci(voci, { gruppo: 'listino' }).length, 2)
+  assert.equal(riepilogo(voci).totale, 0)
+  assert.equal(riepilogo(voci).dalListino, 2)
+})
+
+test('una carta seguita resta tua anche se sta nel listino', () => {
+  const voci = vociPrezzo({
+    seen: [{ id: '1001', name: 'Lautaro Martínez', rating: 89 }],
+    condivise: { 1001: { name: 'Lautaro Martínez', rating: 89 }, 1003: { name: 'Rafael Leão', rating: 86 } },
+    now: ADESSO,
+  })
+  assert.deepEqual(
+    filtraVoci(voci, { gruppo: 'tutte' }).map((voce) => voce.id),
+    ['1001'],
+  )
+  assert.equal(riepilogo(voci).totale, 1)
 })
 
 test('una carta che hai già in rosa non si sdoppia per colpa del listino', () => {

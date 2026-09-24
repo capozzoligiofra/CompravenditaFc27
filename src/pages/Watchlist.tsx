@@ -5,6 +5,7 @@ import { mergeQuotes } from '../../shared/quotes.mjs'
 import { getQuotes } from '../lib/api.ts'
 import { coins, dateTime } from '../lib/format.ts'
 import { profit, signalFor, type Signal } from '../../shared/market.mjs'
+import PlayerLink from '../components/PlayerLink.tsx'
 import { useStore } from '../lib/useStore.ts'
 import type { DataSource, Quote } from '../types.ts'
 
@@ -128,7 +129,9 @@ export default function Watchlist() {
                     {item.rating || '—'}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{item.name}</p>
+                    <p className="truncate text-sm font-semibold">
+                      <PlayerLink id={item.id}>{item.name}</PlayerLink>
+                    </p>
                     <p className="truncate text-xs text-chalk-dim">
                       {item.position} · {item.club}
                     </p>

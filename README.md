@@ -17,9 +17,13 @@ strumento di analisi e di contabilità personale.
 - **Avvisi** — la campanella in alto: target raggiunti, carte in magazzino
   andate in utile, finestre di acquisto che si aprono. Con notifica del
   browser, se la attivi.
-- **Mercato** — ricerca giocatori, prezzo attuale, minimo/massimo, variazione,
-  grafico dello storico e «piano di trade» già pronto: a quanto comprare per
-  ottenere il margine che hai impostato e a quanto rivendere.
+- **Scheda della carta** — ogni nome scritto nell'app si può cliccare e apre
+  la sua scheda: caratteristiche, prezzo attuale con il nome di chi l'ha
+  segnato, storico, prezzo stimato, piano di trade, e il campo per cambiare il
+  prezzo. È una sola per tutta l'app, si apra dai prezzi, dalla watchlist,
+  dalla rosa o dalle proposte.
+- **Mercato** — la ricerca per trovare carte nuove e le ultime aperte: da qui
+  si entra nella scheda. Aprire una carta vuol dire seguirla.
 - **Listino condiviso** — i prezzi sono in comune: quello che segni tu lo
   vedono gli altri e viceversa, con il nome di chi l'ha scritto. Rosa e
   watchlist restano tue, ma ti seguono su tutti i dispositivi. Serve un
@@ -579,6 +583,7 @@ Cosa è in comune e cosa no:
 | | Dove vive | Chi lo vede |
 | --- | --- | --- |
 | Prezzi e storico | sul server | tutti, con il nome di chi li ha scritti |
+| Le carte che segui | sul server, legate al tuo nome | solo tu |
 | Rosa, watchlist, impostazioni | sul server, legate al tuo nome | solo tu, su tutti i tuoi dispositivi |
 | Avvisi | nel dispositivo | solo quel dispositivo |
 
@@ -590,6 +595,13 @@ listino sta per collegarsi e gli chiede solo il nome; da lì entra e si trova
 i prezzi già scritti dagli altri, con il nome di chi li ha segnati. Non ci si
 collega da soli: l'indirizzo arriva da un link, cioè da fuori, e si mostra in
 chiaro prima di chiedere conferma.
+
+**Le carte seguite restano di ciascuno.** In comune ci sono i prezzi, non
+l'elenco delle carte: le tue sono quelle della rosa, della watchlist e quelle
+di cui hai aperto la scheda. Le carte che esistono solo perché qualcun altro
+ne ha segnato il prezzo stanno nel filtro **Dal listino** del pannello
+*Prezzi*, separate: aprirne una è il gesto con cui la adotti, e da lì in poi
+compare fra le tue e nelle tue proposte.
 
 **Come si decide chi ha ragione.** Due persone possono segnare la stessa carta
 a dieci secondi di distanza, e un telefono può restare offline per un giorno.

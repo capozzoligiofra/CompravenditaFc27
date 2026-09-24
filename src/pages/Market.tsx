@@ -1,27 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import ManualPrice from '../components/ManualPrice.tsx'
-import PriceEstimate from '../components/PriceEstimate.tsx'
-import Sparkline from '../components/Sparkline.tsx'
-import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass, primaryButtonClass } from '../components/ui.tsx'
-import { getPlayer, searchPlayers } from '../lib/api.ts'
+import { useNavigate } from 'react-router-dom'
+
+import { Card, CardTitle, EmptyState, Pill } from '../components/ui.tsx'
+import { searchPlayers } from '../lib/api.ts'
 import { coins } from '../lib/format.ts'
-import { breakEvenSell, maxBuyForMargin, roundToMarketStep, sellForMargin } from '../../shared/market.mjs'
-import { isLiveSource, mergeQuotes } from '../../shared/quotes.mjs'
 import { useStore } from '../lib/useStore.ts'
-import type { Player, PlayerDetail, Quote } from '../types.ts'
+import type { Player } from '../types.ts'
 
-const PLATFORM_LABEL = { ps: 'PlayStation', xbox: 'Xbox', pc: 'PC' } as const
-
+/**
+ * Il Mercato è la porta d'ingresso per le carte nuove: si cerca un nome e si
+ * apre la sua scheda. La scheda è una sola per tutta l'app — quella che si
+ * apre anche cliccando un nome nel pannello dei prezzi, in watchlist o in
+ * rosa — così quello che si può fare su una carta è sempre nello stesso posto.
+ */
 export default function Market() {
-  const { data, settings, prezzi, addWatch, isWatched, addPosition, rememberPlayer } = useStore()
+  const { data, prezzi, isWatched, rememberPlayer } = useStore()
+  const naviga = useNavigate()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Player[]>([])
   const [searching, setSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selected, setSelected] = useState<Player | null>(null)
-  const [detail, setDetail] = useState<PlayerDetail | null>(null)
-  const [loadingDetail, setLoadingDetail] = useState(false)
 
   // Ricerca con debounce: una richiesta sola quando l'utente smette di
   // digitare, e nessuna finché non ci sono almeno due lettere.
@@ -56,41 +55,18 @@ export default function Market() {
     }
   }, [query])
 
-  // Il dettaglio si ricarica sia quando cambia il giocatore sia quando cambia
-  // la piattaforma scelta nell'intestazione.
-  useEffect(() => {
-    if (!selected) return undefined
-    const controller = new AbortController()
-    setLoadingDetail(true)
-    getPlayer(selected.id, settings.platform, controller.signal)
-      .then(setDetail)
-      .catch((cause: unknown) => {
-        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Errore di rete')
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoadingDetail(false)
-      })
-    return () => controller.abort()
-  }, [selected, settings.platform])
+  const apri = (player: Player) => {
+    rememberPlayer(player)
+    naviga(`/carta/${encodeURIComponent(player.id)}`)
+  }
 
-  // Anche qui il prezzo scritto a mano copre il buco lasciato dalla sorgente.
-  const quote = useMemo(() => {
-    if (!selected) return null
-    const dalla = detail?.prices?.[settings.platform] ?? null
-    const merged = mergeQuotes({ [selected.id]: dalla }, prezzi, detail?.source ?? 'demo') as Record<
-      string,
-      Quote | null
-    >
-    return merged[selected.id] ?? null
-  }, [selected, detail, settings.platform, prezzi])
-  const price = quote?.price ?? 0
-  const maxBuy = price ? roundToMarketStep(maxBuyForMargin(price, settings.targetMarginPercent, settings.taxPercent)) : 0
-  const suggestedSell = price ? sellForMargin(price, settings.targetMarginPercent, settings.taxPercent) : 0
+  // Le ultime carte aperte: quasi sempre si torna su quelle.
+  const recenti = data.seen.slice(0, 8)
 
   return (
     <div className="space-y-5">
       <Card>
-        <CardTitle hint="Cerca per nome, club, nazione o ruolo. I prezzi arrivano da Futbin tramite il proxy locale.">
+        <CardTitle hint="Cerca per nome, club, nazione o ruolo. Aprendo una carta entra fra quelle che segui.">
           Cerca un giocatore
         </CardTitle>
         <input
@@ -107,13 +83,8 @@ export default function Market() {
             <li key={player.id}>
               <button
                 type="button"
-                onClick={() => {
-                  setSelected(player)
-                  rememberPlayer(player)
-                }}
-                className={`flex w-full items-center gap-3 px-1 py-2.5 text-left transition hover:bg-pitch/60 ${
-                  selected?.id === player.id ? 'bg-pitch/60' : ''
-                }`}
+                onClick={() => apri(player)}
+                className="flex w-full items-center gap-3 px-1 py-2.5 text-left transition hover:bg-pitch/60"
               >
                 <span className="w-9 shrink-0 rounded-lg bg-flag/15 py-1 text-center font-mono text-sm font-bold text-flag">
                   {player.rating || '—'}
@@ -124,132 +95,47 @@ export default function Market() {
                     {player.position} · {player.club} · {player.nation}
                   </span>
                 </span>
+                {prezzi[player.id]?.price ? (
+                  <span className="font-mono text-sm">{coins(prezzi[player.id].price)}</span>
+                ) : null}
                 {isWatched(player.id) ? <Pill tone="gain">in lista</Pill> : null}
               </button>
             </li>
           ))}
         </ul>
 
-        {!searching && results.length === 0 ? (
+        {query.trim().length >= 2 && !searching && results.length === 0 ? (
           <p className="mt-3 text-sm text-chalk-dim">Nessun risultato: prova con un altro nome.</p>
         ) : null}
       </Card>
 
-      {selected ? (
+      {recenti.length > 0 ? (
         <Card>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold">{selected.name}</h2>
-              <p className="text-xs text-chalk-dim">
-                {selected.rating || '—'} · {selected.position} · {selected.club} · {selected.version}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {detail?.fromCache ? <Pill tone="flag">offline</Pill> : null}
-              <Pill tone={isLiveSource(detail?.source) ? 'gain' : 'flag'}>
-                {detail?.source === 'api' ? 'API' : detail?.source === 'futbin' ? 'Futbin' : 'demo'}
-              </Pill>
-              <Pill>{PLATFORM_LABEL[settings.platform]}</Pill>
-            </div>
-          </div>
-
-          {loadingDetail ? (
-            <p className="mt-4 text-sm text-chalk-dim">caricamento prezzi…</p>
-          ) : (
-            <>
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <Stat
-                  label="Prezzo attuale"
-                  value={coins(price)}
-                  hint={detail?.fromCache && !quote?.manual ? 'prezzo salvato, sei offline' : quote?.updated}
-                />
-                <Stat label="Min 24h" value={coins(quote?.minPrice ?? 0)} />
-                <Stat label="Max 24h" value={coins(quote?.maxPrice ?? 0)} />
-                <Stat
-                  label="Variazione"
-                  value={quote?.changePercent ? `${quote.changePercent > 0 ? '+' : ''}${quote.changePercent}%` : '—'}
-                  tone={(quote?.changePercent ?? 0) > 0 ? 'gain' : (quote?.changePercent ?? 0) < 0 ? 'loss' : 'neutral'}
-                />
-              </div>
-
-              <div className="mt-4">
-                <Sparkline points={detail?.history?.length ? detail.history : (data.priceHistory[selected.id] ?? [])} />
-              </div>
-
-              {!isLiveSource(detail?.source) ? (
-                <div className="mt-4 space-y-3">
-                  <PriceEstimate
-                    history={detail?.history?.length ? detail.history : (data.priceHistory[selected.id] ?? [])}
-                    quote={quote}
-                    osservatoIl={prezzi[selected.id]?.at}
-                  />
-                  <ManualPrice playerId={selected.id} />
-                </div>
-              ) : null}
-
-              <div className="mt-5 rounded-xl border border-gain/25 bg-gain/5 p-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-gain">
-                  Piano di trade · margine {settings.targetMarginPercent}%
-                </h3>
-                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  <Stat label="Compra entro" value={coins(maxBuy)} hint="da usare come BIN massimo nel filtro" />
-                  <Stat label="Rivendi a" value={coins(suggestedSell)} hint={`tassa ${settings.taxPercent}% inclusa`} />
-                  <Stat
-                    label="Pareggio"
-                    value={coins(breakEvenSell(price, settings.taxPercent))}
-                    hint="sotto questo prezzo ci rimetti"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
+          <CardTitle hint="Le ultime che hai aperto: un tocco per tornarci.">Carte recenti</CardTitle>
+          <ul className="divide-y divide-pitch-line">
+            {recenti.map((player) => (
+              <li key={player.id}>
                 <button
                   type="button"
-                  className={primaryButtonClass}
-                  disabled={isWatched(selected.id)}
-                  onClick={() =>
-                    addWatch({
-                      id: selected.id,
-                      name: selected.name,
-                      rating: selected.rating,
-                      position: selected.position,
-                      club: selected.club,
-                      buyTarget: maxBuy,
-                      sellTarget: suggestedSell,
-                      note: '',
-                    })
-                  }
+                  onClick={() => apri(player)}
+                  className="flex w-full items-center gap-3 px-1 py-2.5 text-left transition hover:bg-pitch/60"
                 >
-                  {isWatched(selected.id) ? 'Già in watchlist' : 'Aggiungi alla watchlist'}
+                  <span className="w-9 shrink-0 text-center font-mono text-xs text-chalk-dim">
+                    {player.rating || '—'}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{player.name}</span>
+                  {prezzi[player.id]?.price ? (
+                    <span className="font-mono text-xs text-chalk-dim">{coins(prezzi[player.id].price)}</span>
+                  ) : null}
                 </button>
-                <button
-                  type="button"
-                  className={buttonClass}
-                  disabled={!price}
-                  onClick={() =>
-                    addPosition({
-                      playerId: selected.id,
-                      name: selected.name,
-                      rating: selected.rating,
-                      quantity: 1,
-                      buyPrice: price,
-                      platform: settings.platform,
-                      note: 'aggiunto dal mercato',
-                    })
-                  }
-                >
-                  Registra acquisto a {coins(price)}
-                </button>
-              </div>
-
-              {detail?.reason ? <p className="mt-3 text-[11px] text-chalk-dim">Nota sorgente: {detail.reason}</p> : null}
-            </>
-          )}
+              </li>
+            ))}
+          </ul>
         </Card>
       ) : (
-        <EmptyState title="Nessun giocatore selezionato">
-          Cerca un nome qui sopra per vedere prezzo, storico e il piano di acquisto/rivendita calcolato sul tuo
-          margine obiettivo.
+        <EmptyState title="Nessuna carta aperta finora">
+          Cerca un nome qui sopra: nella scheda trovi prezzo, storico, stima e il piano di acquisto e rivendita
+          calcolato sul tuo margine.
         </EmptyState>
       )}
     </div>

@@ -1,5 +1,5 @@
 export type StatoPrezzo = 'mai' | 'vecchio' | 'oggi'
-export type GruppoPrezzo = 'tutte' | 'rosa' | 'watchlist' | 'da-aggiornare'
+export type GruppoPrezzo = 'tutte' | 'rosa' | 'watchlist' | 'da-aggiornare' | 'listino'
 
 export interface VocePrezzo {
   id: string
@@ -36,4 +36,11 @@ export function filtraVoci(
   voci: VocePrezzo[],
   filtro?: { gruppo?: GruppoPrezzo; testo?: string; tieni?: string[] },
 ): VocePrezzo[]
-export function riepilogo(voci: VocePrezzo[]): { totale: number; aggiornate: number; daAggiornare: number; mai: number }
+export function eTua(voce: VocePrezzo): boolean
+export function riepilogo(voci: VocePrezzo[]): {
+  totale: number
+  aggiornate: number
+  daAggiornare: number
+  mai: number
+  dalListino: number
+}
