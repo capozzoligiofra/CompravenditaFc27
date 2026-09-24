@@ -1,16 +1,23 @@
 // Prezzi inseriti a mano.
 //
-// Quando la sorgente automatica non è disponibile — Futbin che rifiuta le
-// richieste, versione statica su Pages, nessuna rete — l'app non deve
-// diventare inutile: il prezzo lo si legge in gioco e lo si scrive qui. Tutto
-// il resto (margini, target, verdetti di vendita) funziona identico.
+// Sono la sorgente normale di questa app: Futbin e gli altri non consentono
+// l'accesso ai programmi, quindi il prezzo lo si legge in gioco e lo si
+// scrive qui — o lo scrive qualcun altro del listino condiviso. Tutto il
+// resto (margini, target, stime, verdetti di vendita) ci lavora sopra
+// esattamente come farebbe con una quotazione automatica.
 //
 // Regola: il prezzo scritto a mano vale quando non c'è una quotazione vera.
 // Se la sorgente automatica funziona, vince lei, perché è aggiornata.
 
-/** Sorgenti vere contro dataset demo: 'futbin', 'futdb' o quel che verrà. */
+/**
+ * Una sorgente automatica c'è, oppure no. 'locale' vuol dire che i prezzi
+ * arrivano da voi — dal listino condiviso o da quello che hai scritto tu — ed
+ * è la condizione normale, non un guasto.
+ */
 export function isLiveSource(source) {
-  return Boolean(source) && source !== 'demo'
+  // 'demo' non lo produce più nessuno: resta riconosciuto perché il service
+  // worker può servire una risposta messa in cache prima di questa versione.
+  return Boolean(source) && source !== 'locale' && source !== 'demo'
 }
 
 /**
@@ -34,9 +41,9 @@ export function manualQuote(price, at, autore = '') {
 /**
  * @param quotes quotazioni ricevute dalla sorgente (possono mancare)
  * @param manual prezzi scritti a mano (tuoi o del listino condiviso), per identificativo
- * @param source 'futbin' quando i prezzi sono veri, 'demo' altrimenti
+ * @param source 'futbin' o 'api' con una sorgente automatica, 'locale' senza
  */
-export function mergeQuotes(quotes = {}, manual = {}, source = 'demo') {
+export function mergeQuotes(quotes = {}, manual = {}, source = 'locale') {
   const out = { ...quotes }
   for (const [id, entry] of Object.entries(manual)) {
     if (!entry || !entry.price) continue

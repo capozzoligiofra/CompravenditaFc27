@@ -22,8 +22,10 @@ strumento di analisi e di contabilità personale.
   segnato, storico, prezzo stimato, piano di trade, e il campo per cambiare il
   prezzo. È una sola per tutta l'app, si apra dai prezzi, dalla watchlist,
   dalla rosa o dalle proposte.
-- **Mercato** — la ricerca per trovare carte nuove e le ultime aperte: da qui
-  si entra nella scheda. Aprire una carta vuol dire seguirla.
+- **Mercato** — la ricerca per trovare carte e le ultime aperte: da qui si
+  entra nella scheda. Aprire una carta vuol dire seguirla. Il catalogo lo fate
+  voi: se una carta non c'è, la crei con nome e valutazione e da quel momento
+  la trovano tutti quelli del listino.
 - **Listino condiviso** — i prezzi sono in comune: quello che segni tu lo
   vedono gli altri e viceversa, con il nome di chi l'ha scritto. Rosa e
   watchlist restano tue, ma ti seguono su tutti i dispositivi. Serve un
@@ -118,7 +120,7 @@ https://capozzoligiofra.github.io/CompravenditaFc27/
 Da lì l'app si apre ovunque e si installa sul telefono come le altre versioni.
 Il limite è strutturale, non un dettaglio: **Pages serve solo file statici**,
 quindi non può ospitare il proxy e non esistono prezzi live. L'app se ne
-accorge da sola, mostra il badge `DATI DEMO` e lavora con il dataset demo che
+accorge da sola, mostra il badge `PREZZI VOSTRI` e lavora con i prezzi che
 si porta dietro. Restano pienamente funzionanti calcolatore, watchlist,
 portafoglio e tutti i conti, perché avvengono nel telefono.
 
@@ -168,7 +170,7 @@ deve reinstallarla dal nuovo: per il telefono sono due siti diversi, e i dati
 salvati (watchlist, rosa) restano legati al vecchio.
 
 Un dominio però non cambia la sostanza: **Pages resta un hosting statico**, e
-lì i prezzi restano quelli demo. Se vuoi prezzi veri su un indirizzo pubblico
+lì i prezzi sono solo i vostri. Se vuoi prezzi automatici su un indirizzo pubblico
 serve un hosting con funzioni lato server (la strada 3 qui sotto), tenendo
 presente che Futbin filtra comunque il traffico dei datacenter.
 
@@ -649,8 +651,9 @@ risolve quattro problemi concreti:
   regge, ed è quella che fa nascere le occasioni fuori dalla watchlist.
 
 L'ordine con cui l'app cerca un prezzo è: *sorgente automatica → database →
-dataset demo*. Un prezzo vero di ieri vale più di uno inventato oggi, e
-l'interfaccia dice sempre quale dei tre sta usando.
+niente*. Un prezzo vero di ieri vale più di uno inventato oggi — e infatti
+prezzi inventati non ne esistono più: se non c'è, l'app lo dice invece di
+riempire il buco.
 
 ### Tenerlo aggiornato
 
@@ -734,8 +737,6 @@ direttamente (CORS). L'app usa quindi un piccolo proxy Node locale
 3. mette in cache i risultati (prezzi 90 s, ricerche 10 min, grafici 30 min) e
    invia **una richiesta alla volta** con almeno 1,2 s di pausa;
 4. se Futbin non risponde, cambia endpoint o blocca la richiesta, ricade su un
-   **dataset demo** incluso e lo dichiara: l'interfaccia mostra il badge
-   `DATI DEMO` invece di `Futbin FC27`. Dopo un errore Futbin resta in pausa
    un minuto, così l'app non rallenta a ogni chiamata.
 
 Essendo endpoint non ufficiali possono cambiare: in quel caso non serve
@@ -744,7 +745,7 @@ toccare il codice, bastano le variabili d'ambiente.
 | Variabile | Default | A cosa serve |
 | --- | --- | --- |
 | `FUT_YEAR` | `27` | anno del gioco negli URL Futbin (`27`, `26`…) |
-| `FUTBIN_ENABLED` | `true` | `false` per lavorare solo sul dataset demo |
+| `FUTBIN_ENABLED` | `true` | `false` per non cercare nemmeno una sorgente automatica |
 | `FUTBIN_SEARCH_URL` | `.../search` | endpoint di ricerca |
 | `FUTBIN_PRICES_URL` | `.../<anno>/playerPrices` | endpoint prezzi |
 | `FUTBIN_GRAPH_URL` | `.../<anno>/playerGraph` | endpoint storico |
@@ -787,7 +788,7 @@ shared/          logica pura, condivisa fra proxy e browser e coperta da test
   roster-import.mjs  lettura della rosa incollata
   text.mjs       confronto dei nomi senza accenti
   quotes.mjs     unione fra prezzi automatici e prezzi scritti a mano
-  demo.mjs       dataset demo, usato sia dal proxy sia dall'app statica
+  catalog.mjs    il catalogo delle carte costruito da voi, e i suoi id stabili
 server-php/     il listino condiviso da caricare su un hosting Linux
   api.php     tutte le chiamate del listino (prezzi, storico, dati personali)
   schema.sql  le tabelle MySQL, da eseguire una volta
@@ -832,7 +833,7 @@ npm run aggiorna  # aggiorna l'archivio dei prezzi delle carte che segui
 
 `npm run diagnosi` è il comando da usare quando i prezzi non arrivano: prova
 ricerca, prezzi, storico e pagine SBC uno per uno e stampa l'errore vero,
-invece del silenzioso ripiego sul dataset demo.
+invece del silenzioso ripiego sui prezzi che avete già in casa.
 
 Per il collaudo completo dell'app, passo per passo, c'è
 **[COLLAUDO.md](COLLAUDO.md)**: controlli automatici, diagnosi del

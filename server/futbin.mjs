@@ -4,7 +4,7 @@
 // interni che il sito chiama dal browser. Possono cambiare senza preavviso,
 // quindi ogni URL è sovrascrivibile da variabile d'ambiente e ogni risposta
 // viene letta in modo difensivo. Se qualcosa non torna, il server ricade sul
-// dataset demo invece di rompersi.
+// prezzi raccolti da voi invece di rompersi.
 
 import { describeFetchError, parseCoins, parsePercent, RateLimiter, TtlCache } from './util.mjs'
 

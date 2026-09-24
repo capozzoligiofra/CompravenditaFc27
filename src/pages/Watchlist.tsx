@@ -26,7 +26,7 @@ const SIGNAL_LABEL: Record<Signal, string> = {
 export default function Watchlist() {
   const { data, settings, prezzi, updateWatch, removeWatch } = useStore()
   const [liveQuotes, setLiveQuotes] = useState<Record<string, Quote | null>>({})
-  const [source, setSource] = useState<DataSource>('demo')
+  const [source, setSource] = useState<DataSource>('locale')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null)

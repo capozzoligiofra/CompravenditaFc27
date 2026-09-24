@@ -74,14 +74,12 @@ export default function PlayerSheet({ playerId }: { playerId: string }) {
 
   const quote = useMemo(() => {
     const dalla = detail?.prices?.[settings.platform] ?? null
-    const unite = mergeQuotes({ [playerId]: dalla }, prezzi, detail?.source ?? 'demo') as Record<string, Quote | null>
+    const unite = mergeQuotes({ [playerId]: dalla }, prezzi, detail?.source ?? 'locale') as Record<string, Quote | null>
     return unite[playerId] ?? null
   }, [detail, settings.platform, prezzi, playerId])
 
-  // Lo storico della sorgente vale solo se la sorgente vale: con i dati demo
-  // mostrerebbe un grafico da un milione sopra un prezzo da cinquantamila,
-  // che è peggio di nessun grafico. In quel caso conta solo quello che hai
-  // osservato tu.
+  // Lo storico della sorgente vale solo se la sorgente vale: altrimenti
+  // conta solo quello che avete osservato voi.
   const storico =
     isLiveSource(detail?.source) && detail?.history?.length ? detail.history : (data.priceHistory[playerId] ?? [])
   const price = quote?.price ?? 0
@@ -142,7 +140,7 @@ export default function PlayerSheet({ playerId }: { playerId: string }) {
           <div className="flex flex-wrap items-center gap-2">
             {detail?.fromCache ? <Pill tone="flag">offline</Pill> : null}
             <Pill tone={isLiveSource(detail?.source) ? 'gain' : 'flag'}>
-              {detail?.source === 'api' ? 'API' : detail?.source === 'futbin' ? 'Futbin' : 'demo'}
+              {detail?.source === 'api' ? 'API' : detail?.source === 'futbin' ? 'Futbin' : 'prezzi vostri'}
             </Pill>
             <Pill>{PLATFORM_LABEL[settings.platform]}</Pill>
             {inRosa.length > 0 ? <Pill tone="gain">in rosa ×{inRosa.reduce((n, v) => n + v.quantity, 0)}</Pill> : null}

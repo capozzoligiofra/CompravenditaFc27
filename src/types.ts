@@ -2,7 +2,8 @@ import type { Catalyst } from '../shared/catalysts.d.mts'
 
 export type Platform = 'ps' | 'xbox' | 'pc'
 
-export type DataSource = 'futbin' | 'api' | 'demo'
+/** Da dove arriva un prezzo: una sorgente automatica, oppure voi. */
+export type DataSource = 'futbin' | 'api' | 'locale'
 
 export interface Player {
   id: string

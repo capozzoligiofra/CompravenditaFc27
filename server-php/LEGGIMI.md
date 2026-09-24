@@ -10,6 +10,11 @@ del tempo.
 
 ## Cosa fa e cosa non fa
 
+- **Anche il catalogo delle carte è di tutti.** Senza sorgenti esterne
+  l'elenco dei giocatori non lo regala nessuno: chi non trova una carta la
+  crea scrivendone nome e valutazione, e da quel momento la trovano tutti. Due
+  persone che creano lo stesso nome con la stessa valutazione ottengono la
+  stessa carta, non due doppioni.
 - **I prezzi sono di tutti.** Chi scrive un prezzo lo scrive per tutti, e
   accanto compare il suo nome. Fra due versioni della stessa carta vince
   quella vista più di recente — non «l'ultima arrivata», che premierebbe il
@@ -78,6 +83,8 @@ Per un backup basta l'esportazione di phpMyAdmin; per ricominciare da capo,
 | `POST api.php?azione=entra` | `{nome}` → restituisce il token del dispositivo |
 | `GET api.php?azione=prezzi&piattaforma=ps&da=0` | il listino, o solo ciò che è cambiato dopo `da` |
 | `POST api.php?azione=prezzi` | `{piattaforma, prezzi:[{id, price, at}]}` (serve il token) |
+| `GET api.php?azione=cerca&q=lautaro` | cerca nel catalogo comune delle carte |
+| `POST api.php?azione=carta` | `{giocatore:{id,name,rating,…}}` aggiunge una carta al catalogo (serve il token) |
 | `GET api.php?azione=storico&id=1001&piattaforma=ps` | un prezzo al giorno per quella carta |
 | `GET/POST api.php?azione=dati` | i dati personali di chi ha il token |
 | `GET api.php?azione=chi` | chi usa il listino e quanti prezzi ha scritto |

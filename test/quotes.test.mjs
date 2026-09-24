@@ -17,14 +17,14 @@ test('la quotazione vera vince su quella scritta a mano', () => {
   assert.equal(merged['1'].manual, undefined)
 })
 
-test('sui dati demo comanda il prezzo scritto a mano', () => {
-  const merged = mergeQuotes({ '1': { ...live, updated: 'dataset demo' } }, { '1': { price: 9_000, at: Date.now() } }, 'demo')
+test('senza sorgente automatica comanda il prezzo scritto a mano', () => {
+  const merged = mergeQuotes({ '1': { ...live, updated: 'vecchio' } }, { '1': { price: 9_000, at: Date.now() } }, 'locale')
   assert.equal(merged['1'].price, 9_000)
   assert.equal(merged['1'].manual, true)
 })
 
 test('un prezzo a zero non sovrascrive niente', () => {
-  const merged = mergeQuotes({ '1': live }, { '1': { price: 0, at: Date.now() } }, 'demo')
+  const merged = mergeQuotes({ '1': live }, { '1': { price: 0, at: Date.now() } }, 'locale')
   assert.equal(merged['1'].price, 12_000)
 })
 
@@ -37,5 +37,7 @@ test('anche una sorgente diversa da Futbin conta come prezzo vero', () => {
   const merged = mergeQuotes({ '1': live }, { '1': { price: 9_000, at: Date.now() } }, 'api')
   assert.equal(merged['1'].price, 12_000)
   assert.equal(isLiveSource('api'), true)
+  assert.equal(isLiveSource('locale'), false)
+  // Risposte messe in cache da una versione precedente.
   assert.equal(isLiveSource('demo'), false)
 })

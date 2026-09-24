@@ -58,7 +58,7 @@ significa. Casi tipici:
 
 | Errore | Significato | Cosa fare |
 | --- | --- | --- |
-| `403` / `503` | Futbin blocca le richieste automatiche | riprova più tardi; se persiste, l'app resta utile in modalità demo |
+| `403` / `503` | Futbin blocca le richieste automatiche | è la normalità: l'app lavora con i prezzi che scrivete voi |
 | `non in formato JSON` | l'indirizzo risponde una pagina, non dati | l'endpoint è cambiato: serve aggiornare `FUTBIN_*_URL` |
 | `404` | l'indirizzo non esiste più | prova un altro anno: `FUT_YEAR=25 npm run diagnosi` |
 | `timeout` / `ENOTFOUND` | rete o DNS del computer | controlla la connessione |
@@ -103,7 +103,7 @@ npm run dev
 ```
 
 Apri <http://localhost:5173>. In alto a destra c'è il badge della sorgente:
-`Futbin FC27` in verde se il passo 3 è andato bene, `dati demo` in giallo
+`Futbin FC27` in verde se il passo 3 è andato bene, `prezzi vostri` in grigio
 altrimenti. Tutto quello che segue funziona in entrambi i casi.
 
 ### Occasioni (schermata iniziale)
@@ -117,6 +117,16 @@ altrimenti. Tutto quello che segue funziona in entrambi i casi.
 - [ ] Aggiungi un catalizzatore a mano: titolo `SBC Serie A 84+`, valutazione
       `84`, lega `Serie A` → **deve** comparire fra i motivi dei giocatori di
       Serie A con valutazione 84 o più, e i loro punteggi salgono.
+
+### Mercato e catalogo delle carte
+
+- [ ] Cercando un nome che nessuno ha ancora creato, l'app **non inventa
+      niente**: dice che non c'è e propone di crearla.
+- [ ] Creando «Moise Kean» con valutazione 84 si apre subito la sua scheda.
+- [ ] Un'altra persona collegata allo stesso listino trova quella carta
+      cercandola, con il prezzo che le hai dato.
+- [ ] Creando la stessa carta con lo stesso nome e la stessa valutazione da
+      due dispositivi si ottiene **una carta sola**, non due doppioni.
 
 ### Mercato
 
@@ -138,7 +148,8 @@ che l'app non racconti storie. Inserisci acquisto `10000` e vendita `12000`:
 
 ### Prezzi scritti a mano
 
-Serve quando Futbin risponde `403` (succede spesso) e i prezzi restano demo.
+È la via normale: nessuna sorgente automatica è accessibile, quindi i prezzi
+li scrivete voi (e con il listino condiviso valgono per tutti).
 
 - [ ] Nella scheda di un giocatore scrivi una cifra in «Prezzo visto in gioco»
       e premi Salva: il prezzo in alto diventa quello, con scritto «inserito
@@ -181,8 +192,8 @@ Serve quando Futbin risponde `403` (succede spesso) e i prezzi restano demo.
 - [ ] Dalla scheda si cambia il prezzo: scrivi una cifra in «Aggiorna il
       prezzo» e premi Salva; il prezzo in alto e il piano di trade si
       aggiornano subito, e con il listino collegato parte anche agli altri.
-- [ ] Il grafico **non** mostra lo storico demo quando il prezzo è tuo: o c'è
-      lo storico che hai costruito, o non c'è grafico.
+- [ ] Il grafico mostra solo lo storico vero: o quello che avete costruito
+      voi, o nessun grafico.
 - [ ] «← indietro» riporta da dove sei arrivato (prezzi, watchlist o rosa).
 - [ ] Aprendo una carta che non seguivi, questa entra fra le tue: la ritrovi
       in *Prezzi* → «Tutte le mie».
@@ -268,7 +279,7 @@ autorizza Node sulla rete privata quando Windows o macOS lo chiede.
 
 <https://capozzoligiofra.github.io/CompravenditaFc27/>
 
-- [ ] Si apre e mostra il badge `dati demo` (là il proxy non esiste: è
+- [ ] Si apre e mostra il badge `prezzi vostri` (là il proxy non esiste: è
       previsto).
 - [ ] **Pagina bianca?** Allora Pages sta pubblicando i sorgenti invece della
       build: *Settings → Pages → Source* va messo su **GitHub Actions**, poi

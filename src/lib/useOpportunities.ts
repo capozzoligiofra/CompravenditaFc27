@@ -4,8 +4,7 @@ import { buildAlerts } from '../../shared/alerts.mjs'
 import type { Catalyst } from '../../shared/catalysts.d.mts'
 import { currentPhase, upcomingEvents } from '../../shared/calendar.mjs'
 import type { CalendarEvent, Phase } from '../../shared/calendar.d.mts'
-import { demoRoster } from '../../shared/demo.mjs'
-import { isLiveSource, mergeQuotes } from '../../shared/quotes.mjs'
+import { mergeQuotes } from '../../shared/quotes.mjs'
 import type { Opportunity, ScoreInput, SellVerdict } from '../../shared/scoring.d.mts'
 import { rankOpportunities, scoreSell } from '../../shared/scoring.mjs'
 import type { Alert, DataSource, Player, Quote } from '../types.ts'
@@ -54,11 +53,10 @@ export function useOpportunities(): OpportunitiesState {
 
   /**
    * Il bacino di partenza: watchlist, carte in magazzino e schede già
-   * aperte. Se è troppo scarno si aggiunge il listino demo, che però ha
-   * senso solo quando i prezzi arrivano dal dataset demo: con Futbin vero
-   * quegli identificativi non vogliono dire niente e vengono scartati.
+   * aperte. Sono le carte che segui tu — niente riempitivi: una proposta su
+   * una carta inventata non è una proposta.
    */
-  const { candidates, seeded } = useMemo(() => {
+  const candidates = useMemo(() => {
     const byId = new Map<string, Player>()
     for (const item of data.watchlist) {
       byId.set(item.id, {
@@ -89,16 +87,7 @@ export function useOpportunities(): OpportunitiesState {
         })
       }
     }
-    const seededIds = new Set<string>()
-    if (byId.size < 8) {
-      for (const player of demoRoster() as Player[]) {
-        if (!byId.has(player.id)) {
-          byId.set(player.id, player)
-          seededIds.add(player.id)
-        }
-      }
-    }
-    return { candidates: [...byId.values()].slice(0, 30), seeded: seededIds }
+    return [...byId.values()].slice(0, 30)
   }, [data.watchlist, data.seen, data.positions])
 
   const refresh = useCallback(() => {
@@ -157,7 +146,7 @@ export function useOpportunities(): OpportunitiesState {
   // I prezzi scritti a mano — i tuoi e quelli del listino condiviso —
   // coprono i buchi lasciati dalla sorgente.
   const quotes = useMemo(
-    () => mergeQuotes(liveQuotes, prezzi, source ?? 'demo') as Record<string, Quote | null>,
+    () => mergeQuotes(liveQuotes, prezzi, source ?? 'locale') as Record<string, Quote | null>,
     [liveQuotes, prezzi, source],
   )
 
@@ -169,8 +158,8 @@ export function useOpportunities(): OpportunitiesState {
   }, [quotes, loading, recordPrices])
 
   const visible = useMemo(
-    () => (isLiveSource(source) ? candidates.filter((player) => !seeded.has(player.id)) : candidates),
-    [candidates, seeded, source],
+    () => candidates,
+    [candidates],
   )
 
   const opportunities = useMemo(() => {

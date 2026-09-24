@@ -1,12 +1,11 @@
 import type { Catalyst } from '../../shared/catalysts.d.mts'
-import { demoHistory, demoPlayer, demoPrices, demoRoster, demoSearch } from '../../shared/demo.mjs'
-import type { DataSource, HistoryPoint, Platform, Player, PlayerDetail, Quote } from '../types.ts'
+import type { DataSource, Platform, Player, PlayerDetail, Quote } from '../types.ts'
 import { getApiBase } from './apiBase.ts'
 
 export class ApiError extends Error {}
 
-export const STATIC_REASON =
-  'Nessun proxy dati raggiungibile: in uso il dataset demo incluso nell’app.'
+export const SENZA_SORGENTE =
+  'Nessuna sorgente automatica: i prezzi sono quelli che scrivete voi.'
 
 // Quando il proxy non risponde smettiamo di interrogarlo per un minuto: sulla
 // versione statica (GitHub Pages) non esiste proprio, e senza questa pausa
@@ -47,9 +46,15 @@ async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
   return payload
 }
 
-/** Prova il proxy; se non c'è, risponde con i dati demo che l'app si porta dietro. */
-async function withLocalFallback<T>(load: () => Promise<T>, local: () => T, signal?: AbortSignal): Promise<T> {
-  if (proxyLikelyDown()) return local()
+/**
+ * Prova il proxy; se non c'è, risponde con il vuoto dichiarato.
+ *
+ * Qui non si inventa niente: l'app non ha più un dataset finto da mostrare al
+ * posto dei dati veri. Senza sorgente restano i prezzi che avete scritto voi,
+ * e l'interfaccia lo dice invece di far finta che siano quotazioni.
+ */
+async function senzaProxy<T>(load: () => Promise<T>, vuoto: () => T, signal?: AbortSignal): Promise<T> {
+  if (proxyLikelyDown()) return vuoto()
   try {
     const result = await load()
     proxyFailedAt = 0
@@ -58,7 +63,7 @@ async function withLocalFallback<T>(load: () => Promise<T>, local: () => T, sign
     if (signal?.aborted) throw error
     if (error instanceof ApiError) {
       proxyFailedAt = Date.now()
-      return local()
+      return vuoto()
     }
     throw error
   }
@@ -82,26 +87,24 @@ export interface HealthResponse {
   lastError: string | null
   lastErrorAt: string | null
   retryInSeconds: number
-  demoPlayers: number
   fromCache?: boolean
 }
 
-function staticHealth(): HealthResponse {
+function saluteStatica(): HealthResponse {
   return {
     ok: true,
     mode: 'statico',
-    futbin: { name: 'demo', enabled: false, year: '', base: '', reachable: false },
-    lastError: STATIC_REASON,
+    futbin: { name: 'nessuna', enabled: false, year: '', base: '', reachable: false },
+    lastError: SENZA_SORGENTE,
     lastErrorAt: null,
     retryInSeconds: 0,
-    demoPlayers: demoRoster().length,
   }
 }
 
 export function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
-  return withLocalFallback(
+  return senzaProxy(
     async () => ({ ...(await request<HealthResponse>('/health', signal)), mode: 'proxy' as const }),
-    staticHealth,
+    saluteStatica,
     signal,
   )
 }
@@ -114,23 +117,17 @@ export interface SearchResponse {
 }
 
 export function searchPlayers(query: string, signal?: AbortSignal): Promise<SearchResponse> {
-  return withLocalFallback(
+  return senzaProxy(
     () => request<SearchResponse>(`/search?q=${encodeURIComponent(query)}`, signal),
-    () => ({ source: 'demo', reason: STATIC_REASON, players: demoSearch(query) as Player[] }),
+    () => ({ source: 'locale', reason: SENZA_SORGENTE, players: [] }),
     signal,
   )
 }
 
 export function getPlayer(id: string, platform: Platform, signal?: AbortSignal): Promise<PlayerDetail> {
-  return withLocalFallback(
+  return senzaProxy(
     () => request<PlayerDetail>(`/player/${encodeURIComponent(id)}?platform=${platform}`, signal),
-    () => ({
-      source: 'demo',
-      reason: STATIC_REASON,
-      player: demoPlayer(id) as Player | null,
-      prices: (demoPrices(id) ?? {}) as Partial<Record<Platform, Quote>>,
-      history: demoHistory(id, platform) as HistoryPoint[],
-    }),
+    () => ({ source: 'locale', reason: SENZA_SORGENTE, player: null, prices: {}, history: [] }),
     signal,
   )
 }
@@ -144,15 +141,11 @@ export interface QuotesResponse {
 
 export function getQuotes(ids: string[], platform: Platform, signal?: AbortSignal): Promise<QuotesResponse> {
   if (ids.length === 0) {
-    return Promise.resolve({ source: 'demo', platform, quotes: {} })
+    return Promise.resolve({ source: 'locale', platform, quotes: {} })
   }
-  return withLocalFallback(
+  return senzaProxy(
     () => request<QuotesResponse>(`/quotes?ids=${ids.map(encodeURIComponent).join(',')}&platform=${platform}`, signal),
-    () => ({
-      source: 'demo' as DataSource,
-      platform,
-      quotes: Object.fromEntries(ids.map((id) => [id, (demoPrices(id)?.[platform] as Quote | undefined) ?? null])),
-    }),
+    () => ({ source: 'locale' as DataSource, platform, quotes: {} }),
     signal,
   )
 }
@@ -169,9 +162,9 @@ export interface CatalystsResponse {
  * l'elenco è vuoto: restano il calendario e i catalizzatori inseriti a mano.
  */
 export function getCatalysts(signal?: AbortSignal): Promise<CatalystsResponse> {
-  return withLocalFallback(
+  return senzaProxy(
     () => request<CatalystsResponse>('/catalysts', signal),
-    () => ({ source: 'demo' as DataSource, reason: STATIC_REASON, catalysts: [] }),
+    () => ({ source: 'locale' as DataSource, reason: SENZA_SORGENTE, catalysts: [] }),
     signal,
   )
 }
@@ -179,7 +172,7 @@ export function getCatalysts(signal?: AbortSignal): Promise<CatalystsResponse> {
 /**
  * Manda al proxy un prezzo scritto a mano, così finisce nell'archivio e vale
  * anche sugli altri dispositivi. Senza proxy (versione statica) fallisce in
- * silenzio: il prezzo resta comunque salvato in locale.
+ * silenzio: il prezzo resta comunque salvato in locale e nel listino condiviso.
  */
 export async function sendManualPrice(
   id: string,

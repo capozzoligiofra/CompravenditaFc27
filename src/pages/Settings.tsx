@@ -109,38 +109,38 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <CardTitle hint="L'app non parla mai con Futbin dal browser: passa sempre da un proxy, che limita le richieste e mette in cache le risposte.">
-          Sorgente dati
+        <CardTitle hint="Una sorgente automatica di prezzi, se mai ce ne sarà una consentita. Oggi i prezzi sono i vostri, e questa scheda serve solo a dirlo chiaro.">
+          Sorgente automatica
         </CardTitle>
         {error || !health ? (
           <div className="space-y-2 text-sm">
-            <Pill tone="loss">sorgente non disponibile</Pill>
-            <p className="text-chalk-dim">Ricarica la pagina: non riesco nemmeno a leggere i dati demo.</p>
+            <Pill tone="loss">stato non leggibile</Pill>
+            <p className="text-chalk-dim">Ricarica la pagina.</p>
           </div>
         ) : (
           <div className="space-y-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <Pill tone={health.mode === 'statico' ? 'flag' : health.futbin.reachable === true ? 'gain' : 'flag'}>
+              <Pill tone={health.futbin.reachable === true ? 'gain' : 'neutral'}>
                 {health.mode === 'statico'
-                  ? 'versione statica'
+                  ? 'nessuna sorgente'
                   : health.futbin.enabled
                     ? health.futbin.reachable === false
-                      ? 'fallback demo'
-                      : 'Futbin attivo'
-                    : 'Futbin disattivato'}
+                      ? 'sorgente non raggiungibile'
+                      : 'sorgente attiva'
+                    : 'sorgente disattivata'}
               </Pill>
               <span className="text-chalk-dim">
                 {health.mode === 'statico'
-                  ? `${health.demoPlayers} giocatori nel dataset demo incluso nell’app`
-                  : `anno gioco FC${health.futbin.year} · ${health.demoPlayers} giocatori nel dataset demo`}
+                  ? 'i prezzi sono quelli che scrivete voi'
+                  : `anno gioco FC${health.futbin.year}`}
               </span>
             </div>
 
             {health.mode === 'statico' ? (
               <p className="text-chalk-dim">
-                Qui non c’è nessun proxy dati, quindi i prezzi mostrati sono quelli del dataset demo: calcolatore,
-                watchlist e portafoglio funzionano comunque, perché i conti si fanno nel telefono. Per i prezzi veri di
-                Futbin serve il proxy, avviato sul computer con <code className="font-mono text-chalk">npm run mobile</code>.
+                Nessuna sorgente automatica collegata, ed è la condizione normale: Futbin e gli altri siti non
+                consentono l’accesso ai programmi. I prezzi sono quelli che scrivete tu e chi è nel listino, e tutto il
+                resto — conti, stime, proposte, verdetti — ci lavora sopra esattamente allo stesso modo.
               </p>
             ) : null}
 
@@ -199,7 +199,7 @@ export default function SettingsPage() {
               d’ambiente <code className="font-mono">FUTBIN_SEARCH_URL</code>,{' '}
               <code className="font-mono">FUTBIN_PRICES_URL</code>, <code className="font-mono">FUTBIN_GRAPH_URL</code>{' '}
               e <code className="font-mono">FC27_YEAR</code>. Con{' '}
-              <code className="font-mono">FUTBIN_ENABLED=false</code> il proxy lavora solo sul dataset demo.
+              <code className="font-mono">FUTBIN_ENABLED=false</code> il proxy non prova nemmeno a cercarla.
             </p>
           </div>
         )}

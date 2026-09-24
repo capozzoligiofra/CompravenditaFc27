@@ -4,7 +4,6 @@ import { test } from 'node:test'
 import { currentPhase, romeParts, upcomingEvents } from '../shared/calendar.mjs'
 import { matchesPlayer, normalizeCatalyst } from '../shared/catalysts.mjs'
 import { breakEvenSell, maxBuyForMargin, profit, roundToMarketStep, signalFor } from '../shared/market.mjs'
-import { demoSearch } from '../shared/demo.mjs'
 import { priceSignals, scorePlayer, scoreSell } from '../shared/scoring.mjs'
 
 // --- matematica del mercato -------------------------------------------------
@@ -235,8 +234,3 @@ test('una SBC che richiede la carta spinge la vendita', () => {
   assert.ok(con.reasons.some((reason) => reason.label.includes('Richiesta ora da')))
 })
 
-test('la ricerca nel dataset ignora gli accenti', () => {
-  assert.ok(demoSearch('martinez').some((player) => player.name === 'Lautaro Martínez'))
-  assert.ok(demoSearch('leao').some((player) => player.name === 'Rafael Leão'))
-  assert.ok(demoSearch('Nicolo Barella').length >= 0)
-})

@@ -204,8 +204,7 @@ function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
 }
 
 export default function Opportunities() {
-  const { loading, refining, error, source, opportunities, catalysts, catalystsReason, phase, events } =
-    useOpportunities()
+  const { loading, refining, error, opportunities, catalysts, catalystsReason, phase, events } = useOpportunities()
   const { data, removeCatalyst } = useStore()
   // Chi apre il link la prima volta non ha niente: prima di tutto gli si dice
   // cos'ha davanti e da dove si comincia.
@@ -273,7 +272,7 @@ export default function Opportunities() {
           <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-chalk-dim">Da comprare</h2>
           <span className="text-xs text-chalk-dim">
             {loading ? 'calcolo in corso…' : refining ? 'sto approfondendo i primi…' : `${opportunities.length} proposte`}
-            {source === 'demo' ? ' · su dati demo' : ''}
+
           </span>
         </div>
         {error ? <p className="mb-2 text-xs text-flag">{error}</p> : null}

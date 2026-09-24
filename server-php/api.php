@@ -20,6 +20,8 @@
 //   POST api.php?azione=entra          {nome}
 //   GET  api.php?azione=prezzi&piattaforma=ps&da=0
 //   POST api.php?azione=prezzi         {piattaforma, prezzi:[{id,price,at,giocatore}]}
+//   GET  api.php?azione=cerca&q=lautaro
+//   POST api.php?azione=carta          {giocatore:{name,rating,...}}
 //   GET  api.php?azione=storico&id=123&piattaforma=ps
 //   GET  api.php?azione=dati
 //   POST api.php?azione=dati           {contenuto, aggiornato}
@@ -344,6 +346,72 @@ try {
             }
 
             rispondi(['salvati' => $salvati, 'adesso' => $ora]);
+
+        case 'cerca':
+            // Il catalogo delle carte e' di tutti: chi ne crea una la rende
+            // trovabile agli altri. Senza sorgenti esterne, questa e' la
+            // ricerca dell'app.
+            $testo = trim((string) ($_GET['q'] ?? ''));
+            if (mb_strlen($testo) < 2) {
+                rispondi(['giocatori' => []]);
+            }
+            $query = $db->prepare(
+                'select g.id, g.nome, g.valutazione, g.ruolo, g.club, g.lega, g.nazione, g.versione
+                 from giocatori g
+                 where g.nome like ?
+                 order by (g.nome like ?) desc, g.valutazione desc
+                 limit 25'
+            );
+            $query->execute(['%' . $testo . '%', $testo . '%']);
+            $giocatori = [];
+            foreach ($query->fetchAll() as $riga) {
+                $giocatori[] = [
+                    'id' => (string) $riga['id'],
+                    'name' => (string) $riga['nome'],
+                    'rating' => (int) $riga['valutazione'],
+                    'position' => (string) $riga['ruolo'],
+                    'club' => (string) $riga['club'],
+                    'league' => (string) $riga['lega'],
+                    'nation' => (string) $riga['nazione'],
+                    'version' => (string) $riga['versione'],
+                ];
+            }
+            rispondi(['giocatori' => $giocatori]);
+
+        case 'carta':
+            // Una carta nuova entra nel catalogo anche prima di avere un
+            // prezzo: chi la crea la sta gia' cercando, e gli altri devono
+            // poterla trovare.
+            if ($metodo !== 'POST') {
+                errore('Serve una POST.', 405);
+            }
+            richiediUtente($db);
+            $dati = corpo();
+            $carta = is_array($dati['giocatore'] ?? null) ? $dati['giocatore'] : [];
+            $id = idValido($carta['id'] ?? null);
+            $nome = is_scalar($carta['name'] ?? null) ? trim((string) $carta['name']) : '';
+            if ($id === null || $nome === '') {
+                errore('Carta senza identificativo o senza nome.');
+            }
+            $db->prepare(
+                'insert into giocatori (id, nome, valutazione, ruolo, club, lega, nazione, versione, aggiornato)
+                 values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 on duplicate key update
+                   nome = values(nome), valutazione = values(valutazione), ruolo = values(ruolo),
+                   club = values(club), lega = values(lega), nazione = values(nazione),
+                   versione = values(versione), aggiornato = values(aggiornato)'
+            )->execute([
+                $id,
+                mb_substr($nome, 0, 120),
+                (int) ($carta['rating'] ?? 0),
+                mb_substr((string) ($carta['position'] ?? ''), 0, 12),
+                mb_substr((string) ($carta['club'] ?? ''), 0, 80),
+                mb_substr((string) ($carta['league'] ?? ''), 0, 80),
+                mb_substr((string) ($carta['nation'] ?? ''), 0, 80),
+                mb_substr((string) ($carta['version'] ?? ''), 0, 60),
+                adesso(),
+            ]);
+            rispondi(['id' => $id, 'nome' => $nome]);
 
         case 'storico':
             $id = idValido($_GET['id'] ?? null);

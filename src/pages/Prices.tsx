@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import PlayerLink from '../components/PlayerLink.tsx'
+import CardSearch from '../components/CardSearch.tsx'
 import PriceListImport from '../components/PriceListImport.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass } from '../components/ui.tsx'
-import { searchPlayers, sendManualPrice } from '../lib/api.ts'
+import { sendManualPrice } from '../lib/api.ts'
 import { coins } from '../lib/format.ts'
 import { stimaPrezzo } from '../../shared/forecast.mjs'
 import { filtraVoci, ordinaVoci, riepilogo, vociPrezzo } from '../../shared/price-entry.mjs'
 import type { GruppoPrezzo, VocePrezzo } from '../../shared/price-entry.d.mts'
 import { parseCoinsLoose } from '../../shared/roster-import.mjs'
 import { useStore } from '../lib/useStore.ts'
-import type { Player } from '../types.ts'
 
 const GRUPPI: { value: GruppoPrezzo; label: string }[] = [
   { value: 'da-aggiornare', label: 'Da aggiornare' },
@@ -204,7 +204,13 @@ export default function Prices() {
         </ul>
       )}
 
-      <AggiungiCarta onAdd={rememberPlayer} conosciuti={voci.map((voce) => voce.id)} />
+      <Card>
+        <CardTitle hint="Cerca fra le carte del listino e fra le tue. Se non c'è, creala: da quel momento la trovano tutti.">
+          Aggiungi una carta
+        </CardTitle>
+        <CardSearch onScegli={rememberPlayer} etichettaAzione="segui" />
+      </Card>
+
       <PriceListImport />
     </div>
   )
@@ -306,78 +312,5 @@ function RigaPrezzo({
       </div>
       {appenaSalvato > 0 ? <p className="mt-1 text-[11px] text-gain">Salvato {coins(appenaSalvato)}.</p> : null}
     </div>
-  )
-}
-
-/**
- * Le carte che l'app non conosce ancora: si cercano qui e finiscono
- * nell'elenco, senza passare dal Mercato.
- */
-function AggiungiCarta({ onAdd, conosciuti }: { onAdd: (player: Player) => void; conosciuti: string[] }) {
-  const [query, setQuery] = useState('')
-  const [risultati, setRisultati] = useState<Player[]>([])
-  const [cercando, setCercando] = useState(false)
-  const noti = new Set(conosciuti)
-
-  useEffect(() => {
-    const term = query.trim()
-    if (term.length < 2) {
-      setRisultati([])
-      return undefined
-    }
-    const controller = new AbortController()
-    const timer = setTimeout(() => {
-      setCercando(true)
-      searchPlayers(term, controller.signal)
-        .then((risposta) => setRisultati(risposta.players.slice(0, 8)))
-        .catch(() => setRisultati([]))
-        .finally(() => {
-          if (!controller.signal.aborted) setCercando(false)
-        })
-    }, 350)
-    return () => {
-      clearTimeout(timer)
-      controller.abort()
-    }
-  }, [query])
-
-  return (
-    <Card>
-      <CardTitle hint="Cerca una carta e aggiungila all'elenco: da lì in poi ti chiederà il prezzo come le altre.">
-        Aggiungi una carta
-      </CardTitle>
-      <input
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Es. Lautaro, Bastoni…"
-        className="w-full rounded-xl border border-pitch-line bg-pitch px-3 py-2 text-sm outline-none focus:border-gain/60"
-      />
-      {cercando ? <p className="mt-2 text-xs text-chalk-dim">cerco…</p> : null}
-      {risultati.length > 0 ? (
-        <ul className="mt-2 space-y-1">
-          {risultati.map((player) => (
-            <li key={player.id} className="flex items-center gap-2">
-              <span className="font-mono text-xs text-chalk-dim">{player.rating}</span>
-              <span className="flex-1 truncate text-sm">{player.name}</span>
-              {noti.has(player.id) ? (
-                <span className="text-xs text-chalk-dim">già nell'elenco</span>
-              ) : (
-                <button
-                  type="button"
-                  className={buttonClass}
-                  onClick={() => {
-                    onAdd(player)
-                    setQuery('')
-                    setRisultati([])
-                  }}
-                >
-                  Aggiungi
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </Card>
   )
 }

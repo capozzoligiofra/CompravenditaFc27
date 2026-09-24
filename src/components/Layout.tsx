@@ -36,13 +36,15 @@ type BadgeTone = keyof typeof BADGE_TONES
 /** Il badge non promette mai più di quello che l'app ha davvero in mano. */
 function badgeState(health: HealthResponse): { label: string; tone: BadgeTone } {
   if (health.fromCache) return { label: 'offline', tone: 'loss' }
-  if (health.mode === 'statico') return { label: 'dati demo', tone: 'flag' }
-  if (!health.futbin.enabled) return { label: 'dati demo', tone: 'flag' }
+  // Senza sorgente automatica non c'è niente di rotto: è il modo normale in
+  // cui l'app lavora, con i prezzi che scrivete voi. Il badge lo dice così.
+  if (health.mode === 'statico') return { label: 'prezzi vostri', tone: 'neutral' }
+  if (!health.futbin.enabled) return { label: 'prezzi vostri', tone: 'neutral' }
   if (health.futbin.reachable === true) {
     const sorgente = health.futbin.name === 'api' ? (health.futbin.label ?? 'API') : 'Futbin'
     return { label: health.futbin.year ? `${sorgente} FC${health.futbin.year}` : sorgente, tone: 'gain' }
   }
-  if (health.futbin.reachable === false) return { label: 'dati demo', tone: 'flag' }
+  if (health.futbin.reachable === false) return { label: 'prezzi vostri', tone: 'neutral' }
   // Nessuna richiesta ancora partita: non sappiamo se Futbin risponde.
   return { label: 'sorgente da verificare', tone: 'neutral' }
 }

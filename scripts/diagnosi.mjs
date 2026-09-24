@@ -2,7 +2,7 @@
 // connessione e dice cosa funziona e cosa no.
 //
 // Serve perché il proxy, quando qualcosa non va, ripiega in silenzio sul
-// dataset demo: questo comando invece mostra l'errore vero, così si capisce
+// prezzi che avete già: questo comando invece mostra l'errore vero, così si capisce
 // se è la rete, un endpoint cambiato o un blocco di Futbin.
 
 import { lookup } from 'node:dns/promises'
@@ -51,7 +51,7 @@ if (!providerConfig.enabled) {
     console.log('')
     console.log('Vedi il README: servono anche i percorsi di ricerca e prezzi se diversi da quelli standard.')
   } else {
-    console.log("Futbin è disattivato (FUTBIN_ENABLED=false): l'app userà solo il dataset demo.")
+    console.log("Futbin è disattivato (FUTBIN_ENABLED=false): l'app userà solo i prezzi che scrivete voi.")
   }
   console.log('')
   process.exit(0)
@@ -141,7 +141,7 @@ console.log('')
 
 let idTrovato = null
 
-await prova('Ricerca giocatori', "Se fallisce, l'app non trova nessuno e ricade sulla demo.", async () => {
+await prova('Ricerca giocatori', "Se fallisce, la ricerca resta quella del catalogo che avete costruito voi.", async () => {
   const trovati = await searchPlayers(NOME_PROVA)
   if (trovati.length === 0) throw new Error(`Nessun risultato per "${NOME_PROVA}"`)
   idTrovato = trovati[0].id

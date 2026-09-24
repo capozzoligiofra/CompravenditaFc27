@@ -192,6 +192,16 @@ export function inviaDati(
   })
 }
 
+/** Cerca nel catalogo comune: le carte che qualcuno del gruppo ha già creato. */
+export function cercaNelListino(account: Account, testo: string, signal?: AbortSignal): Promise<{ giocatori: Player[] }> {
+  return chiama(account.server, 'cerca', { cerca: { q: testo }, signal })
+}
+
+/** Rende trovabile agli altri una carta appena creata, anche senza prezzo. */
+export function registraCarta(account: Account, giocatore: Player): Promise<{ id: string }> {
+  return chiama(account.server, 'carta', { metodo: 'POST', token: account.token, corpo: { giocatore } })
+}
+
 export function chiCe(server: string, signal?: AbortSignal): Promise<{ persone: { nome: string; visto: number; prezzi: number }[] }> {
   return chiama(server, 'chi', { signal })
 }
