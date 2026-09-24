@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import PlayerLink from '../components/PlayerLink.tsx'
 import CardSearch from '../components/CardSearch.tsx'
+import JsonPriceImport from '../components/JsonPriceImport.tsx'
 import PriceListImport from '../components/PriceListImport.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass } from '../components/ui.tsx'
 import { sendManualPrice } from '../lib/api.ts'
@@ -214,6 +215,8 @@ export default function Prices() {
       </Card>
 
       <PriceListImport />
+
+      <JsonPriceImport />
     </div>
   )
 }

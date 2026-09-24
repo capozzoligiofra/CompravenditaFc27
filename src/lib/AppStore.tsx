@@ -43,6 +43,8 @@ export interface Store {
   removePosition: (id: string) => void
   rememberPlayer: (player: Player) => void
   setManualPrice: (playerId: string, price: number) => void
+  /** Applica un elenco intero di prezzi in un colpo solo, creando le carte che mancano. */
+  importaPrezzi: (voci: { player: Player; price: number }[]) => void
   clearManualPrices: () => void
   recordPrices: (quotes: Record<string, Quote | null>) => void
   addCatalyst: (raw: Partial<Catalyst> & { title: string }) => void
@@ -155,6 +157,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ? { ...current.priceHistory, [playerId]: recordSnapshot(current.priceHistory[playerId] ?? [], price, adesso) }
           : current.priceHistory
       return { ...current, manualPrices: next, priceHistory }
+    })
+  }, [])
+
+  /**
+   * Un elenco incollato può valere centinaia di carte: si applica tutto in un
+   * aggiornamento solo, altrimenti l'app ridisegna la pagina a ogni riga e il
+   * telefono si pianta a metà.
+   */
+  const importaPrezzi = useCallback((voci: { player: Player; price: number }[]) => {
+    if (voci.length === 0) return
+    setData((current) => {
+      const adesso = Date.now()
+      const manualPrices = { ...current.manualPrices }
+      const priceHistory = { ...current.priceHistory }
+      const perId = new Map(current.seen.map((player) => [player.id, player]))
+      for (const { player, price } of voci) {
+        if (!player?.id || !(price > 0)) continue
+        manualPrices[player.id] = { price: Math.round(price), at: adesso }
+        if (needsSnapshot(priceHistory[player.id] ?? [], price, adesso)) {
+          priceHistory[player.id] = recordSnapshot(priceHistory[player.id] ?? [], price, adesso)
+        }
+        // Le carte che non conoscevi entrano fra quelle che segui: le hai
+        // appena prezzate, quindi ti interessano.
+        const conosciuta = perId.get(player.id)
+        if (!conosciuta || (player.name.length > conosciuta.name.length)) perId.set(player.id, { ...conosciuta, ...player })
+      }
+      return {
+        ...current,
+        manualPrices,
+        priceHistory,
+        seen: [...perId.values()].slice(0, 400),
+      }
     })
   }, [])
 
@@ -316,6 +350,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removePosition,
       rememberPlayer,
       setManualPrice,
+      importaPrezzi,
       clearManualPrices,
       recordPrices,
       addCatalyst,
@@ -345,6 +380,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removePosition,
       rememberPlayer,
       setManualPrice,
+      importaPrezzi,
       clearManualPrices,
       recordPrices,
       addCatalyst,

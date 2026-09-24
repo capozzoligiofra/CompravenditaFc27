@@ -215,6 +215,20 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
       prima e dopo la correzione, la cifra stimata è diversa.
 - [ ] Gli orari si ritrovano sull'altro dispositivo con lo stesso nome.
 
+### Prezzi da un elenco JSON
+
+- [ ] Incollando `{"nome":"Klara Bühl","prezzo":"8.2K"}` — anche senza
+      parentesi quadre — l'anteprima mostra la carta con 8.200.
+- [ ] Il pulsante dice quante carte sta per aggiornare e quante ne creerà;
+      applicandolo, compaiono nel pannello con «poco fa».
+- [ ] Righe senza nome o senza prezzo vengono **contate come scartate**, non
+      ignorate in silenzio; i doppioni entrano una volta sola.
+- [ ] Un testo che non è JSON dice cosa non va, invece di non fare niente.
+- [ ] Una carta creata senza valutazione mostra «valutazione mancante» nella
+      sua scheda: scrivendola, resta la stessa carta (non se ne crea un'altra).
+- [ ] Un elenco di un centinaio di carte si applica in un paio di secondi
+      senza bloccare la pagina.
+
 ### Prezzo stimato
 
 Il seguito naturale dei prezzi scritti a mano: quello che hai segnato

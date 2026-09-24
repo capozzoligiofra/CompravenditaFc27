@@ -28,6 +28,8 @@ export default function PlayerSheet({ playerId }: { playerId: string }) {
   const [detail, setDetail] = useState<PlayerDetail | null>(null)
   const [caricando, setCaricando] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
+  const [valutazione, setValutazione] = useState('')
+  const [correggo, setCorreggo] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -127,6 +129,47 @@ export default function PlayerSheet({ playerId }: { playerId: string }) {
               </span>
               <h2 className="truncate text-lg font-semibold">{player.name}</h2>
             </div>
+            {/* Una carta creata da un elenco può arrivare senza valutazione, e
+                senza quella i segnali sul fodder non funzionano: si corregge
+                qui, senza cambiare carta. */}
+            {correggo ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <input
+                  value={valutazione}
+                  onChange={(event) => setValutazione(event.target.value.replace(/[^\d]/g, '').slice(0, 2))}
+                  inputMode="numeric"
+                  placeholder="es. 84"
+                  aria-label="Valutazione"
+                  className="w-20 rounded-xl border border-pitch-line bg-pitch px-2 py-1.5 text-center font-mono text-sm outline-none focus:border-gain/60"
+                />
+                <button
+                  type="button"
+                  className={buttonClass}
+                  onClick={() => {
+                    const voto = Number(valutazione)
+                    if (voto > 0) rememberPlayer({ ...player, rating: Math.min(99, voto) })
+                    setCorreggo(false)
+                  }}
+                >
+                  Salva valutazione
+                </button>
+                <button type="button" className="text-xs text-chalk-dim" onClick={() => setCorreggo(false)}>
+                  annulla
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className={player.rating ? 'mt-1 text-[11px] text-chalk-dim hover:text-chalk' : 'mt-1 text-xs text-flag'}
+                onClick={() => {
+                  setValutazione(player.rating ? String(player.rating) : '')
+                  setCorreggo(true)
+                }}
+              >
+                {player.rating ? 'correggi la valutazione' : 'valutazione mancante: scrivila'}
+              </button>
+            )}
+
             {caratteristiche.length > 0 ? (
               <p className="mt-1 text-xs text-chalk-dim">
                 {caratteristiche.map(([, valore]) => valore).join(' · ')}

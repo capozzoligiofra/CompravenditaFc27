@@ -416,6 +416,15 @@ Quello che si fa invece:
   il cursore sulla carta dopo. Si scrive anche `44k` o `1,2M`. I filtri
   *Da aggiornare / La mia rosa / Watchlist* servono a fare un giro per volta,
   e il contatore in alto dice quante ne restano.
+- **Incollare un elenco JSON.** In *Prezzi* c'è «Prezzi da un elenco JSON»,
+  per chi i prezzi li tiene in un foglio o in un file:
+  `[{"nome": "Klara Bühl", "prezzo": "8.2K"}, …]`. Accetta le chiavi in
+  italiano o in inglese, i prezzi come `8.2K`, `14K`, `1,2M` o `44000`, e
+  anche solo il pezzo copiato in mezzo all'elenco, senza parentesi quadre.
+  Prima di applicare mostra cosa ha capito — quante carte, quante nuove,
+  quante righe scartate — perché un import silenzioso che sbaglia i nomi fa
+  più danno di uno che non parte. Le carte che non conosci vengono create; se
+  nell'elenco non c'è la valutazione, la scrivi dalla scheda della carta.
 - **Aggiornarli in blocco.** In *Prezzi* (e in *Conti*) c'è «Aggiorna i prezzi in blocco»:
   si incolla un elenco `Nome prezzo`, una riga per carta, e si sistemano tutti
   insieme. I nomi vengono cercati fra i giocatori che l'app già conosce, senza
@@ -806,6 +815,7 @@ shared/          logica pura, condivisa fra proxy e browser e coperta da test
   forecast.mjs   prezzo stimato fra un'osservazione e l'altra, e finestre utili
   price-entry.mjs  l'elenco delle carte a cui serve un prezzo, per urgenza
   sync.mjs       chi ha ragione quando due dispositivi hanno prezzi diversi
+  price-json.mjs lettura tollerante di un elenco di prezzi in JSON
   catalysts.mjs  forma dei catalizzatori e regole di corrispondenza
   scoring.mjs    punteggio delle occasioni e ragioni in chiaro
   alerts.mjs     regole degli avvisi
