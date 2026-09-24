@@ -16,12 +16,18 @@
 
 /**
  * Gli appuntamenti fissi della settimana: giorno (0 = domenica) e ora
- * italiana. Sono i valori di partenza, non una verità.
+ * italiana. Sono i valori di partenza per FC27, non una verità: EA li sposta
+ * e chi gioca se ne accorge prima di qualunque codice.
+ *
+ *   premi Rivals      giovedì mattina (in FC27 è il reset settimanale)
+ *   fine Champions    lunedì mattina, quando la Weekend League chiude
+ *   promo             venerdì sera, con l'apertura della Champions
+ *   infrasettimanale  mercoledì sera, squadra della settimana e SBC
  */
 export const CALENDARIO_PREDEFINITO = {
   premiRivals: { weekday: 4, hour: 9 },
   premiChampions: { weekday: 1, hour: 9 },
-  promo: { weekday: 5, hour: 19 },
+  promo: { weekday: 5, hour: 20 },
   infrasettimanale: { weekday: 3, hour: 19 },
 }
 
@@ -30,19 +36,19 @@ export const APPUNTAMENTI = [
   {
     chiave: 'premiRivals',
     label: 'Premi Rivals',
-    detail: 'Ondata di pacchetti: il mercato si riempie e i prezzi scendono.',
+    detail: 'Il reset settimanale: ondata di pacchetti, il mercato si riempie e i prezzi scendono.',
     effect: 'offerta',
   },
   {
     chiave: 'premiChampions',
-    label: 'Premi Champions',
-    detail: 'Chiude la Weekend League: seconda ondata di pacchetti della settimana.',
+    label: 'Fine Champions e premi',
+    detail: 'Chiude la Weekend League e si incassano i premi: seconda ondata di pacchetti.',
     effect: 'offerta',
   },
   {
     chiave: 'promo',
     label: 'Nuova promo + Champions',
-    detail: 'Uscita contenuti e apertura Weekend League: picco di domanda sulle carte meta.',
+    detail: 'Uscita contenuti e apertura Champions: picco di domanda sulle carte meta.',
     effect: 'domanda',
   },
   {

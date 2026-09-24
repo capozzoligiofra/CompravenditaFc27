@@ -254,6 +254,15 @@ gioca si ricompra e i prezzi risalgono. Orari italiani:
 L'app riconosce da sola in che fase sei e te lo dice in cima alla pagina
 Occasioni, con il conto alla rovescia per il prossimo appuntamento.
 
+Gli orari di partenza, oggi, sono questi:
+
+| Appuntamento | Quando (ora italiana) |
+| --- | --- |
+| Premi Rivals | giovedì 09:00 — in FC27 è il reset settimanale |
+| Fine Champions e premi | lunedì 09:00, quando chiude la Weekend League |
+| Nuova promo + Champions | venerdì 20:00 |
+| Aggiornamento settimanale | mercoledì 19:00 |
+
 **Gli orari li decidi tu, perché li decide EA.** Per anni i premi Rivals sono
 arrivati di lunedì, poi sono passati al giovedì; e nessuna fonte ce lo dice,
 visto che i siti che pubblicano il calendario non consentono l'accesso ai

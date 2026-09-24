@@ -1,17 +1,12 @@
-import { CALENDARIO_PREDEFINITO } from '../../shared/calendar.mjs'
 import type { AppData } from '../types.ts'
 
 const KEY = 'fc27-trader:v1'
 
 export const defaultData: AppData = {
-  settings: {
-    platform: 'ps',
-    taxPercent: 5,
-    targetMarginPercent: 15,
-    budget: 0,
-    notifications: false,
-    calendar: CALENDARIO_PREDEFINITO,
-  },
+  // `calendar` resta assente finché non lo correggi: così, se i valori di
+  // partenza migliorano con un aggiornamento, li ricevi — mentre i tuoi, una
+  // volta scritti, non te li tocca nessuno.
+  settings: { platform: 'ps', taxPercent: 5, targetMarginPercent: 15, budget: 0, notifications: false },
   watchlist: [],
   positions: [],
   catalysts: [],

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { currentPhase, normalizzaCalendario, romeParts, upcomingEvents } from '../shared/calendar.mjs'
+import { CALENDARIO_PREDEFINITO, currentPhase, normalizzaCalendario, romeParts, upcomingEvents } from '../shared/calendar.mjs'
 import { stimaPrezzo } from '../shared/forecast.mjs'
 import { matchesPlayer, normalizeCatalyst } from '../shared/catalysts.mjs'
 import { breakEvenSell, maxBuyForMargin, profit, roundToMarketStep, signalFor } from '../shared/market.mjs'
@@ -250,9 +250,10 @@ test('il calendario si può correggere: se i premi passano al giovedì, la fase 
 test('un calendario incompleto o sballato non rompe niente', () => {
   assert.ok(currentPhase(new Date('2026-09-23T13:00:00Z'), null).id)
   assert.ok(currentPhase(new Date('2026-09-23T13:00:00Z'), { promo: { weekday: 99, hour: -4 } }).id)
+  // I valori sballati vengono sostituiti da quelli di partenza.
   const calendario = normalizzaCalendario({ promo: { weekday: 99, hour: -4 } })
-  assert.equal(calendario.promo.weekday, 5)
-  assert.equal(calendario.promo.hour, 19)
+  assert.deepEqual(calendario.promo, CALENDARIO_PREDEFINITO.promo)
+  assert.deepEqual(normalizzaCalendario({}), CALENDARIO_PREDEFINITO)
 })
 
 test('i conti alla rovescia seguono il calendario configurato', () => {
