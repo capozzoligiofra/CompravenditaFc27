@@ -665,6 +665,28 @@ in gioco perderebbe contro quello di ieri sera. Per i dati personali vale la
 stessa regola, con una cautela: una copia vuota non cancella una copia piena,
 così il telefono nuovo riceve la rosa invece di azzerarla.
 
+**Svuotare il listino.** Le carte e i prezzi comuni stanno in due posti: sul
+server e in copia su ogni dispositivo. Per ripartire da zero servono tutti e
+due i passaggi, in quest'ordine:
+
+1. **Sul server**, da phpMyAdmin (scheda SQL):
+   `delete from prezzi; delete from storico; delete from giocatori;`
+   e, se vuoi buttare anche il catalogo condiviso,
+   `delete from catalogo; delete from catalogo_stato;`
+   Gli account restano: nessuno deve rientrare.
+2. **Su ogni dispositivo**, in *Opzioni → Listino condiviso*, **Dimentica i
+   prezzi scaricati**. Senza questo passo il telefono continuerebbe a mostrare
+   la sua copia di prezzi che sul server non esistono più.
+
+Prima del passo 1 conviene cancellare i propri prezzi scritti a mano (*Opzioni
+→ Dati locali → cancellali*): altrimenti la prima sincronizzazione li rimanda
+sul server, e il listino si ripopola da solo.
+
+Non c'è un pulsante «svuota tutto» che agisca sul server, ed è voluto: il nome
+non è una password, quindi chiunque conosca l'indirizzo potrebbe cancellare i
+dati di tutti. Le cose irreversibili si fanno da phpMyAdmin, che è protetto
+dalle credenziali Aruba.
+
 **Quando non c'è linea** si continua a scrivere: i prezzi restano nel telefono
 e partono da soli appena la connessione torna. In alto, accanto al nome
 dell'app, una scritta dice come sta il listino (`LISTINO IN COMUNE`,

@@ -236,6 +236,9 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
 - [ ] Ricaricando la pagina il catalogo è ancora lì.
 - [ ] **Controlla il server** (in *Opzioni → Listino condiviso*) risponde con
       le versioni e dice se manca qualche tabella.
+- [ ] **Dimentica i prezzi scaricati** svuota la copia locale del listino: le
+      carte non mostrano più «da <nome>». Rosa, watchlist e i prezzi scritti
+      da te restano al loro posto.
 - [ ] **Condividi con il gruppo**: il pulsante mostra l'avanzamento a blocchi
       e finisce con «Catalogo condiviso: N carte». Se le tabelle del catalogo
       non ci sono, l'errore lo **dice** invece di parlare di «errore del

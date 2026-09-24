@@ -57,6 +57,8 @@ export interface Store {
   /** Applica un elenco intero di prezzi in un colpo solo, creando le carte che mancano. */
   importaPrezzi: (voci: { player: Player; price: number }[]) => void
   clearManualPrices: () => void
+  /** Butta la copia locale del listino: prezzi e carte scaricati dal server. */
+  dimenticaListino: () => void
   recordPrices: (quotes: Record<string, Quote | null>) => void
   addCatalyst: (raw: Partial<Catalyst> & { title: string }) => void
   removeCatalyst: (id: string) => void
@@ -233,6 +235,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const clearManualPrices = useCallback(() => setData((current) => ({ ...current, manualPrices: {} })), [])
 
   /**
+   * Dimentica quello che è stato scaricato dal listino: prezzi comuni, carte
+   * viste solo lì, e il segnaposto della sincronizzazione. Serve quando il
+   * listino sul server è stato svuotato — altrimenti questo dispositivo
+   * continuerebbe a mostrare per sempre la sua copia di prezzi che non
+   * esistono più. La tua rosa, la watchlist e i prezzi scritti da te restano.
+   */
+  const dimenticaListino = useCallback(() => {
+    setData((current) => ({ ...current, sharedPrices: {}, sharedPlayers: {}, syncedAt: 0 }))
+  }, [])
+
+  /**
    * Il listino comune appena arrivato. I prezzi tuoi che il listino ha ormai
    * assorbito si buttano: tenerne due copie identiche non serve, e si
    * finirebbe per rispedirli in eterno.
@@ -393,6 +406,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setManualPrice,
       importaPrezzi,
       clearManualPrices,
+      dimenticaListino,
       recordPrices,
       addCatalyst,
       removeCatalyst,
@@ -426,6 +440,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setManualPrice,
       importaPrezzi,
       clearManualPrices,
+      dimenticaListino,
       recordPrices,
       addCatalyst,
       removeCatalyst,

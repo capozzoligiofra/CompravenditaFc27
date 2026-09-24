@@ -32,7 +32,7 @@ function linkInvito(server: string): string {
 }
 
 export default function SharedList() {
-  const { account, setAccount, data } = useStore()
+  const { account, setAccount, data, dimenticaListino } = useStore()
   const sync = useSync()
   const [invito, setInvito] = useState<string | null>(null)
   const [indirizzo, setIndirizzo] = useState(() => account?.server ?? '')
@@ -160,6 +160,22 @@ export default function SharedList() {
               }}
             >
               Invita qualcuno
+            </button>
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={() => {
+                if (
+                  confirm(
+                    'Dimenticare i prezzi e le carte scaricati dal listino? Restano la tua rosa, la watchlist e i prezzi che hai scritto tu. Alla prossima sincronizzazione riscarichi quello che c’è adesso sul server.',
+                  )
+                ) {
+                  dimenticaListino()
+                  setEsame('Copia locale del listino svuotata: alla prossima sincronizzazione riparte da quello che c’è sul server.')
+                }
+              }}
+            >
+              Dimentica i prezzi scaricati
             </button>
             <button
               type="button"
