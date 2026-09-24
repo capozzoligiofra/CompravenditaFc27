@@ -175,3 +175,28 @@ test('il filtro per nome vale anche sulle carte appena sistemate', () => {
     ['2'],
   )
 })
+
+test('chi entra in un listino già avviato vede le carte degli altri', () => {
+  const voci = vociPrezzo({
+    // Dispositivo nuovo: niente rosa, niente watchlist, nessuna scheda aperta.
+    condivise: { 1001: { name: 'Lautaro Martínez', rating: 89 }, 1003: { name: 'Rafael Leão', rating: 86 } },
+    manualPrices: { 1001: { price: 150_000, at: ADESSO - 2 * GIORNO } },
+    now: ADESSO,
+  })
+  assert.deepEqual(
+    voci.map((voce) => voce.name),
+    ['Rafael Leão', 'Lautaro Martínez'],
+  )
+  assert.deepEqual(voci[0].gruppi, ['listino'])
+  assert.equal(voci.find((voce) => voce.id === '1001').prezzo, 150_000)
+})
+
+test('una carta che hai già in rosa non si sdoppia per colpa del listino', () => {
+  const voci = vociPrezzo({
+    positions: [{ playerId: '1001', name: 'Lautaro Martínez', rating: 89, quantity: 1, sellPrice: null }],
+    condivise: { 1001: { name: 'Lautaro Martínez', rating: 89 } },
+    now: ADESSO,
+  })
+  assert.equal(voci.length, 1)
+  assert.deepEqual(voci[0].gruppi, ['rosa', 'listino'])
+})

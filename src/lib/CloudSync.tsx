@@ -30,6 +30,14 @@ export const SyncContext = createContext<StatoSync | null>(null)
  * continua con quello che c'è in locale e il prossimo giro riproverà. È la
  * ragione per cui l'app funziona anche in metropolitana.
  */
+function raccogliCarte(prezzi: { id: string; carta?: string; valutazione?: number }[]) {
+  const carte: Record<string, { name: string; rating: number }> = {}
+  for (const voce of prezzi) {
+    if (voce?.id && voce.carta) carte[voce.id] = { name: voce.carta, rating: Number(voce.valutazione) || 0 }
+  }
+  return carte
+}
+
 export function SyncProvider({ children }: { children: ReactNode }) {
   const store = useStore()
   const { account, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati } = store
@@ -64,6 +72,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       const giu = await scaricaPrezzi(account, piattaforma, cursorePartenza)
       let condivisi = applicaRemoti(partenza, giu.prezzi).condivisi as Record<string, PrezzoCondiviso>
       let cursore = giu.adesso
+      // Con i prezzi arrivano i nomi delle carte: senza, chi entra in un
+      // listino già avviato si troverebbe cifre senza sapere di chi sono.
+      const carte = raccogliCarte(giu.prezzi)
 
       const daMandare = daInviare(dati.manualPrices, condivisi)
       if (daMandare.length > 0) {
@@ -80,8 +91,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         const ritorno = await scaricaPrezzi(account, piattaforma, cursore)
         condivisi = applicaRemoti(condivisi, ritorno.prezzi).condivisi as Record<string, PrezzoCondiviso>
         cursore = ritorno.adesso
+        Object.assign(carte, raccogliCarte(ritorno.prezzi))
       }
-      impostaPrezziCondivisi(condivisi, cursore, piattaforma)
+      impostaPrezziCondivisi(condivisi, cursore, piattaforma, carte)
 
       const mio = datiPersonali(datiRef.current)
       const remoto = await scaricaDati(account)

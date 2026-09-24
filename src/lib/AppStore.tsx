@@ -26,6 +26,7 @@ export interface Store {
     condivisi: Record<string, PrezzoCondiviso>,
     syncedAt: number,
     piattaforma: Settings['platform'],
+    carte?: Record<string, { name: string; rating: number }>,
   ) => void
   /** Sostituisce i dati personali con quelli arrivati dal server. */
   applicaDatiRemoti: (contenuto: DatiPersonali, aggiornato: number) => void
@@ -157,18 +158,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * finirebbe per rispedirli in eterno.
    */
   const impostaPrezziCondivisi = useCallback(
-    (condivisi: Record<string, PrezzoCondiviso>, syncedAt: number, piattaforma: Settings['platform']) => {
+    (
+      condivisi: Record<string, PrezzoCondiviso>,
+      syncedAt: number,
+      piattaforma: Settings['platform'],
+      carte: Record<string, { name: string; rating: number }> = {},
+    ) => {
       setData((current) => {
         const superati = localiSuperati(current.manualPrices, condivisi)
+        const nuoveCarte = Object.keys(carte).some((id) => current.sharedPlayers[id]?.name !== carte[id].name)
         const uguale =
           current.sharedPrices === condivisi &&
           syncedAt === current.syncedAt &&
           piattaforma === current.syncedPlatform &&
-          superati.length === 0
+          superati.length === 0 &&
+          !nuoveCarte
         if (uguale) return current
         const manualPrices = { ...current.manualPrices }
         for (const id of superati) delete manualPrices[id]
-        return { ...current, sharedPrices: condivisi, syncedAt, syncedPlatform: piattaforma, manualPrices }
+        return {
+          ...current,
+          sharedPrices: condivisi,
+          sharedPlayers: nuoveCarte ? { ...current.sharedPlayers, ...carte } : current.sharedPlayers,
+          syncedAt,
+          syncedPlatform: piattaforma,
+          manualPrices,
+        }
       })
     },
     [],

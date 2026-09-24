@@ -21,9 +21,20 @@ function quandoBreve(istante: number): string {
  * viceversa. Il nome serve a firmarli e a ritrovare la tua rosa sugli altri
  * dispositivi — non è una password, e l'app lo dice invece di far finta.
  */
+/**
+ * Il link d'invito: l'indirizzo dell'app con dentro quello del listino. Chi
+ * lo riceve apre e scrive solo il proprio nome, invece di trascrivere un
+ * indirizzo dal telefono.
+ */
+function linkInvito(server: string): string {
+  const base = `${window.location.origin}${window.location.pathname}`
+  return `${base}#/entra?listino=${encodeURIComponent(server)}`
+}
+
 export default function SharedList() {
   const { account, setAccount, data } = useStore()
   const sync = useSync()
+  const [invito, setInvito] = useState<string | null>(null)
   const [indirizzo, setIndirizzo] = useState(() => account?.server ?? '')
   const [nome, setNome] = useState(() => account?.nome ?? '')
   const [errore, setErrore] = useState<string | null>(null)
@@ -90,6 +101,15 @@ export default function SharedList() {
 
           {sync.errore ? <p className="text-xs text-loss">{sync.errore}</p> : null}
 
+          {invito ? (
+            <div className="rounded-xl border border-gain/30 bg-gain/5 p-3">
+              <p className="text-xs text-chalk-dim">
+                Manda questo link: chi lo apre trova già l'indirizzo e deve solo scrivere il suo nome.
+              </p>
+              <code className="mt-1 block break-all font-mono text-[11px] text-chalk">{invito}</code>
+            </div>
+          ) : null}
+
           {persone.length > 0 ? (
             <p className="text-xs text-chalk-dim">
               Chi scrive i prezzi:{' '}
@@ -103,6 +123,32 @@ export default function SharedList() {
           <div className="flex flex-wrap gap-2">
             <button type="button" className={buttonClass} onClick={sync.sincronizzaOra} disabled={sync.inCorso}>
               {sync.inCorso ? 'Sincronizzo…' : 'Sincronizza ora'}
+            </button>
+            <button
+              type="button"
+              className={primaryButtonClass}
+              onClick={() => {
+                const link = linkInvito(account.server)
+                setInvito(link)
+                const share = navigator.share
+                if (typeof share === 'function') {
+                  void share
+                    .call(navigator, {
+                      title: 'FC27 Trader',
+                      text: 'Entra nel listino: i prezzi li teniamo in comune.',
+                      url: link,
+                    })
+                    .catch(() => {
+                      // Condivisione annullata: il link resta scritto qui sotto.
+                    })
+                  return
+                }
+                navigator.clipboard?.writeText(link).catch(() => {
+                  // Niente appunti: il link resta comunque visibile qui sotto.
+                })
+              }}
+            >
+              Invita qualcuno
             </button>
             <button
               type="button"

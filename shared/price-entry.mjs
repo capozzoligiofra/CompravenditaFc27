@@ -50,6 +50,10 @@ export function vociPrezzo({
   seen = [],
   watchlist = [],
   positions = [],
+  // Le carte che esistono solo nel listino condiviso: chi entra in un listino
+  // già avviato non ha né rosa né schede aperte, ma i prezzi degli altri sì.
+  // Senza questa fonte si troverebbe un pannello vuoto con il listino pieno.
+  condivise = {},
   manualPrices = {},
   priceHistory = {},
   now = Date.now(),
@@ -63,6 +67,9 @@ export function vociPrezzo({
   }
   for (const item of watchlist) aggiungi(mappa, item, 'watchlist')
   for (const player of seen) aggiungi(mappa, player, 'visto')
+  for (const [id, carta] of Object.entries(condivise)) {
+    aggiungi(mappa, { id, name: carta?.name ?? '', rating: carta?.rating ?? 0 }, 'listino')
+  }
 
   const voci = []
   for (const voce of mappa.values()) {

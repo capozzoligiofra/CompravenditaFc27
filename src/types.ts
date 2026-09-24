@@ -103,6 +103,8 @@ export interface AppData {
   priceHistory: Record<string, HistoryPoint[]>
   /** Il listino comune, come l'ha mandato il server condiviso. */
   sharedPrices: Record<string, { price: number; at: number; autore?: string }>
+  /** Le carte conosciute dal listino: servono a chi entra e non ha ancora nulla. */
+  sharedPlayers: Record<string, { name: string; rating: number }>
   /** Cursore della sincronizzazione: è l'orologio del server, non il nostro. */
   syncedAt: number
   /** A quale piattaforma appartiene il listino scaricato: cambiarla lo azzera. */

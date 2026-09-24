@@ -582,6 +582,15 @@ Cosa è in comune e cosa no:
 | Rosa, watchlist, impostazioni | sul server, legate al tuo nome | solo tu, su tutti i tuoi dispositivi |
 | Avvisi | nel dispositivo | solo quel dispositivo |
 
+**Invitare qualcuno.** Digitare un indirizzo su un telefono è il punto in cui
+la gente si arrende, quindi non glielo si fa fare: in *Opzioni → Listino
+condiviso* c'è **Invita qualcuno**, che prepara un link con dentro già
+l'indirizzo del listino. Chi lo apre trova una schermata che dice a quale
+listino sta per collegarsi e gli chiede solo il nome; da lì entra e si trova
+i prezzi già scritti dagli altri, con il nome di chi li ha segnati. Non ci si
+collega da soli: l'indirizzo arriva da un link, cioè da fuori, e si mostra in
+chiaro prima di chiedere conferma.
+
 **Come si decide chi ha ragione.** Due persone possono segnare la stessa carta
 a dieci secondi di distanza, e un telefono può restare offline per un giorno.
 La regola è una sola e vale nei due sensi: **vince l'osservazione più

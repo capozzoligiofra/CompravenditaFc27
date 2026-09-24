@@ -25,6 +25,7 @@ export function vociPrezzo(input?: {
   seen?: { id: string; name: string; rating?: number; position?: string; club?: string; version?: string }[]
   watchlist?: { id: string; name: string; rating?: number }[]
   positions?: { playerId: string; name: string; rating?: number; quantity?: number; sellPrice?: number | null }[]
+  condivise?: Record<string, { name: string; rating?: number }>
   manualPrices?: Record<string, { price: number; at: number }>
   priceHistory?: Record<string, { t: number; price: number }[]>
   now?: number

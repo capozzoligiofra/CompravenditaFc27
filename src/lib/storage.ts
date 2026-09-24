@@ -12,6 +12,7 @@ export const defaultData: AppData = {
   manualPrices: {},
   priceHistory: {},
   sharedPrices: {},
+  sharedPlayers: {},
   syncedAt: 0,
   syncedPlatform: 'ps',
   dataChangedAt: 0,
@@ -35,6 +36,7 @@ export function loadData(): AppData {
       // Il listino comune è una copia locale di quello del server: se manca,
       // la prima sincronizzazione lo riporta.
       sharedPrices: isRecord(parsed.sharedPrices) ? parsed.sharedPrices : {},
+      sharedPlayers: isPlainObject(parsed.sharedPlayers) ? parsed.sharedPlayers : {},
       syncedAt: Number(parsed.syncedAt) || 0,
       syncedPlatform: parsed.syncedPlatform ?? 'ps',
       dataChangedAt: Number(parsed.dataChangedAt) || 0,
@@ -68,6 +70,7 @@ export function importData(raw: string): AppData {
     manualPrices: isRecord(parsed.manualPrices) ? parsed.manualPrices : {},
     priceHistory: isPlainObject(parsed.priceHistory) ? parsed.priceHistory : {},
     sharedPrices: isRecord(parsed.sharedPrices) ? parsed.sharedPrices : {},
+    sharedPlayers: isPlainObject(parsed.sharedPlayers) ? parsed.sharedPlayers : {},
     syncedAt: Number(parsed.syncedAt) || 0,
     syncedPlatform: parsed.syncedPlatform ?? 'ps',
     dataChangedAt: Number(parsed.dataChangedAt) || 0,

@@ -5,6 +5,7 @@ import { StoreProvider } from './lib/AppStore.tsx'
 import { SyncProvider } from './lib/CloudSync.tsx'
 import Alerts from './pages/Alerts.tsx'
 import Calculator from './pages/Calculator.tsx'
+import Join from './pages/Join.tsx'
 import Market from './pages/Market.tsx'
 import Opportunities from './pages/Opportunities.tsx'
 import Portfolio from './pages/Portfolio.tsx'
@@ -29,6 +30,8 @@ export default function App() {
               <Route path="/calcolatore" element={<Calculator />} />
               <Route path="/portafoglio" element={<Portfolio />} />
               <Route path="/impostazioni" element={<SettingsPage />} />
+              {/* L'invito: un link che porta già l'indirizzo del listino. */}
+              <Route path="/entra" element={<Join />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>

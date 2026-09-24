@@ -290,6 +290,14 @@ finestra anonima: per l'app è un altro dispositivo a tutti gli effetti.
       secondo il prezzo è sul server.
 - [ ] Cambiando piattaforma (PS → Xbox) il listino si ricarica per quella
       piattaforma: non restano i prezzi PlayStation.
+- [ ] **Invito**: *Opzioni → Invita qualcuno* copia (o condivide) un link.
+      Aprendolo su un dispositivo nuovo compare «Ti hanno invitato a un
+      listino» con l'indirizzo in chiaro; si scrive solo il nome e si entra.
+- [ ] Subito dopo, il dispositivo nuovo trova nella pagina *Prezzi* le carte
+      del listino con i prezzi già segnati dagli altri, pur non avendo né
+      rosa né watchlist.
+- [ ] Un link d'invito senza indirizzo (`#/entra` da solo) non rompe niente:
+      porta alle Opzioni.
 
 ---
 
