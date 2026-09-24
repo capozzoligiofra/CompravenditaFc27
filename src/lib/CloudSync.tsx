@@ -2,7 +2,17 @@ import { createContext, useCallback, useEffect, useMemo, useRef, useState, type 
 
 import { applicaRemoti, daInviare, scegliDati } from '../../shared/sync.mjs'
 import type { PrezzoCondiviso } from '../../shared/sync.d.mts'
-import { datiPersonali, inviaDati, inviaPrezzi, scaricaDati, scaricaPrezzi, type DatiPersonali } from './cloud.ts'
+import { espandiCarta, leggiVersioneCatalogo, salvaVersioneCatalogo, type RigaCompatta } from './catalogStore.ts'
+import {
+  datiPersonali,
+  inviaDati,
+  inviaPrezzi,
+  scaricaBloccoCatalogo,
+  scaricaDati,
+  scaricaPrezzi,
+  statoCatalogo,
+  type DatiPersonali,
+} from './cloud.ts'
 import { useStore } from './useStore.ts'
 
 const OGNI = 3 * 60_000
@@ -40,7 +50,7 @@ function raccogliCarte(prezzi: { id: string; carta?: string; valutazione?: numbe
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const store = useStore()
-  const { account, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati } = store
+  const { account, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati, aggiungiAlCatalogo } = store
 
   // Il ciclo di sincronizzazione è asincrono: quando finisce, lo stato di
   // React può essere cambiato sotto i piedi. Si lavora sempre sull'ultima
@@ -55,6 +65,25 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [errore, setErrore] = useState<string | null>(null)
   const occupato = useRef(false)
   const impronta = useRef<string | null>(null)
+
+  const allineaCatalogo = useCallback(async () => {
+    if (!account) return
+    const stato = await statoCatalogo(account.server)
+    if (!stato?.versione || stato.versione <= leggiVersioneCatalogo()) return
+    const carte = []
+    for (let indice = 0; indice < stato.blocchi; indice += 1) {
+      const blocco = await scaricaBloccoCatalogo(account.server, indice)
+      for (const riga of blocco.carte as RigaCompatta[]) {
+        const carta = espandiCarta(riga)
+        if (carta) carte.push(carta)
+      }
+    }
+    if (carte.length === 0) return
+    const esito = aggiungiAlCatalogo(carte)
+    // La versione si annota solo se il catalogo è entrato davvero: se il
+    // browser era pieno, al prossimo giro ci riproviamo.
+    if (esito.salvato) salvaVersioneCatalogo(stato.versione)
+  }, [account, aggiungiAlCatalogo])
 
   const sincronizza = useCallback(async () => {
     if (!account || occupato.current) return
@@ -115,6 +144,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         impronta.current = JSON.stringify(mio)
       }
 
+      // Il catalogo del gruppo: si scarica solo se è più nuovo di quello che
+      // hai già, e una volta sola — sono megabyte, non un ping.
+      await allineaCatalogo()
+
       setErrore(null)
       setUltima(Date.now())
     } catch (problema) {
@@ -123,7 +156,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       occupato.current = false
       setInCorso(false)
     }
-  }, [account, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati])
+  }, [account, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati, allineaCatalogo])
 
   // Appena collegati, poi ogni tanto, e ogni volta che si torna sull'app:
   // è il momento in cui è più probabile che qualcun altro abbia scritto.

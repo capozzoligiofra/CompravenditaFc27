@@ -108,14 +108,6 @@ export function catalogoLocale({ seen = [], watchlist = [], positions = [], cond
 
 const DELIMITATORI = [',', ';', '\t', '|']
 
-const COLONNE_NOME = ['name', 'nome', 'player', 'playername', 'player_name', 'giocatore', 'fullname', 'full_name']
-const COLONNE_VALUTAZIONE = ['rating', 'overall', 'ovr', 'valutazione', 'media', 'score']
-const COLONNE_RUOLO = ['position', 'ruolo', 'pos', 'preferredposition']
-const COLONNE_CLUB = ['club', 'team', 'squadra']
-const COLONNE_LEGA = ['league', 'lega', 'campionato']
-const COLONNE_NAZIONE = ['nation', 'nazione', 'country', 'nazionalita']
-const COLONNE_VERSIONE = ['version', 'versione', 'cardtype', 'card_type', 'rarity']
-
 /** Il separatore più plausibile: quello che compare più volte nella prima riga. */
 function scegliDelimitatore(prima) {
   let migliore = ','
@@ -156,8 +148,49 @@ export function dividiRigaCsv(riga, delimitatore = ',') {
   return campi.map((campo) => campo.trim())
 }
 
-function indiceColonna(intestazioni, alias) {
-  return intestazioni.findIndex((voce) => alias.includes(voce.replace(/[^a-z0-9_]/g, '')))
+// Le intestazioni possibili, ridotte a sole lettere e numeri. Un file
+// esportato può chiamare le colonne in mille modi — `name`, `common_name`,
+// `overall_rating` — e sbagliare colonna significa importare ventimila righe
+// di spazzatura senza accorgersene, come è successo la prima volta.
+const COLONNE = {
+  nome: ['commonname', 'name', 'nome', 'playername', 'fullname', 'giocatore', 'player'],
+  primoNome: ['firstname', 'nome1', 'givenname'],
+  cognome: ['lastname', 'surname', 'cognome', 'familyname'],
+  valutazione: ['overallrating', 'overall', 'rating', 'ovr', 'valutazione', 'media'],
+  ruolo: ['position', 'ruolo', 'pos', 'preferredposition', 'mainposition'],
+  alternativi: ['alternatepositions', 'altpositions', 'otherpositions', 'ruolialternativi'],
+  club: ['club', 'team', 'squadra', 'clubname'],
+  lega: ['league', 'lega', 'campionato', 'leaguename'],
+  nazione: ['nationality', 'nation', 'nazione', 'country', 'nazionalita'],
+  genere: ['gender', 'genere'],
+  versione: ['version', 'versione', 'cardtype', 'cardversion', 'rarity'],
+  pac: ['pace', 'velocita'],
+  sho: ['shooting', 'tiro'],
+  pas: ['passing', 'passaggio', 'passaggi'],
+  dri: ['dribbling'],
+  dif: ['defending', 'difesa'],
+  fis: ['physicality', 'physical', 'fisico'],
+}
+
+function intestazionePulita(voce) {
+  return String(voce ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+/**
+ * Trova la colonna giusta: prima per nome esatto, poi — solo se non c'è — per
+ * contenuto. L'ordine conta: `alternate_positions` contiene `position`, e
+ * senza la precedenza all'esatto i ruoli finirebbero nella colonna sbagliata.
+ */
+function trovaColonna(intestazioni, alias, occupate = new Set()) {
+  for (const nome of alias) {
+    const indice = intestazioni.findIndex((voce, i) => voce === nome && !occupate.has(i))
+    if (indice >= 0) return indice
+  }
+  for (const nome of alias) {
+    const indice = intestazioni.findIndex((voce, i) => voce.includes(nome) && !occupate.has(i))
+    if (indice >= 0) return indice
+  }
+  return -1
 }
 
 /**
@@ -170,62 +203,90 @@ function indiceColonna(intestazioni, alias) {
  */
 export function leggiCsv(testo) {
   const righe = String(testo ?? '')
-    .replace(/^﻿/, '')
+    .replace(/^\uFEFF/, '')
     .split(/\r?\n/)
     .filter((riga) => riga.trim().length > 0)
   if (righe.length === 0) return { carte: [], errore: null, scartate: 0, colonne: null }
 
   const delimitatore = scegliDelimitatore(righe[0])
-  const prima = dividiRigaCsv(righe[0], delimitatore).map((voce) => voce.toLowerCase())
+  const intestazioni = dividiRigaCsv(righe[0], delimitatore).map(intestazionePulita)
 
-  let colonneNome = indiceColonna(prima, COLONNE_NOME)
-  let colonneVoto = indiceColonna(prima, COLONNE_VALUTAZIONE)
-  const conIntestazione = colonneNome >= 0 || colonneVoto >= 0
-  const extra = conIntestazione
-    ? {
-        position: indiceColonna(prima, COLONNE_RUOLO),
-        club: indiceColonna(prima, COLONNE_CLUB),
-        league: indiceColonna(prima, COLONNE_LEGA),
-        nation: indiceColonna(prima, COLONNE_NAZIONE),
-        version: indiceColonna(prima, COLONNE_VERSIONE),
-      }
-    : {}
-
-  if (!conIntestazione) {
-    // Nessuna intestazione riconoscibile: si prendono le prime due colonne.
-    colonneNome = 0
-    colonneVoto = 1
-  } else {
-    if (colonneNome < 0) colonneNome = 0
-    if (colonneVoto < 0) colonneVoto = -1
+  const occupate = new Set()
+  const colonna = (chiave) => {
+    const indice = trovaColonna(intestazioni, COLONNE[chiave], occupate)
+    if (indice >= 0) occupate.add(indice)
+    return indice
   }
+
+  // L'ordine delle chiamate è l'ordine di precedenza: chi prende una colonna
+  // la toglie agli altri.
+  const cNome = colonna('nome')
+  const cPrimoNome = colonna('primoNome')
+  const cCognome = colonna('cognome')
+  const cVoto = colonna('valutazione')
+  const cRuolo = colonna('ruolo')
+  const cAlternativi = colonna('alternativi')
+  const cClub = colonna('club')
+  const cLega = colonna('lega')
+  const cNazione = colonna('nazione')
+  const cGenere = colonna('genere')
+  const cVersione = colonna('versione')
+  const statistiche = { pac: colonna('pac'), sho: colonna('sho'), pas: colonna('pas'), dri: colonna('dri'), dif: colonna('dif'), fis: colonna('fis') }
+
+  const conIntestazione = cNome >= 0 || cCognome >= 0 || cVoto >= 0
+  const indiceNome = conIntestazione ? cNome : 0
+  const indiceVoto = conIntestazione ? cVoto : 1
 
   const dati = conIntestazione ? righe.slice(1) : righe
   const carte = []
   const viste = new Set()
   let scartate = 0
 
+  const campo = (campi, indice) => (indice >= 0 ? String(campi[indice] ?? '').trim() : '')
+  const numero = (campi, indice) => {
+    if (indice < 0) return 0
+    const valore = Number.parseInt(String(campi[indice] ?? '').replace(/[^\d]/g, ''), 10)
+    return Number.isFinite(valore) ? valore : 0
+  }
+
   for (const riga of dati) {
     const campi = dividiRigaCsv(riga, delimitatore)
-    const nome = String(campi[colonneNome] ?? '').replace(/\s+/g, ' ').trim()
-    const voto = colonneVoto >= 0 ? Number.parseInt(String(campi[colonneVoto] ?? '').replace(/[^\d]/g, ''), 10) : 0
-    if (!nome || nome.length < 2) {
+    // Il nome «comune» a volte manca (è vuoto per chi si conosce col nome
+    // intero): in quel caso lo si compone da nome e cognome.
+    let nome = campo(campi, indiceNome)
+    if (!nome) nome = [campo(campi, cPrimoNome), campo(campi, cCognome)].filter(Boolean).join(' ')
+    nome = nome.replace(/\s+/g, ' ').trim()
+
+    if (nome.length < 2) {
       scartate += 1
       continue
     }
+
     const carta = creaCarta({
       name: nome,
-      rating: Number.isFinite(voto) ? voto : 0,
-      position: extra.position >= 0 ? (campi[extra.position] ?? '') : '',
-      club: extra.club >= 0 ? (campi[extra.club] ?? '') : '',
-      league: extra.league >= 0 ? (campi[extra.league] ?? '') : '',
-      nation: extra.nation >= 0 ? (campi[extra.nation] ?? '') : '',
-      version: extra.version >= 0 ? (campi[extra.version] ?? '') : '',
+      rating: numero(campi, indiceVoto),
+      position: campo(campi, cRuolo),
+      club: campo(campi, cClub),
+      league: campo(campi, cLega),
+      nation: campo(campi, cNazione),
+      version: campo(campi, cVersione),
     })
     if (!carta) {
       scartate += 1
       continue
     }
+
+    const alternativi = campo(campi, cAlternativi)
+    if (alternativi) carta.alt = alternativi
+    const genere = campo(campi, cGenere)
+    if (genere) carta.gender = genere
+    const valori = Object.fromEntries(
+      Object.entries(statistiche)
+        .map(([chiave, indice]) => [chiave, numero(campi, indice)])
+        .filter(([, valore]) => valore > 0),
+    )
+    if (Object.keys(valori).length > 0) carta.stats = valori
+
     if (viste.has(carta.id)) continue
     viste.add(carta.id)
     carte.push(carta)
@@ -240,11 +301,16 @@ export function leggiCsv(testo) {
     }
   }
 
+  const grezze = dividiRigaCsv(righe[0], delimitatore)
   return {
     carte,
     errore: null,
     scartate,
-    colonne: { nome: prima[colonneNome] ?? 'prima colonna', valutazione: colonneVoto >= 0 ? (prima[colonneVoto] ?? 'seconda colonna') : null },
+    colonne: {
+      nome: conIntestazione ? (grezze[indiceNome] || [grezze[cPrimoNome], grezze[cCognome]].filter(Boolean).join(' + ')) : 'prima colonna',
+      valutazione: indiceVoto >= 0 ? (grezze[indiceVoto] ?? null) : null,
+      extra: [cRuolo, cClub, cLega, cNazione].filter((indice) => indice >= 0).map((indice) => grezze[indice]),
+    },
   }
 }
 

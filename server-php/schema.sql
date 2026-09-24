@@ -71,3 +71,25 @@ create table if not exists dati_utente (
   aggiornato  bigint not null,
   primary key (utente)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_unicode_ci;
+
+-- Il catalogo condiviso: l'elenco dei giocatori caricato una volta da un
+-- dispositivo e scaricato da tutti gli altri. Viaggia a blocchi perché un
+-- elenco da ventimila carte non sta in una richiesta sola.
+create table if not exists catalogo (
+  versione    bigint not null,
+  indice      int not null,
+  contenuto   longtext not null,
+  aggiornato  bigint not null,
+  primary key (versione, indice)
+) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_unicode_ci;
+
+-- Qual è il catalogo buono, adesso: si aggiorna solo quando tutti i blocchi
+-- sono arrivati, così nessuno scarica una versione a metà.
+create table if not exists catalogo_stato (
+  id          tinyint unsigned not null,
+  versione    bigint not null,
+  blocchi     int not null,
+  carte       int not null,
+  aggiornato  bigint not null,
+  primary key (id)
+) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_unicode_ci;

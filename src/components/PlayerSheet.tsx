@@ -112,13 +112,26 @@ export default function PlayerSheet({ playerId }: { playerId: string }) {
     )
   }
 
+  // Quello che il catalogo sa di questa carta e la sorgente non dice.
+  const schedaCatalogo = catalogo[playerId]
   const caratteristiche = [
-    ['Ruolo', player.position],
-    ['Club', player.club],
-    ['Campionato', player.league],
-    ['Nazione', player.nation],
+    ['Ruolo', player.position || schedaCatalogo?.position],
+    ['Altri ruoli', schedaCatalogo?.alt],
+    ['Club', player.club || schedaCatalogo?.club],
+    ['Campionato', player.league || schedaCatalogo?.league],
+    ['Nazione', player.nation || schedaCatalogo?.nation],
     ['Versione', player.version],
+    ['Modalità', schedaCatalogo?.gender],
   ].filter(([, valore]) => Boolean(valore))
+  const ETICHETTE_STATS: Record<string, string> = {
+    pac: 'VEL',
+    sho: 'TIR',
+    pas: 'PAS',
+    dri: 'DRI',
+    dif: 'DIF',
+    fis: 'FIS',
+  }
+  const statistiche = Object.entries(schedaCatalogo?.stats ?? {}).filter(([, valore]) => valore > 0)
 
   return (
     <div className="space-y-4">
@@ -206,6 +219,19 @@ export default function PlayerSheet({ playerId }: { playerId: string }) {
             tone={(quote?.changePercent ?? 0) > 0 ? 'gain' : (quote?.changePercent ?? 0) < 0 ? 'loss' : 'neutral'}
           />
         </div>
+
+        {statistiche.length > 0 ? (
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {statistiche.map(([chiave, valore]) => (
+              <div key={chiave} className="rounded-xl border border-pitch-line bg-pitch/60 px-2 py-2 text-center">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+                  {ETICHETTE_STATS[chiave] ?? chiave}
+                </p>
+                <p className="mt-0.5 font-mono text-base font-semibold">{valore}</p>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-4">
           <Sparkline points={storico} />

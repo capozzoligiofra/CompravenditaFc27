@@ -421,11 +421,17 @@ Quello che si fa invece:
   quel momento la ricerca li trova tutti e gli elenchi di prezzi riconoscono i
   nomi invece di creare carte nuove. Vanno bene virgola, punto e virgola o
   tabulazione, intestazioni in italiano o in inglese, e — se manca
-  l'intestazione — le prime due colonne. Diciottomila carte si caricano in
-  meno di un secondo e occupano circa 800 KB nel browser; restano su quel
-  dispositivo, non vengono mandate al listino (le carte entrano nel listino
-  quando qualcuno ci mette un prezzo). Chi vuole lo stesso catalogo carica lo
-  stesso file.
+  l'intestazione — le prime due colonne. Riconosce anche gli export veri, dove
+  le colonne si chiamano `common_name` e `overall_rating`, e compone il nome da
+  nome e cognome quando quello «comune» manca. Oltre a nome e valutazione
+  prende ruolo, ruoli alternativi, club, campionato, nazione, modalità e le sei
+  statistiche principali, e li mostra nella scheda della carta. Ventimila carte
+  si caricano in meno di un secondo.
+  **Poi basta premere «Condividi con il gruppo»**: il catalogo finisce sul tuo
+  listino a blocchi, e ogni altro dispositivo collegato se lo scarica da solo
+  alla prima sincronizzazione — una volta sola, non uno per telefono. Il server
+  pubblica il catalogo nuovo solo quando sono arrivati tutti i blocchi, così
+  nessuno si ritrova un elenco a metà.
 - **Incollare un elenco JSON.** In *Prezzi* c'è «Prezzi da un elenco JSON»,
   per chi i prezzi li tiene in un foglio o in un file:
   `[{"nome": "Klara Bühl", "prezzo": "8.2K"}, …]`. Accetta le chiavi in
@@ -630,6 +636,7 @@ Cosa è in comune e cosa no:
 | | Dove vive | Chi lo vede |
 | --- | --- | --- |
 | Prezzi e storico | sul server | tutti, con il nome di chi li ha scritti |
+| Il catalogo dei giocatori | sul server, se lo condividi | tutti quelli del listino |
 | Le carte che segui | sul server, legate al tuo nome | solo tu |
 | Rosa, watchlist, impostazioni | sul server, legate al tuo nome | solo tu, su tutti i tuoi dispositivi |
 | Avvisi | nel dispositivo | solo quel dispositivo |

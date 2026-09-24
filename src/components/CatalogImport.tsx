@@ -3,9 +3,13 @@ import { useRef, useState } from 'react'
 import { Card, CardTitle, buttonClass, primaryButtonClass } from './ui.tsx'
 import { leggiCsv } from '../../shared/catalog.mjs'
 import type { CartaBase } from '../../shared/catalog.d.mts'
+import { compattaCarta, salvaVersioneCatalogo } from '../lib/catalogStore.ts'
+import { inviaBloccoCatalogo } from '../lib/cloud.ts'
 import { useStore } from '../lib/useStore.ts'
 
 const MAX_CARTE = 40_000
+/** Carte per blocco: circa un quarto di megabyte a richiesta, che passa ovunque. */
+const PER_BLOCCO = 2_500
 
 /**
  * Il catalogo dei giocatori, da un file tuo.
@@ -19,13 +23,49 @@ const MAX_CARTE = 40_000
  * riempiono il pannello dei prezzi. Resta su questo dispositivo.
  */
 export default function CatalogImport() {
-  const { catalogo, aggiungiAlCatalogo, svuotaCatalogo } = useStore()
+  const { catalogo, account, aggiungiAlCatalogo, svuotaCatalogo } = useStore()
   const fileInput = useRef<HTMLInputElement>(null)
   const [messaggio, setMessaggio] = useState<string | null>(null)
   const [errore, setErrore] = useState<string | null>(null)
   const [lavorando, setLavorando] = useState(false)
+  const [invio, setInvio] = useState<string | null>(null)
 
   const quante = Object.keys(catalogo).length
+
+  /**
+   * Manda il catalogo al listino, a blocchi. Da lì se lo scaricano tutti gli
+   * altri dispositivi collegati: è un lavoro che si fa una volta sola, non
+   * uno per telefono.
+   */
+  const condividi = async () => {
+    if (!account) return
+    const carte = Object.values(catalogo).map((carta) => compattaCarta(carta))
+    const blocchi = Math.max(1, Math.ceil(carte.length / PER_BLOCCO))
+    const versione = Date.now()
+    setInvio(`Invio 0 di ${blocchi}…`)
+    setErrore(null)
+    try {
+      for (let indice = 0; indice < blocchi; indice += 1) {
+        await inviaBloccoCatalogo(account, {
+          versione,
+          indice,
+          blocchi,
+          carte: carte.slice(indice * PER_BLOCCO, (indice + 1) * PER_BLOCCO),
+        })
+        setInvio(`Invio ${indice + 1} di ${blocchi}…`)
+      }
+      // Questo dispositivo ha già quello che ha appena mandato.
+      salvaVersioneCatalogo(versione)
+      setInvio(
+        `Catalogo condiviso: ${quante.toLocaleString('it-IT')} carte. Gli altri lo scaricano da soli alla prossima sincronizzazione.`,
+      )
+    } catch (problema) {
+      setInvio(null)
+      setErrore(
+        `Invio interrotto: ${problema instanceof Error ? problema.message : 'errore di rete'}. Il catalogo di prima resta quello buono per gli altri.`,
+      )
+    }
+  }
 
   const carica = (testo: string) => {
     setLavorando(true)
@@ -41,16 +81,24 @@ export default function CatalogImport() {
         return
       }
       const carte = (esito.carte as CartaBase[]).slice(0, MAX_CARTE)
-      const { aggiunte, salvato } = aggiungiAlCatalogo(carte)
+      const { aggiunte, salvato, dettaglio } = aggiungiAlCatalogo(carte)
       const colonne = esito.colonne
-        ? `Colonne usate: «${esito.colonne.nome}»${esito.colonne.valutazione ? ` e «${esito.colonne.valutazione}»` : ' (nessuna valutazione)'}.`
+        ? `Colonne usate: «${esito.colonne.nome}»${esito.colonne.valutazione ? ` e «${esito.colonne.valutazione}»` : ' (nessuna valutazione)'}${
+            esito.colonne.extra && esito.colonne.extra.length > 0 ? `, più ${esito.colonne.extra.join(', ')}` : ''
+          }.`
         : ''
       setMessaggio(
         `${carte.length} carte lette, ${aggiunte} nuove nel catalogo${esito.scartate > 0 ? `, ${esito.scartate} righe scartate` : ''}. ${colonne}`,
       )
       if (!salvato) {
         setErrore(
-          'Il browser non ha spazio per tenere tutto il catalogo: vale per questa sessione, ma alla prossima apertura ne ritroverai meno. Prova con un file più piccolo.',
+          "Il browser non ha spazio per questo catalogo e l'ho tolto invece di lasciarne metà: i tuoi prezzi e la tua rosa contano di più. Prova con un file più piccolo.",
+        )
+      } else if (dettaglio !== 'completo') {
+        setErrore(
+          dettaglio === 'ridotto'
+            ? 'Spazio limitato: ho tenuto nome, valutazione, ruolo e club, ma non statistiche, campionato e nazione.'
+            : 'Spazio limitato: ho tenuto solo nome e valutazione.',
         )
       }
       setLavorando(false)
@@ -73,6 +121,11 @@ export default function CatalogImport() {
         <button type="button" className={primaryButtonClass} disabled={lavorando} onClick={() => fileInput.current?.click()}>
           {lavorando ? 'Leggo il file…' : 'Carica un CSV'}
         </button>
+        {quante > 0 && account ? (
+          <button type="button" className={buttonClass} disabled={Boolean(invio?.startsWith('Invio'))} onClick={() => void condividi()}>
+            Condividi con il gruppo
+          </button>
+        ) : null}
         {quante > 0 ? (
           <button
             type="button"
@@ -105,13 +158,15 @@ export default function CatalogImport() {
       </div>
 
       {messaggio ? <p className="mt-2 text-xs text-gain">{messaggio}</p> : null}
+      {invio ? <p className="mt-2 text-xs text-chalk-dim">{invio}</p> : null}
       {errore ? <p className="mt-2 text-xs text-loss">{errore}</p> : null}
 
       <p className="mt-3 text-[11px] text-chalk-dim">
         Vanno bene virgola, punto e virgola o tabulazione, intestazioni in italiano o in inglese
         (<code className="font-mono">nome/name</code>, <code className="font-mono">valutazione/rating/overall</code>) e,
-        se l'intestazione manca, le prime due colonne. Il catalogo resta su questo dispositivo: non viene mandato al
-        listino né agli altri. Le carte entrano nel listino solo quando qualcuno ci mette un prezzo.
+        se l'intestazione manca, le prime due colonne. Il catalogo resta su questo dispositivo finché non premi
+        «Condividi con il gruppo»: da lì finisce sul tuo listino, e gli altri se lo scaricano da soli — una volta
+        sola, non uno per telefono.
       </p>
     </Card>
   )

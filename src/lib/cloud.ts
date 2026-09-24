@@ -202,6 +202,37 @@ export function registraCarta(account: Account, giocatore: Player): Promise<{ id
   return chiama(account.server, 'carta', { metodo: 'POST', token: account.token, corpo: { giocatore } })
 }
 
+export interface StatoCatalogo {
+  versione: number
+  blocchi: number
+  carte: number
+  aggiornato: number
+}
+
+/** Che catalogo ha il gruppo, e quanto è nuovo. */
+export function statoCatalogo(server: string, signal?: AbortSignal): Promise<StatoCatalogo> {
+  return chiama(server, 'catalogo', { signal })
+}
+
+export function scaricaBloccoCatalogo(
+  server: string,
+  indice: number,
+  signal?: AbortSignal,
+): Promise<{ versione: number; indice: number; carte: unknown[] }> {
+  return chiama(server, 'catalogo', { cerca: { blocco: String(indice) }, signal })
+}
+
+/**
+ * Manda un blocco di catalogo. Il server lo pubblica solo quando sono
+ * arrivati tutti: nessuno scarica un elenco a metà.
+ */
+export function inviaBloccoCatalogo(
+  account: Account,
+  blocco: { versione: number; indice: number; blocchi: number; carte: unknown[] },
+): Promise<{ completo: boolean }> {
+  return chiama(account.server, 'catalogo', { metodo: 'POST', token: account.token, corpo: blocco })
+}
+
 export function chiCe(server: string, signal?: AbortSignal): Promise<{ persone: { nome: string; visto: number; prezzi: number }[] }> {
   return chiama(server, 'chi', { signal })
 }

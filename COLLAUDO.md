@@ -228,7 +228,17 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
       trova, con valutazione e club.
 - [ ] Incollando un elenco di prezzi, i nomi presenti nel catalogo risultano
       **già conosciuti** (non «da creare») e prendono la valutazione da lì.
+- [ ] Le colonne riconosciute vengono elencate nel messaggio: su un export
+      vero devono risultare `common_name` e `overall_rating`, più `position`,
+      `club`, `league`, `nationality`.
+- [ ] Aprendo la scheda di una carta del catalogo si vedono ruolo, ruoli
+      alternativi, club, campionato, nazione e le sei statistiche.
 - [ ] Ricaricando la pagina il catalogo è ancora lì.
+- [ ] **Condividi con il gruppo**: il pulsante mostra l'avanzamento a blocchi
+      e finisce con «Catalogo condiviso: N carte».
+- [ ] Un secondo dispositivo che entra nel listino si ritrova lo stesso
+      catalogo entro pochi secondi, **senza caricare nessun file**, e trova in
+      ricerca un giocatore che non ha mai aperto.
 - [ ] Con il catalogo caricato, segnare un prezzo e ricaricare: **il prezzo
       c'è ancora**. (Un catalogo troppo grande non deve mai rubare lo spazio
       ai tuoi dati: se non ci sta, l'app lo dice e non lo tiene.)

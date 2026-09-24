@@ -6,7 +6,7 @@ import { needsSnapshot, recordSnapshot } from '../../shared/history.mjs'
 import { localiSuperati, prezziEffettivi } from '../../shared/sync.mjs'
 import type { PrezzoCondiviso } from '../../shared/sync.d.mts'
 import type { CartaBase } from '../../shared/catalog.d.mts'
-import { leggiCatalogo, salvaCatalogo, type Catalogo } from './catalogStore.ts'
+import { leggiCatalogo, salvaCatalogo, type Catalogo, type EsitoSalvataggio } from './catalogStore.ts'
 import type { DatiPersonali } from './cloud.ts'
 import { leggiAccount, salvaAccount, type Account } from './cloud.ts'
 import type { Alert, AppData, HistoryPoint, Player, Position, Quote, Settings, WatchItem } from '../types.ts'
@@ -26,8 +26,8 @@ export interface Store {
    * l'elenco delle carte che segui.
    */
   catalogo: Catalogo
-  /** Aggiunge carte al catalogo. Restituisce false se il browser è pieno. */
-  aggiungiAlCatalogo: (carte: CartaBase[]) => { aggiunte: number; salvato: boolean }
+  /** Aggiunge carte al catalogo, dicendo quanto dettaglio è stato possibile tenere. */
+  aggiungiAlCatalogo: (carte: CartaBase[]) => { aggiunte: number } & EsitoSalvataggio
   svuotaCatalogo: () => void
   /** Chi sei sul listino condiviso, se ti sei collegato. */
   account: Account | null
@@ -84,19 +84,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const aggiungiAlCatalogo = useCallback((carte: CartaBase[]) => {
     let aggiunte = 0
-    let salvato = true
+    let esito: EsitoSalvataggio = { salvato: true, dettaglio: 'completo' }
     setCatalogo((current) => {
       const prossimo = { ...current }
+      let cambiato = false
       for (const carta of carte) {
         if (!carta?.id || !carta.name) continue
         if (!prossimo[carta.id]) aggiunte += 1
+        // Anche una carta già presente può arrivare più completa di prima.
+        if (!prossimo[carta.id] || JSON.stringify(prossimo[carta.id]) !== JSON.stringify(carta)) cambiato = true
         prossimo[carta.id] = carta
       }
-      if (aggiunte === 0) return current
-      salvato = salvaCatalogo(prossimo)
+      if (!cambiato) return current
+      esito = salvaCatalogo(prossimo)
       return prossimo
     })
-    return { aggiunte, salvato }
+    return { aggiunte, ...esito }
   }, [])
 
   const svuotaCatalogo = useCallback(() => {

@@ -20,6 +20,9 @@
 //   POST api.php?azione=entra          {nome}
 //   GET  api.php?azione=prezzi&piattaforma=ps&da=0
 //   POST api.php?azione=prezzi         {piattaforma, prezzi:[{id,price,at,giocatore}]}
+//   GET  api.php?azione=catalogo            stato del catalogo condiviso
+//   GET  api.php?azione=catalogo&blocco=0    un blocco di carte
+//   POST api.php?azione=catalogo             {versione, indice, blocchi, carte:[...]}
 //   GET  api.php?azione=cerca&q=lautaro
 //   POST api.php?azione=carta          {giocatore:{name,rating,...}}
 //   GET  api.php?azione=storico&id=123&piattaforma=ps
@@ -346,6 +349,73 @@ try {
             }
 
             rispondi(['salvati' => $salvati, 'adesso' => $ora]);
+
+        case 'catalogo':
+            // L'elenco dei giocatori, caricato una volta e scaricato da tutti.
+            // Viaggia a blocchi: ventimila carte non stanno in una richiesta.
+            if ($metodo === 'GET') {
+                $stato = $db->query('select versione, blocchi, carte, aggiornato from catalogo_stato where id = 1')->fetch();
+                if (!$stato) {
+                    rispondi(['versione' => 0, 'blocchi' => 0, 'carte' => 0, 'aggiornato' => 0]);
+                }
+                if (isset($_GET['blocco'])) {
+                    $indice = max(0, (int) $_GET['blocco']);
+                    $query = $db->prepare('select contenuto from catalogo where versione = ? and indice = ?');
+                    $query->execute([(int) $stato['versione'], $indice]);
+                    $riga = $query->fetch();
+                    if (!$riga) {
+                        errore('Blocco non trovato.', 404);
+                    }
+                    rispondi([
+                        'versione' => (int) $stato['versione'],
+                        'indice' => $indice,
+                        'carte' => json_decode((string) $riga['contenuto'], true) ?: [],
+                    ]);
+                }
+                rispondi([
+                    'versione' => (int) $stato['versione'],
+                    'blocchi' => (int) $stato['blocchi'],
+                    'carte' => (int) $stato['carte'],
+                    'aggiornato' => (int) $stato['aggiornato'],
+                ]);
+            }
+
+            if ($metodo !== 'POST') {
+                errore('Serve una GET o una POST.', 405);
+            }
+            richiediUtente($db);
+            $dati = corpo();
+            $versione = (int) ($dati['versione'] ?? 0);
+            $indice = (int) ($dati['indice'] ?? -1);
+            $blocchi = (int) ($dati['blocchi'] ?? 0);
+            $carte = is_array($dati['carte'] ?? null) ? $dati['carte'] : null;
+            if ($versione <= 0 || $indice < 0 || $blocchi <= 0 || $indice >= $blocchi || $carte === null) {
+                errore('Blocco di catalogo non valido.');
+            }
+
+            $ora = adesso();
+            $db->prepare(
+                'insert into catalogo (versione, indice, contenuto, aggiornato) values (?, ?, ?, ?)
+                 on duplicate key update contenuto = values(contenuto), aggiornato = values(aggiornato)'
+            )->execute([$versione, $indice, json_encode($carte, JSON_UNESCAPED_UNICODE), $ora]);
+
+            $quanti = $db->prepare('select count(*) as n, coalesce(sum(json_length(contenuto)), 0) as carte from catalogo where versione = ?');
+            $quanti->execute([$versione]);
+            $conteggio = $quanti->fetch();
+            $completo = ((int) $conteggio['n']) >= $blocchi;
+
+            if ($completo) {
+                // Solo adesso il catalogo nuovo diventa quello buono, e i
+                // vecchi si buttano: nessuno deve scaricare una versione a metà.
+                $db->prepare(
+                    'insert into catalogo_stato (id, versione, blocchi, carte, aggiornato) values (1, ?, ?, ?, ?)
+                     on duplicate key update versione = values(versione), blocchi = values(blocchi),
+                       carte = values(carte), aggiornato = values(aggiornato)'
+                )->execute([$versione, $blocchi, (int) $conteggio['carte'], $ora]);
+                $db->prepare('delete from catalogo where versione <> ?')->execute([$versione]);
+            }
+
+            rispondi(['versione' => $versione, 'indice' => $indice, 'completo' => $completo]);
 
         case 'cerca':
             // Il catalogo delle carte e' di tutti: chi ne crea una la rende

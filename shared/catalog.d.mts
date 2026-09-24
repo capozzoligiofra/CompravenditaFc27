@@ -8,6 +8,12 @@ export interface CartaBase {
   nation?: string
   version?: string
   image?: string
+  /** Ruoli alternativi, come li scrive il gioco: «CAM ST». */
+  alt?: string
+  /** Calcio maschile o femminile, quando il file lo dice. */
+  gender?: string
+  /** Le sei statistiche principali, se il file le contiene. */
+  stats?: Record<string, number>
 }
 
 export function idCarta(nome: string, valutazione?: number): string
@@ -33,7 +39,7 @@ export function leggiCsv(testo: string): {
   carte: CartaBase[]
   errore: string | null
   scartate: number
-  colonne: { nome: string; valutazione: string | null } | null
+  colonne: { nome: string; valutazione: string | null; extra?: string[] } | null
 }
 export function indicePerNome(carte?: CartaBase[]): Map<string, CartaBase[]>
 export function trovaNelCatalogo(

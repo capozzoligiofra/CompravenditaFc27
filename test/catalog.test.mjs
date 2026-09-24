@@ -151,3 +151,45 @@ test("l'indice regge un catalogo grande senza rallentare", () => {
   for (let i = 0; i < 2_000; i += 1) trovaNelCatalogo(`Giocatore ${i * 7}`, 0, indice)
   assert.ok(Date.now() - inizio < 500, 'duemila ricerche su ventimila carte devono costare poco')
 })
+
+test('riconosce le colonne di un export vero: common_name e overall_rating', () => {
+  // È il caso che aveva fatto importare ventimila righe di identificativi al
+  // posto dei nomi: le colonne non si chiamavano «name» e «rating».
+  const csv = `player_id,common_name,first_name,last_name,overall_rating,position,alternate_positions,club,league,nationality,gender
+227203,Alexia Putellas,Alexia,Putellas Segura,91,CM,CAM ST,London City,Barclays WSL,Spain,Women's Football
+231747,,Kylian,Mbappé,91,ST,LW,Real Madrid,LALIGA EA SPORTS,France,Men's Football`
+  const esito = leggiCsv(csv)
+  assert.equal(esito.errore, null)
+  assert.equal(esito.colonne.nome, 'common_name')
+  assert.equal(esito.colonne.valutazione, 'overall_rating')
+  assert.equal(esito.carte.length, 2)
+
+  const [putellas, mbappe] = esito.carte
+  assert.equal(putellas.name, 'Alexia Putellas')
+  assert.equal(putellas.rating, 91)
+  assert.equal(putellas.club, 'London City')
+  assert.equal(putellas.league, 'Barclays WSL')
+  assert.equal(putellas.nation, 'Spain')
+  assert.equal(putellas.alt, 'CAM ST')
+  assert.equal(putellas.gender, "Women's Football")
+  // Il nome comune può mancare: si compone da nome e cognome.
+  assert.equal(mbappe.name, 'Kylian Mbappé')
+})
+
+test('i ruoli alternativi non rubano la colonna del ruolo', () => {
+  const esito = leggiCsv('name,alternate_positions,position,rating\nTizio,CAM ST,CM,84')
+  assert.equal(esito.carte[0].position, 'CM')
+  assert.equal(esito.carte[0].alt, 'CAM ST')
+})
+
+test('le sei statistiche principali entrano nella carta, se ci sono', () => {
+  const esito = leggiCsv('name,rating,pace,shooting,passing,dribbling,defending,physicality\nTizio,84,96,91,80,92,29,76')
+  assert.deepEqual(esito.carte[0].stats, { pac: 96, sho: 91, pas: 80, dri: 92, dif: 29, fis: 76 })
+})
+
+test('una colonna in meno non manda tutto di traverso', () => {
+  const esito = leggiCsv('common_name,overall_rating\nMoise Kean,84')
+  assert.equal(esito.carte[0].name, 'Moise Kean')
+  assert.equal(esito.carte[0].rating, 84)
+  assert.equal(esito.carte[0].stats, undefined)
+})

@@ -68,6 +68,13 @@ stesso indirizzo, e il proprio nome.
   dell'app è definitivo, mettilo in `origini` dentro `config.php` al posto di
   `'*'`: da quel momento solo la tua app potrà chiamarlo.
 
+## Se hai già caricato il servizio prima del catalogo condiviso
+
+Sono state aggiunte due tabelle. Riapri phpMyAdmin, scheda **SQL**, e incolla
+di nuovo tutto `schema.sql`: le tabelle che esistono già non vengono toccate
+(`create table if not exists`), e le due nuove vengono create. Poi ricarica
+`api.php` via FTP.
+
 ## Manutenzione
 
 Praticamente nessuna. Il listino si pota da solo quando supera
@@ -83,6 +90,9 @@ Per un backup basta l'esportazione di phpMyAdmin; per ricominciare da capo,
 | `POST api.php?azione=entra` | `{nome}` → restituisce il token del dispositivo |
 | `GET api.php?azione=prezzi&piattaforma=ps&da=0` | il listino, o solo ciò che è cambiato dopo `da` |
 | `POST api.php?azione=prezzi` | `{piattaforma, prezzi:[{id, price, at}]}` (serve il token) |
+| `GET api.php?azione=catalogo` | stato del catalogo condiviso (versione, blocchi, carte) |
+| `GET api.php?azione=catalogo&blocco=0` | un blocco del catalogo |
+| `POST api.php?azione=catalogo` | `{versione, indice, blocchi, carte}` carica un blocco (serve il token) |
 | `GET api.php?azione=cerca&q=lautaro` | cerca nel catalogo comune delle carte |
 | `POST api.php?azione=carta` | `{giocatore:{id,name,rating,…}}` aggiunge una carta al catalogo (serve il token) |
 | `GET api.php?azione=storico&id=1001&piattaforma=ps` | un prezzo al giorno per quella carta |
