@@ -4,6 +4,70 @@
 //
 // Orari in ora italiana. EA pubblica in orario UK: promo e Champions
 // partono venerdì alle 18:00 UK, cioè le 19:00 da noi.
+//
+// **Gli orari non sono una legge di natura.** EA li cambia fra un capitolo e
+// l'altro, e a volte a stagione in corso: per anni i premi Rivals sono
+// arrivati di lunedì, poi sono passati al giovedì. Per questo il calendario
+// non è più scolpito nel codice — sono quattro appuntamenti che l'utente può
+// correggere dalle Opzioni, e quelli qui sotto sono solo il punto di
+// partenza. Se l'app dice che i premi arrivano fra due giorni e tu li hai
+// appena ricevuti, è questo il posto dove si aggiusta, e non serve
+// aggiornare l'app per farlo.
+
+/**
+ * Gli appuntamenti fissi della settimana: giorno (0 = domenica) e ora
+ * italiana. Sono i valori di partenza, non una verità.
+ */
+export const CALENDARIO_PREDEFINITO = {
+  premiRivals: { weekday: 4, hour: 9 },
+  premiChampions: { weekday: 1, hour: 9 },
+  promo: { weekday: 5, hour: 19 },
+  infrasettimanale: { weekday: 3, hour: 19 },
+}
+
+/** Etichette e spiegazioni dei quattro appuntamenti, per l'interfaccia. */
+export const APPUNTAMENTI = [
+  {
+    chiave: 'premiRivals',
+    label: 'Premi Rivals',
+    detail: 'Ondata di pacchetti: il mercato si riempie e i prezzi scendono.',
+    effect: 'offerta',
+  },
+  {
+    chiave: 'premiChampions',
+    label: 'Premi Champions',
+    detail: 'Chiude la Weekend League: seconda ondata di pacchetti della settimana.',
+    effect: 'offerta',
+  },
+  {
+    chiave: 'promo',
+    label: 'Nuova promo + Champions',
+    detail: 'Uscita contenuti e apertura Weekend League: picco di domanda sulle carte meta.',
+    effect: 'domanda',
+  },
+  {
+    chiave: 'infrasettimanale',
+    label: 'Aggiornamento settimanale',
+    detail: 'Nuove carte squadra della settimana e SBC infrasettimanali.',
+    effect: 'offerta',
+  },
+]
+
+/** Un calendario valido comunque, anche se arriva mezzo vuoto da un backup. */
+export function normalizzaCalendario(calendario) {
+  const pulito = {}
+  for (const { chiave } of APPUNTAMENTI) {
+    const voce = calendario?.[chiave]
+    const base = CALENDARIO_PREDEFINITO[chiave]
+    const weekday = Number(voce?.weekday)
+    const hour = Number(voce?.hour)
+    pulito[chiave] = {
+      weekday: Number.isInteger(weekday) && weekday >= 0 && weekday <= 6 ? weekday : base.weekday,
+      hour: Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : base.hour,
+    }
+  }
+  return pulito
+}
 
 const PHASES = {
   'crollo-premi': {
@@ -62,61 +126,60 @@ export function romeParts(date) {
   }
 }
 
-/**
- * In che fase del ciclo siamo adesso. L'ordine dei controlli conta: le fasi
- * più specifiche (premi, promo) vincono su quelle generiche.
- */
-export function currentPhase(now = new Date()) {
-  const { weekday, hour } = romeParts(now)
+/** Quante ore sono passate dall'ultima volta che è capitato quel giorno/ora. */
+function oreDa(adesso, appuntamento) {
+  const distanza = (adesso.weekday - appuntamento.weekday + 7) % 7
+  return distanza * 24 + (adesso.hour - appuntamento.hour)
+}
 
-  // Giovedì mattina chiude la Champions e arrivano i premi.
-  if (weekday === 4 && hour >= 9 && hour < 18) return PHASES['crollo-premi']
-  // Lunedì mattina i premi Rivals.
-  if (weekday === 1 && hour >= 9 && hour < 14) return PHASES['crollo-premi']
-  // Da giovedì sera fino all'uscita della promo del venerdì.
-  if ((weekday === 4 && hour >= 18) || (weekday === 5 && hour < 19)) return PHASES['pre-promo']
-  // Venerdì sera: promo e Champions aprono insieme.
-  if ((weekday === 5 && hour >= 19) || (weekday === 6 && hour < 12)) return PHASES['hype-promo']
-  if (weekday === 6 || weekday === 0) return PHASES['weekend-league']
-  if (hour >= 1 && hour < 8) return PHASES.notte
+/** Quante ore mancano al prossimo. */
+function oreA(adesso, appuntamento) {
+  const ore = oreDa(adesso, appuntamento)
+  return ore === 0 ? 0 : 168 - ore
+}
+
+/** Per quante ore dopo l'arrivo dei premi il mercato resta pieno di carte. */
+const DURATA_PREMI = 6
+/** Da quanto prima della promo la gente comincia a svendere. */
+const ANTICIPO_PREPROMO = 24
+/** Quanto dura la spinta subito dopo l'uscita della promo. */
+const DURATA_HYPE = 15
+
+/**
+ * In che fase del ciclo siamo adesso, secondo il calendario configurato.
+ * L'ordine dei controlli conta: le fasi più specifiche (premi, promo) vincono
+ * su quelle generiche.
+ */
+export function currentPhase(now = new Date(), calendario = CALENDARIO_PREDEFINITO) {
+  const quando = normalizzaCalendario(calendario)
+  const adesso = romeParts(now)
+
+  const daRivals = oreDa(adesso, quando.premiRivals)
+  const daChampions = oreDa(adesso, quando.premiChampions)
+  if (daRivals >= 0 && daRivals < DURATA_PREMI) return PHASES['crollo-premi']
+  if (daChampions >= 0 && daChampions < DURATA_PREMI) return PHASES['crollo-premi']
+
+  const allaPromo = oreA(adesso, quando.promo)
+  if (allaPromo > 0 && allaPromo <= ANTICIPO_PREPROMO) return PHASES['pre-promo']
+
+  const dallaPromo = oreDa(adesso, quando.promo)
+  if (dallaPromo >= 0 && dallaPromo < DURATA_HYPE) return PHASES['hype-promo']
+
+  // Dalla fine dell'entusiasmo iniziale fino ai premi Champions si gioca:
+  // è la Weekend League, e la sua durata la dicono i due appuntamenti.
+  const duraWeekend = oreDa(quando.premiChampions, quando.promo) || 168
+  if (dallaPromo >= DURATA_HYPE && dallaPromo < duraWeekend) return PHASES['weekend-league']
+
+  if (adesso.hour >= 1 && adesso.hour < 8) return PHASES.notte
   return PHASES['mid-settimana']
 }
 
-const WEEKLY = [
-  {
-    weekday: 4,
-    hour: 9,
-    label: 'Premi Champions',
-    detail: 'Chiude la Weekend League: ondata di pacchetti, prezzi in calo.',
-    effect: 'offerta',
-  },
-  {
-    weekday: 5,
-    hour: 19,
-    label: 'Nuova promo + Champions',
-    detail: 'Uscita contenuti e apertura Weekend League: picco di domanda sulle carte meta.',
-    effect: 'domanda',
-  },
-  {
-    weekday: 1,
-    hour: 9,
-    label: 'Premi Rivals',
-    detail: 'Seconda ondata di pacchetti della settimana: piccolo calo dei prezzi.',
-    effect: 'offerta',
-  },
-  {
-    weekday: 3,
-    hour: 19,
-    label: 'Aggiornamento settimanale',
-    detail: 'Nuove carte squadra della settimana e SBC infrasettimanali.',
-    effect: 'offerta',
-  },
-]
-
 /** I prossimi appuntamenti fissi, per il conto alla rovescia in pagina. */
-export function upcomingEvents(now = new Date(), count = 4) {
+export function upcomingEvents(now = new Date(), count = 4, calendario = CALENDARIO_PREDEFINITO) {
+  const quando = normalizzaCalendario(calendario)
   const events = []
-  for (const entry of WEEKLY) {
+  for (const voce of APPUNTAMENTI) {
+    const entry = { ...voce, ...quando[voce.chiave] }
     for (let week = 0; week < 2; week += 1) {
       const at = nextOccurrence(now, entry.weekday, entry.hour, week)
       events.push({

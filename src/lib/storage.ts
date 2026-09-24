@@ -1,9 +1,17 @@
+import { CALENDARIO_PREDEFINITO } from '../../shared/calendar.mjs'
 import type { AppData } from '../types.ts'
 
 const KEY = 'fc27-trader:v1'
 
 export const defaultData: AppData = {
-  settings: { platform: 'ps', taxPercent: 5, targetMarginPercent: 15, budget: 0, notifications: false },
+  settings: {
+    platform: 'ps',
+    taxPercent: 5,
+    targetMarginPercent: 15,
+    budget: 0,
+    notifications: false,
+    calendar: CALENDARIO_PREDEFINITO,
+  },
   watchlist: [],
   positions: [],
   catalysts: [],

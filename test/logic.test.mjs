@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { currentPhase, romeParts, upcomingEvents } from '../shared/calendar.mjs'
+import { currentPhase, normalizzaCalendario, romeParts, upcomingEvents } from '../shared/calendar.mjs'
+import { stimaPrezzo } from '../shared/forecast.mjs'
 import { matchesPlayer, normalizeCatalyst } from '../shared/catalysts.mjs'
 import { breakEvenSell, maxBuyForMargin, profit, roundToMarketStep, signalFor } from '../shared/market.mjs'
 import { priceSignals, scorePlayer, scoreSell } from '../shared/scoring.mjs'
@@ -234,3 +235,52 @@ test('una SBC che richiede la carta spinge la vendita', () => {
   assert.ok(con.reasons.some((reason) => reason.label.includes('Richiesta ora da')))
 })
 
+
+test('il calendario si può correggere: se i premi passano al giovedì, la fase segue', () => {
+  // Giovedì 24 settembre 2026, 10:00 in Italia.
+  const giovediMattina = new Date('2026-09-24T08:00:00Z')
+  const spostato = { premiRivals: { weekday: 4, hour: 9 }, premiChampions: { weekday: 1, hour: 9 } }
+  assert.equal(currentPhase(giovediMattina, spostato).id, 'crollo-premi')
+
+  // Con i premi rimessi al lunedì, lo stesso istante non è più «premi».
+  const vecchio = { premiRivals: { weekday: 1, hour: 9 }, premiChampions: { weekday: 4, hour: 18 } }
+  assert.notEqual(currentPhase(giovediMattina, vecchio).id, 'crollo-premi')
+})
+
+test('un calendario incompleto o sballato non rompe niente', () => {
+  assert.ok(currentPhase(new Date('2026-09-23T13:00:00Z'), null).id)
+  assert.ok(currentPhase(new Date('2026-09-23T13:00:00Z'), { promo: { weekday: 99, hour: -4 } }).id)
+  const calendario = normalizzaCalendario({ promo: { weekday: 99, hour: -4 } })
+  assert.equal(calendario.promo.weekday, 5)
+  assert.equal(calendario.promo.hour, 19)
+})
+
+test('i conti alla rovescia seguono il calendario configurato', () => {
+  const mercoledi = new Date('2026-09-23T13:00:00Z')
+  const eventi = upcomingEvents(mercoledi, 4, { premiRivals: { weekday: 4, hour: 9 } })
+  const rivals = eventi.find((evento) => evento.label === 'Premi Rivals')
+  // Con i premi al giovedì mattina, da mercoledì pomeriggio mancano meno di 24 ore.
+  assert.ok(rivals.at - mercoledi.getTime() < 24 * 3_600_000)
+})
+
+test('la stima usa il calendario corretto, non quello di partenza', () => {
+  const GIORNO = 86_400_000
+  // Prezzo segnato mercoledì; stima fatta giovedì mattina, quando (secondo il
+  // calendario corretto) stanno arrivando i premi e il mercato scende.
+  const mercoledi = Date.parse('2026-09-23T13:00:00Z')
+  const giovedi = Date.parse('2026-09-24T08:00:00Z')
+  const storia = [{ t: mercoledi - GIORNO, price: 10_000 }, { t: mercoledi, price: 10_000 }]
+  const conPremiGiovedi = stimaPrezzo({
+    history: storia,
+    quote: { price: 10_000, at: mercoledi },
+    now: giovedi,
+    calendario: { premiRivals: { weekday: 4, hour: 9 } },
+  })
+  const senza = stimaPrezzo({
+    history: storia,
+    quote: { price: 10_000, at: mercoledi },
+    now: giovedi,
+    calendario: { premiRivals: { weekday: 1, hour: 9 }, premiChampions: { weekday: 2, hour: 9 } },
+  })
+  assert.ok(conPremiGiovedi.price < senza.price, `${conPremiGiovedi.price} dovrebbe essere sotto ${senza.price}`)
+})

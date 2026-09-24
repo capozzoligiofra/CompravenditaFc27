@@ -144,9 +144,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!playerId) return
     setData((current) => {
       const next = { ...current.manualPrices }
-      if (price > 0) next[playerId] = { price: Math.round(price), at: Date.now() }
+      const adesso = Date.now()
+      if (price > 0) next[playerId] = { price: Math.round(price), at: adesso }
       else delete next[playerId]
-      return { ...current, manualPrices: next }
+      // Il punto di storia nasce qui, quando il prezzo viene osservato, e non
+      // ogni volta che l'app lo rilegge: un prezzo di tre giorni fa non deve
+      // diventare «segnato oggi» solo perché hai aperto l'app.
+      const priceHistory =
+        price > 0 && needsSnapshot(current.priceHistory[playerId] ?? [], price, adesso)
+          ? { ...current.priceHistory, [playerId]: recordSnapshot(current.priceHistory[playerId] ?? [], price, adesso) }
+          : current.priceHistory
+      return { ...current, manualPrices: next, priceHistory }
     })
   }, [])
 
@@ -176,9 +184,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (uguale) return current
         const manualPrices = { ...current.manualPrices }
         for (const id of superati) delete manualPrices[id]
+        // Anche i prezzi degli altri sono osservazioni: entrano nello storico
+        // con la data in cui sono stati visti in gioco, non con quella della
+        // sincronizzazione.
+        const priceHistory = { ...current.priceHistory }
+        for (const [id, voce] of Object.entries(condivisi)) {
+          const quando = voce.at || syncedAt
+          if (needsSnapshot(priceHistory[id] ?? [], voce.price, quando)) {
+            priceHistory[id] = recordSnapshot(priceHistory[id] ?? [], voce.price, quando)
+          }
+        }
         return {
           ...current,
           sharedPrices: condivisi,
+          priceHistory,
           sharedPlayers: nuoveCarte ? { ...current.sharedPlayers, ...carte } : current.sharedPlayers,
           syncedAt,
           syncedPlatform: piattaforma,
@@ -216,6 +235,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       let cambiato = false
       const next: Record<string, HistoryPoint[]> = { ...current.priceHistory }
       for (const [id, quote] of Object.entries(quotes)) {
+        // Un prezzo scritto a mano è già in archivio con la sua data: ri-annotarlo
+        // ogni giorno lo farebbe sembrare fresco senza che nessuno l'abbia visto.
+        if (quote?.manual) continue
         const price = quote?.price ?? 0
         if (!needsSnapshot(next[id] ?? [], price, now)) continue
         next[id] = recordSnapshot(next[id] ?? [], price, now)

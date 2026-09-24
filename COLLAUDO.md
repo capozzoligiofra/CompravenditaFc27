@@ -161,6 +161,9 @@ li scrivete voi (e con il listino condiviso valgono per tutti).
       assegnato a nessuno.
 - [ ] Riaprendo l'app il giorno dopo, il grafico di una carta mostra un
       secondo punto: l'app si costruisce lo storico da sola.
+- [ ] Un prezzo scritto due giorni fa continua a dire **«2 giorni fa»** anche
+      dopo aver girato per l'app: riaprire una schermata non lo fa sembrare
+      fresco.
 
 ### Il pannello *Prezzi*
 
@@ -197,6 +200,20 @@ li scrivete voi (e con il listino condiviso valgono per tutti).
 - [ ] «← indietro» riporta da dove sei arrivato (prezzi, watchlist o rosa).
 - [ ] Aprendo una carta che non seguivi, questa entra fra le tue: la ritrovi
       in *Prezzi* → «Tutte le mie».
+
+### Orari della settimana
+
+Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
+
+- [ ] *Opzioni → Orari della settimana* mostra quattro appuntamenti con
+      giorno e ora.
+- [ ] Nel momento in cui in gioco arrivano i premi, premi **«È appena
+      successo»** sulla riga giusta: giorno e ora diventano quelli di adesso.
+- [ ] Torni su *Occasioni*: la fase in cima è cambiata (per esempio «Premi in
+      consegna») e il conto alla rovescia riparte dal nuovo orario.
+- [ ] Anche il **prezzo stimato** cambia di conseguenza: sulla stessa carta,
+      prima e dopo la correzione, la cifra stimata è diversa.
+- [ ] Gli orari si ritrovano sull'altro dispositivo con lo stesso nome.
 
 ### Prezzo stimato
 

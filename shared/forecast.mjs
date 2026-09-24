@@ -11,7 +11,7 @@
 //   2. la stima è sempre etichettata come tale e mostra da cosa nasce, così
 //      si può non crederci.
 
-import { currentPhase } from './calendar.mjs'
+import { CALENDARIO_PREDEFINITO, currentPhase } from './calendar.mjs'
 
 const GIORNO = 86_400_000
 
@@ -45,7 +45,7 @@ function media(valori) {
  * non bastano restituisce i fattori di partenza: meglio un modello generale
  * che uno inventato su due punti.
  */
-export function profiloDaStorico(history = []) {
+export function profiloDaStorico(history = [], calendario = CALENDARIO_PREDEFINITO) {
   const punti = history.filter((punto) => punto?.price > 0)
   if (punti.length < 6) return { fattori: { ...FATTORI_BASE }, imparato: false, osservazioni: punti.length }
 
@@ -54,7 +54,7 @@ export function profiloDaStorico(history = []) {
 
   const perFase = new Map()
   for (const punto of punti) {
-    const fase = currentPhase(new Date(punto.t)).id
+    const fase = currentPhase(new Date(punto.t), calendario).id
     const elenco = perFase.get(fase) ?? []
     elenco.push(punto.price / mediaGenerale)
     perFase.set(fase, elenco)
@@ -90,7 +90,7 @@ export function tendenzaGiornaliera(history = []) {
  *
  * @returns { price, confidenza, spiegazione, basePrice, baseAt, giorniPassati }
  */
-export function stimaPrezzo({ history = [], quote = null, now = Date.now() } = {}) {
+export function stimaPrezzo({ history = [], quote = null, now = Date.now(), calendario = CALENDARIO_PREDEFINITO } = {}) {
   const punti = history.filter((punto) => punto?.price > 0).sort((a, b) => a.t - b.t)
   const osservazione = quote?.price > 0 ? { t: quote.at ?? now, price: quote.price } : punti.at(-1)
 
@@ -99,9 +99,9 @@ export function stimaPrezzo({ history = [], quote = null, now = Date.now() } = {
   }
 
   const giorniPassati = Math.max(0, (now - osservazione.t) / GIORNO)
-  const { fattori, imparato } = profiloDaStorico(punti)
-  const faseAdesso = currentPhase(new Date(now))
-  const faseAllora = currentPhase(new Date(osservazione.t))
+  const { fattori, imparato } = profiloDaStorico(punti, calendario)
+  const faseAdesso = currentPhase(new Date(now), calendario)
+  const faseAllora = currentPhase(new Date(osservazione.t), calendario)
   const fattoreAdesso = fattori[faseAdesso.id] ?? 1
   const fattoreAllora = fattori[faseAllora.id] ?? 1
 
@@ -146,9 +146,9 @@ function scegliConfidenza({ giorniPassati, punti, imparato }) {
  * I momenti migliori dei prossimi giorni per comprare e per vendere, secondo
  * il ciclo settimanale e i fattori imparati dai tuoi prezzi.
  */
-export function finestre({ history = [], now = Date.now(), giorni = 7 } = {}) {
-  const { fattori } = profiloDaStorico(history)
-  const faseAdesso = currentPhase(new Date(now))
+export function finestre({ history = [], now = Date.now(), giorni = 7, calendario = CALENDARIO_PREDEFINITO } = {}) {
+  const { fattori } = profiloDaStorico(history, calendario)
+  const faseAdesso = currentPhase(new Date(now), calendario)
   const fattoreAdesso = fattori[faseAdesso.id] ?? 1
 
   let minima = null
@@ -156,7 +156,7 @@ export function finestre({ history = [], now = Date.now(), giorni = 7 } = {}) {
   const passo = 2 * 3_600_000
 
   for (let istante = now + passo; istante <= now + giorni * GIORNO; istante += passo) {
-    const fase = currentPhase(new Date(istante))
+    const fase = currentPhase(new Date(istante), calendario)
     const fattore = fattori[fase.id] ?? 1
     if (!minima || fattore < minima.fattore) minima = { istante, fase, fattore }
     if (!massima || fattore > massima.fattore) massima = { istante, fase, fattore }

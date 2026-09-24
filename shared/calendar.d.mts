@@ -23,6 +23,29 @@ export interface CalendarEvent {
   effect: 'offerta' | 'domanda'
 }
 
+export interface Appuntamento {
+  weekday: number
+  hour: number
+}
+
+export interface Calendario {
+  premiRivals: Appuntamento
+  premiChampions: Appuntamento
+  promo: Appuntamento
+  infrasettimanale: Appuntamento
+}
+
+export type ChiaveAppuntamento = keyof Calendario
+
+export const CALENDARIO_PREDEFINITO: Calendario
+export const APPUNTAMENTI: {
+  chiave: ChiaveAppuntamento
+  label: string
+  detail: string
+  effect: 'offerta' | 'domanda'
+}[]
+
+export function normalizzaCalendario(calendario?: Partial<Calendario> | null): Calendario
 export function romeParts(date: Date): { weekday: number; hour: number; minute: number }
-export function currentPhase(now?: Date): Phase
-export function upcomingEvents(now?: Date, count?: number): CalendarEvent[]
+export function currentPhase(now?: Date, calendario?: Partial<Calendario> | null): Phase
+export function upcomingEvents(now?: Date, count?: number, calendario?: Partial<Calendario> | null): CalendarEvent[]

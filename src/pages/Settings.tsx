@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 
+import CalendarSettings from '../components/CalendarSettings.tsx'
 import SharedList from '../components/SharedList.tsx'
 import { Card, CardTitle, NumberField, Pill, buttonClass } from '../components/ui.tsx'
 import { getCustomApiBase, setCustomApiBase } from '../lib/apiBase.ts'
@@ -204,6 +205,8 @@ export default function SettingsPage() {
           </div>
         )}
       </Card>
+
+      <CalendarSettings />
 
       <SharedList />
 

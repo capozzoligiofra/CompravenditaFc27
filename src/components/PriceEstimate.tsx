@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { finestre, stimaPrezzo } from '../../shared/forecast.mjs'
+import { useStore } from '../lib/useStore.ts'
 import type { HistoryPoint, Quote } from '../types.ts'
 import { coins, percent } from '../lib/format.ts'
 import { Pill } from './ui.tsx'
@@ -40,6 +41,9 @@ export default function PriceEstimate({
   osservatoIl?: number
   compact?: boolean
 }) {
+  const { settings } = useStore()
+  const calendario = settings.calendar
+
   // Il tempo passa anche a pagina ferma, e la stima dipende dall'ora: si
   // rinfresca da sola ogni dieci minuti invece di restare ferma a quando hai
   // aperto la scheda.
@@ -52,11 +56,11 @@ export default function PriceEstimate({
   const osservazione = quote?.price
     ? { price: quote.price, at: quote.manual ? (osservatoIl ?? adesso) : adesso }
     : null
-  const stima = stimaPrezzo({ history, quote: osservazione, now: adesso })
+  const stima = stimaPrezzo({ history, quote: osservazione, now: adesso, calendario })
   if (!stima.price) return null
 
   const scarto = stima.basePrice > 0 ? (stima.price / stima.basePrice - 1) * 100 : 0
-  const previsioni = finestre({ history, now: adesso })
+  const previsioni = finestre({ history, now: adesso, calendario })
   const giorni = Math.floor(stima.giorniPassati)
 
   return (

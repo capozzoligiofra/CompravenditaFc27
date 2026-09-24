@@ -1,3 +1,4 @@
+import type { Calendario } from '../shared/calendar.d.mts'
 import type { Catalyst } from '../shared/catalysts.d.mts'
 
 export type Platform = 'ps' | 'xbox' | 'pc'
@@ -69,6 +70,8 @@ export interface Position {
 
 export interface Settings {
   platform: Platform
+  /** Quando arrivano premi, promo e aggiornamenti: EA li sposta, e si correggono. */
+  calendar?: Calendario
   taxPercent: number
   targetMarginPercent: number
   budget: number

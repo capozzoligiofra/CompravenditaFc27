@@ -1,4 +1,4 @@
-import type { Phase } from './calendar.d.mts'
+import type { Calendario, Phase } from './calendar.d.mts'
 
 export interface PricePoint {
   t: number
@@ -23,7 +23,7 @@ export interface Finestra {
 
 export const FATTORI_BASE: Record<string, number>
 
-export function profiloDaStorico(history?: PricePoint[]): {
+export function profiloDaStorico(history?: PricePoint[], calendario?: Partial<Calendario> | null): {
   fattori: Record<string, number>
   imparato: boolean
   osservazioni: number
@@ -33,8 +33,14 @@ export function stimaPrezzo(input?: {
   history?: PricePoint[]
   quote?: { price: number; at?: number } | null
   now?: number
+  calendario?: Partial<Calendario> | null
 }): Stima
-export function finestre(input?: { history?: PricePoint[]; now?: number; giorni?: number }): {
+export function finestre(input?: {
+  history?: PricePoint[]
+  now?: number
+  giorni?: number
+  calendario?: Partial<Calendario> | null
+}): {
   adesso: { fase: Phase; fattore: number }
   acquisto: Finestra | null
   vendita: Finestra | null

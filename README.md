@@ -244,15 +244,30 @@ gioca si ricompra e i prezzi risalgono. Orari italiani:
 
 | Quando | Cosa succede | Effetto |
 | --- | --- | --- |
-| Giovedì mattina | Chiude la Champions, arrivano i premi | Offerta ↑, prezzi ↓ — **si compra** |
-| Giovedì sera → venerdì | Si svende la rosa per fare crediti in vista della promo | Prezzi ai minimi — **si compra** |
-| Venerdì 19:00 | Nuova promo e apertura Champions | Domanda ↑ — **si vende** |
-| Sabato e domenica | Weekend League in corso | Domanda alta, prezzi tengono |
-| Lunedì mattina | Premi Rivals | Seconda ondata di pacchetti, prezzi ↓ |
+| Arrivo dei premi | Tutti aprono pacchetti | Offerta ↑, prezzi ↓ — **si compra** |
+| Il giorno prima della promo | Si svende la rosa per fare crediti | Prezzi ai minimi — **si compra** |
+| Uscita promo e Champions | Nuovi contenuti, apre la Weekend League | Domanda ↑ — **si vende** |
+| Weekend League in corso | Si gioca e si ricompra | Domanda alta, prezzi tengono |
+| Secondo arrivo di premi | Seconda ondata di pacchetti | Prezzi ↓ |
 | Notte e primo mattino | Pochi acquirenti online | Occasioni sotto prezzo |
 
 L'app riconosce da sola in che fase sei e te lo dice in cima alla pagina
 Occasioni, con il conto alla rovescia per il prossimo appuntamento.
+
+**Gli orari li decidi tu, perché li decide EA.** Per anni i premi Rivals sono
+arrivati di lunedì, poi sono passati al giovedì; e nessuna fonte ce lo dice,
+visto che i siti che pubblicano il calendario non consentono l'accesso ai
+programmi. Quindi i quattro appuntamenti — premi Rivals, premi Champions,
+uscita promo, aggiornamento infrasettimanale — stanno in *Opzioni → Orari
+della settimana*, con giorno e ora modificabili. Il modo più veloce è il
+pulsante **«È appena successo»**: lo premi nel momento in cui arrivano i
+premi e l'app prende giorno e ora da lì.
+
+Non è un dettaglio estetico: da quegli orari nascono le fasi, i conti alla
+rovescia **e il prezzo stimato**. Se l'app crede che i premi arrivino lunedì
+e invece arrivano giovedì, la stima sbaglia segno proprio nel giorno in cui
+conta di più. Gli orari seguono il tuo nome sugli altri dispositivi, come il
+resto dei dati personali.
 
 ### 2. I catalizzatori
 

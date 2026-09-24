@@ -47,8 +47,11 @@ export function useOpportunities(): OpportunitiesState {
   const [clock, setClock] = useState(() => Date.now())
   const notified = useRef(new Set<string>())
 
-  const phase = useMemo(() => currentPhase(new Date(clock)), [clock])
-  const events = useMemo(() => upcomingEvents(new Date(clock), 4), [clock])
+  // Il calendario è quello che l'utente ha corretto: EA sposta gli orari e
+  // l'app non può indovinarli da sola.
+  const calendario = settings.calendar
+  const phase = useMemo(() => currentPhase(new Date(clock), calendario), [clock, calendario])
+  const events = useMemo(() => upcomingEvents(new Date(clock), 4, calendario), [clock, calendario])
   const catalysts = useMemo(() => [...data.catalysts, ...remote], [data.catalysts, remote])
 
   /**

@@ -9,6 +9,7 @@ import { coins } from '../lib/format.ts'
 import { stimaPrezzo } from '../../shared/forecast.mjs'
 import { filtraVoci, ordinaVoci, riepilogo, vociPrezzo } from '../../shared/price-entry.mjs'
 import type { GruppoPrezzo, VocePrezzo } from '../../shared/price-entry.d.mts'
+import type { Settings } from '../types.ts'
 import { parseCoinsLoose } from '../../shared/roster-import.mjs'
 import { useStore } from '../lib/useStore.ts'
 
@@ -178,6 +179,7 @@ export default function Prices() {
               <RigaPrezzo
                 voce={voce}
                 adesso={adesso}
+                calendario={settings.calendar}
                 autore={prezzi[voce.id]?.autore ?? ''}
                 mio={Boolean(data.manualPrices[voce.id])}
                 storico={data.priceHistory[voce.id] ?? []}
@@ -219,6 +221,7 @@ export default function Prices() {
 function RigaPrezzo({
   voce,
   adesso,
+  calendario,
   autore,
   mio,
   storico,
@@ -232,6 +235,7 @@ function RigaPrezzo({
 }: {
   voce: VocePrezzo
   adesso: number
+  calendario: Settings['calendar']
   /** Chi ha segnato questo prezzo sul listino condiviso, se non sei tu. */
   autore: string
   /** Il prezzo è ancora una tua nota locale: solo quelle si possono togliere. */
@@ -254,6 +258,7 @@ function RigaPrezzo({
           history: storico,
           quote: { price: voce.prezzo, at: voce.osservatoIl },
           now: adesso,
+          calendario,
         })
       : null
   const scarto = stima && stima.price > 0 && voce.prezzo > 0 ? stima.price / voce.prezzo - 1 : 0

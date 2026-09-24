@@ -233,6 +233,15 @@ export default function Opportunities() {
             </li>
           ))}
         </ul>
+        {/* Gli orari li sposta EA, non noi: se non tornano si correggono, e
+            con loro tornano giuste anche le fasi e le stime. */}
+        <p className="mt-2 text-[11px] text-chalk-dim">
+          Gli orari non tornano?{' '}
+          <Link to="/impostazioni" className="text-gain underline">
+            correggili in Opzioni
+          </Link>
+          : bastano due tocchi e valgono anche per il prezzo stimato.
+        </p>
       </Card>
 
       <Card>
