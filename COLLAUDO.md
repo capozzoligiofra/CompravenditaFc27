@@ -219,6 +219,20 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
       prima e dopo la correzione, la cifra stimata è diversa.
 - [ ] Gli orari si ritrovano sull'altro dispositivo con lo stesso nome.
 
+### Catalogo dei giocatori da CSV
+
+- [ ] *Prezzi* → «Catalogo dei giocatori» → **Carica un CSV**: scegli il tuo
+      file e dopo un istante dice quante carte ha letto e **quali colonne ha
+      usato**.
+- [ ] Cercando dal *Mercato* un giocatore che non hai mai aperto, adesso lo
+      trova, con valutazione e club.
+- [ ] Incollando un elenco di prezzi, i nomi presenti nel catalogo risultano
+      **già conosciuti** (non «da creare») e prendono la valutazione da lì.
+- [ ] Ricaricando la pagina il catalogo è ancora lì.
+- [ ] Con il catalogo caricato, segnare un prezzo e ricaricare: **il prezzo
+      c'è ancora**. (Un catalogo troppo grande non deve mai rubare lo spazio
+      ai tuoi dati: se non ci sta, l'app lo dice e non lo tiene.)
+
 ### Prezzi da un elenco JSON
 
 - [ ] Incollando `{"nome":"Klara Bühl","prezzo":"8.2K"}` — anche senza

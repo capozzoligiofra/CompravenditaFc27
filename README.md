@@ -416,6 +416,16 @@ Quello che si fa invece:
   il cursore sulla carta dopo. Si scrive anche `44k` o `1,2M`. I filtri
   *Da aggiornare / La mia rosa / Watchlist* servono a fare un giro per volta,
   e il contatore in alto dice quante ne restano.
+- **Caricare il catalogo dei giocatori.** In *Prezzi* → «Catalogo dei
+  giocatori» si carica un **CSV** con i nomi e, se c'è, la valutazione: da
+  quel momento la ricerca li trova tutti e gli elenchi di prezzi riconoscono i
+  nomi invece di creare carte nuove. Vanno bene virgola, punto e virgola o
+  tabulazione, intestazioni in italiano o in inglese, e — se manca
+  l'intestazione — le prime due colonne. Diciottomila carte si caricano in
+  meno di un secondo e occupano circa 800 KB nel browser; restano su quel
+  dispositivo, non vengono mandate al listino (le carte entrano nel listino
+  quando qualcuno ci mette un prezzo). Chi vuole lo stesso catalogo carica lo
+  stesso file.
 - **Incollare un elenco JSON.** In *Prezzi* c'è «Prezzi da un elenco JSON»,
   per chi i prezzi li tiene in un foglio o in un file:
   `[{"nome": "Klara Bühl", "prezzo": "8.2K"}, …]`. Accetta le chiavi in
@@ -824,7 +834,7 @@ shared/          logica pura, condivisa fra proxy e browser e coperta da test
   roster-import.mjs  lettura della rosa incollata
   text.mjs       confronto dei nomi senza accenti
   quotes.mjs     unione fra prezzi automatici e prezzi scritti a mano
-  catalog.mjs    il catalogo delle carte costruito da voi, e i suoi id stabili
+  catalog.mjs    il catalogo delle carte (CSV, ricerca, id stabili)
 server-php/     il listino condiviso da caricare su un hosting Linux
   api.php     tutte le chiamate del listino (prezzi, storico, dati personali)
   schema.sql  le tabelle MySQL, da eseguire una volta

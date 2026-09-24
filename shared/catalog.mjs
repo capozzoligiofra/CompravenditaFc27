@@ -96,3 +96,190 @@ export function catalogoLocale({ seen = [], watchlist = [], positions = [], cond
   for (const [id, carta] of Object.entries(condivise)) metti({ id, name: carta?.name, rating: carta?.rating })
   return [...mappa.values()]
 }
+
+// --- Il catalogo da un file -------------------------------------------------
+//
+// Chi ha già un elenco di giocatori — un CSV esportato, un foglio, una lista
+// tenuta a mano — non deve ribattere niente: lo carica e l'app lo usa come
+// catalogo. Restano due cose separate, e conviene tenerle chiare:
+//   il catalogo   tutte le carte che l'app sa nominare (anche 20.000)
+//   le tue carte  quelle che segui davvero, poche e tue
+// Il catalogo serve a cercare e a riconoscere i nomi; non riempie gli elenchi.
+
+const DELIMITATORI = [',', ';', '\t', '|']
+
+const COLONNE_NOME = ['name', 'nome', 'player', 'playername', 'player_name', 'giocatore', 'fullname', 'full_name']
+const COLONNE_VALUTAZIONE = ['rating', 'overall', 'ovr', 'valutazione', 'media', 'score']
+const COLONNE_RUOLO = ['position', 'ruolo', 'pos', 'preferredposition']
+const COLONNE_CLUB = ['club', 'team', 'squadra']
+const COLONNE_LEGA = ['league', 'lega', 'campionato']
+const COLONNE_NAZIONE = ['nation', 'nazione', 'country', 'nazionalita']
+const COLONNE_VERSIONE = ['version', 'versione', 'cardtype', 'card_type', 'rarity']
+
+/** Il separatore più plausibile: quello che compare più volte nella prima riga. */
+function scegliDelimitatore(prima) {
+  let migliore = ','
+  let massimo = 0
+  for (const candidato of DELIMITATORI) {
+    const quanti = prima.split(candidato).length - 1
+    if (quanti > massimo) {
+      massimo = quanti
+      migliore = candidato
+    }
+  }
+  return migliore
+}
+
+/** Divide una riga CSV rispettando le virgolette. */
+export function dividiRigaCsv(riga, delimitatore = ',') {
+  const campi = []
+  let corrente = ''
+  let dentroVirgolette = false
+  for (let i = 0; i < riga.length; i += 1) {
+    const carattere = riga[i]
+    if (carattere === '"') {
+      // Due virgolette di fila dentro un campo sono una virgoletta vera.
+      if (dentroVirgolette && riga[i + 1] === '"') {
+        corrente += '"'
+        i += 1
+      } else {
+        dentroVirgolette = !dentroVirgolette
+      }
+    } else if (carattere === delimitatore && !dentroVirgolette) {
+      campi.push(corrente)
+      corrente = ''
+    } else {
+      corrente += carattere
+    }
+  }
+  campi.push(corrente)
+  return campi.map((campo) => campo.trim())
+}
+
+function indiceColonna(intestazioni, alias) {
+  return intestazioni.findIndex((voce) => alias.includes(voce.replace(/[^a-z0-9_]/g, '')))
+}
+
+/**
+ * Legge un elenco di carte da un CSV. Si arrangia con quello che trova:
+ * separatore virgola, punto e virgola o tabulazione, intestazioni in italiano
+ * o in inglese, e — se l'intestazione non c'è — le prime due colonne intese
+ * come nome e valutazione.
+ *
+ * @returns { carte, errore, scartate, colonne }
+ */
+export function leggiCsv(testo) {
+  const righe = String(testo ?? '')
+    .replace(/^﻿/, '')
+    .split(/\r?\n/)
+    .filter((riga) => riga.trim().length > 0)
+  if (righe.length === 0) return { carte: [], errore: null, scartate: 0, colonne: null }
+
+  const delimitatore = scegliDelimitatore(righe[0])
+  const prima = dividiRigaCsv(righe[0], delimitatore).map((voce) => voce.toLowerCase())
+
+  let colonneNome = indiceColonna(prima, COLONNE_NOME)
+  let colonneVoto = indiceColonna(prima, COLONNE_VALUTAZIONE)
+  const conIntestazione = colonneNome >= 0 || colonneVoto >= 0
+  const extra = conIntestazione
+    ? {
+        position: indiceColonna(prima, COLONNE_RUOLO),
+        club: indiceColonna(prima, COLONNE_CLUB),
+        league: indiceColonna(prima, COLONNE_LEGA),
+        nation: indiceColonna(prima, COLONNE_NAZIONE),
+        version: indiceColonna(prima, COLONNE_VERSIONE),
+      }
+    : {}
+
+  if (!conIntestazione) {
+    // Nessuna intestazione riconoscibile: si prendono le prime due colonne.
+    colonneNome = 0
+    colonneVoto = 1
+  } else {
+    if (colonneNome < 0) colonneNome = 0
+    if (colonneVoto < 0) colonneVoto = -1
+  }
+
+  const dati = conIntestazione ? righe.slice(1) : righe
+  const carte = []
+  const viste = new Set()
+  let scartate = 0
+
+  for (const riga of dati) {
+    const campi = dividiRigaCsv(riga, delimitatore)
+    const nome = String(campi[colonneNome] ?? '').replace(/\s+/g, ' ').trim()
+    const voto = colonneVoto >= 0 ? Number.parseInt(String(campi[colonneVoto] ?? '').replace(/[^\d]/g, ''), 10) : 0
+    if (!nome || nome.length < 2) {
+      scartate += 1
+      continue
+    }
+    const carta = creaCarta({
+      name: nome,
+      rating: Number.isFinite(voto) ? voto : 0,
+      position: extra.position >= 0 ? (campi[extra.position] ?? '') : '',
+      club: extra.club >= 0 ? (campi[extra.club] ?? '') : '',
+      league: extra.league >= 0 ? (campi[extra.league] ?? '') : '',
+      nation: extra.nation >= 0 ? (campi[extra.nation] ?? '') : '',
+      version: extra.version >= 0 ? (campi[extra.version] ?? '') : '',
+    })
+    if (!carta) {
+      scartate += 1
+      continue
+    }
+    if (viste.has(carta.id)) continue
+    viste.add(carta.id)
+    carte.push(carta)
+  }
+
+  if (carte.length === 0) {
+    return {
+      carte: [],
+      errore: "Non ho trovato nomi in questo file: serve almeno una colonna con il nome (e, se c'è, una con la valutazione).",
+      scartate,
+      colonne: null,
+    }
+  }
+
+  return {
+    carte,
+    errore: null,
+    scartate,
+    colonne: { nome: prima[colonneNome] ?? 'prima colonna', valutazione: colonneVoto >= 0 ? (prima[colonneVoto] ?? 'seconda colonna') : null },
+  }
+}
+
+/**
+ * Un indice per nome: con ventimila carte, cercarle scorrendo l'elenco a ogni
+ * riga di un import significa milioni di confronti e un telefono che si pianta.
+ */
+export function indicePerNome(carte = []) {
+  const indice = new Map()
+  for (const carta of carte) {
+    if (!carta?.name) continue
+    const chiave = normalizeName(carta.name)
+    const elenco = indice.get(chiave)
+    if (elenco) elenco.push(carta)
+    else indice.set(chiave, [carta])
+  }
+  return indice
+}
+
+/**
+ * La carta che corrisponde a questo nome, se c'è.
+ *
+ * Solo corrispondenza esatta del nome (senza accenti e maiuscole): con un
+ * catalogo grande, accontentarsi di una somiglianza vuol dire assegnare il
+ * prezzo di Vinícius a «Vini Jr» e non accorgersene mai. Fra più carte con lo
+ * stesso nome vince quella con la valutazione richiesta, altrimenti la più alta.
+ */
+export function trovaNelCatalogo(nome, valutazione, indice) {
+  const chiave = normalizeName(nome)
+  if (chiave.length < 2) return null
+  const candidate = indice?.get(chiave)
+  if (!candidate || candidate.length === 0) return null
+  if (valutazione > 0) {
+    const esatta = candidate.find((carta) => carta.rating === valutazione)
+    if (esatta) return esatta
+  }
+  return [...candidate].sort((a, b) => (b.rating || 0) - (a.rating || 0))[0]
+}

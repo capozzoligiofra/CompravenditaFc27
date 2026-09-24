@@ -24,7 +24,7 @@ const PLATFORM_LABEL = { ps: 'PlayStation', xbox: 'Xbox', pc: 'PC' } as const
  * dati che l'app ha già (rosa, watchlist, listino).
  */
 export default function PlayerSheet({ playerId }: { playerId: string }) {
-  const { data, settings, prezzi, addWatch, isWatched, addPosition, rememberPlayer } = useStore()
+  const { data, settings, prezzi, catalogo, addWatch, isWatched, addPosition, rememberPlayer } = useStore()
   const [detail, setDetail] = useState<PlayerDetail | null>(null)
   const [caricando, setCaricando] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
@@ -60,12 +60,14 @@ export default function PlayerSheet({ playerId }: { playerId: string }) {
     if (inRosa) {
       return { id: playerId, name: inRosa.name, rating: inRosa.rating, position: '', club: '', league: '', nation: '', version: '', image: '' }
     }
+    const dalCatalogo = catalogo[playerId]
+    if (dalCatalogo) return { ...dalCatalogo, image: '' } as Player
     const dalListino = data.sharedPlayers[playerId]
     if (dalListino) {
       return { id: playerId, name: dalListino.name, rating: dalListino.rating, position: '', club: '', league: '', nation: '', version: '', image: '' }
     }
     return null
-  }, [detail, data.seen, data.watchlist, data.positions, data.sharedPlayers, playerId])
+  }, [detail, data.seen, data.watchlist, data.positions, data.sharedPlayers, catalogo, playerId])
 
   // Aprire una scheda vuol dire seguire quella carta: da qui in poi comparirà
   // nel pannello dei prezzi e fra le proposte. Le carte seguite sono tue,

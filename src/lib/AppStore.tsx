@@ -5,6 +5,8 @@ import { normalizeCatalyst } from '../../shared/catalysts.mjs'
 import { needsSnapshot, recordSnapshot } from '../../shared/history.mjs'
 import { localiSuperati, prezziEffettivi } from '../../shared/sync.mjs'
 import type { PrezzoCondiviso } from '../../shared/sync.d.mts'
+import type { CartaBase } from '../../shared/catalog.d.mts'
+import { leggiCatalogo, salvaCatalogo, type Catalogo } from './catalogStore.ts'
 import type { DatiPersonali } from './cloud.ts'
 import { leggiAccount, salvaAccount, type Account } from './cloud.ts'
 import type { Alert, AppData, HistoryPoint, Player, Position, Quote, Settings, WatchItem } from '../types.ts'
@@ -18,6 +20,15 @@ export interface Store {
    * scritto tu, fusi tenendo il più recente per ogni carta.
    */
   prezzi: Record<string, PrezzoCondiviso>
+  /**
+   * Tutte le carte che l'app sa nominare: il catalogo caricato da un file più
+   * quelle del listino. Serve a cercare e a riconoscere i nomi, non è
+   * l'elenco delle carte che segui.
+   */
+  catalogo: Catalogo
+  /** Aggiunge carte al catalogo. Restituisce false se il browser è pieno. */
+  aggiungiAlCatalogo: (carte: CartaBase[]) => { aggiunte: number; salvato: boolean }
+  svuotaCatalogo: () => void
   /** Chi sei sul listino condiviso, se ti sei collegato. */
   account: Account | null
   setAccount: (account: Account | null) => void
@@ -68,6 +79,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // L'account sta fuori dai dati dell'app di proposito: il token non deve
   // finire nei backup JSON che ci si scambia.
   const [account, setAccountState] = useState<Account | null>(() => leggiAccount())
+
+  const [catalogo, setCatalogo] = useState<Catalogo>(() => leggiCatalogo())
+
+  const aggiungiAlCatalogo = useCallback((carte: CartaBase[]) => {
+    let aggiunte = 0
+    let salvato = true
+    setCatalogo((current) => {
+      const prossimo = { ...current }
+      for (const carta of carte) {
+        if (!carta?.id || !carta.name) continue
+        if (!prossimo[carta.id]) aggiunte += 1
+        prossimo[carta.id] = carta
+      }
+      if (aggiunte === 0) return current
+      salvato = salvaCatalogo(prossimo)
+      return prossimo
+    })
+    return { aggiunte, salvato }
+  }, [])
+
+  const svuotaCatalogo = useCallback(() => {
+    setCatalogo({})
+    salvaCatalogo({})
+  }, [])
 
   const setAccount = useCallback((prossimo: Account | null) => {
     salvaAccount(prossimo)
@@ -334,6 +369,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       data,
       settings: data.settings,
       prezzi,
+      catalogo,
+      aggiungiAlCatalogo,
+      svuotaCatalogo,
       account,
       setAccount,
       impostaPrezziCondivisi,
@@ -365,6 +403,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [
       data,
       prezzi,
+      catalogo,
+      aggiungiAlCatalogo,
+      svuotaCatalogo,
       account,
       setAccount,
       impostaPrezziCondivisi,

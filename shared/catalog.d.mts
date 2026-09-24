@@ -27,3 +27,17 @@ export function catalogoLocale(input?: {
   positions?: { playerId: string; name: string; rating: number }[]
   condivise?: Record<string, { name: string; rating: number }>
 }): CartaBase[]
+
+export function dividiRigaCsv(riga: string, delimitatore?: string): string[]
+export function leggiCsv(testo: string): {
+  carte: CartaBase[]
+  errore: string | null
+  scartate: number
+  colonne: { nome: string; valutazione: string | null } | null
+}
+export function indicePerNome(carte?: CartaBase[]): Map<string, CartaBase[]>
+export function trovaNelCatalogo(
+  nome: string,
+  valutazione: number,
+  indice: Map<string, CartaBase[]>,
+): CartaBase | null

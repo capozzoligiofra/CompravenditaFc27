@@ -25,22 +25,27 @@ export default function CardSearch({
   onScegli: (player: Player) => void
   etichettaAzione?: string
 }) {
-  const { data, prezzi, account } = useStore()
+  const { data, prezzi, account, catalogo } = useStore()
   const [query, setQuery] = useState('')
   const [remoti, setRemoti] = useState<Player[]>([])
   const [cercando, setCercando] = useState(false)
   const [valutazione, setValutazione] = useState('')
   const [creando, setCreando] = useState(false)
 
-  const catalogo = useMemo(
+  // Le carte che conosci, più il catalogo caricato da un file: la ricerca
+  // deve trovare anche i giocatori che non hai mai aperto.
+  const carteNote = useMemo(
     () =>
-      catalogoLocale({
-        seen: data.seen,
-        watchlist: data.watchlist,
-        positions: data.positions,
-        condivise: data.sharedPlayers,
-      }) as CartaBase[],
-    [data.seen, data.watchlist, data.positions, data.sharedPlayers],
+      [
+        ...(catalogoLocale({
+          seen: data.seen,
+          watchlist: data.watchlist,
+          positions: data.positions,
+          condivise: data.sharedPlayers,
+        }) as CartaBase[]),
+        ...Object.values(catalogo),
+      ] as CartaBase[],
+    [data.seen, data.watchlist, data.positions, data.sharedPlayers, catalogo],
   )
 
   useEffect(() => {
@@ -83,11 +88,11 @@ export default function CardSearch({
     for (const player of remoti) {
       if (player?.id && player.name) mappa.set(String(player.id), player as Player)
     }
-    for (const carta of cercaCarte(testo, catalogo) as CartaBase[]) {
+    for (const carta of cercaCarte(testo, carteNote) as CartaBase[]) {
       if (!mappa.has(carta.id)) mappa.set(carta.id, carta as Player)
     }
     return [...mappa.values()].slice(0, 12)
-  }, [remoti, catalogo, query])
+  }, [remoti, carteNote, query])
 
   const crea = () => {
     const carta = creaCarta({ name: query, rating: Number(valutazione) || 0 }) as Player | null

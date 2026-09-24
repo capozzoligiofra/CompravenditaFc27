@@ -1,8 +1,7 @@
 import { useCallback, useMemo } from 'react'
 
-import { catalogoLocale, creaCarta } from '../../shared/catalog.mjs'
+import { catalogoLocale, creaCarta, indicePerNome, trovaNelCatalogo } from '../../shared/catalog.mjs'
 import type { CartaBase } from '../../shared/catalog.d.mts'
-import { matchKnownPlayer } from '../../shared/roster-import.mjs'
 import { useStore } from './useStore.ts'
 import type { Player } from '../types.ts'
 
@@ -31,28 +30,30 @@ export interface RigaPreparata {
  * tutto all'inizio.
  */
 export function useApplicaPrezzi() {
-  const { data, importaPrezzi } = useStore()
+  const { data, catalogo, importaPrezzi } = useStore()
 
-  const catalogo = useMemo(
-    () =>
-      catalogoLocale({
-        seen: data.seen,
-        watchlist: data.watchlist,
-        positions: data.positions,
-        condivise: data.sharedPlayers,
-      }) as CartaBase[],
-    [data.seen, data.watchlist, data.positions, data.sharedPlayers],
-  )
+  // L'indice si costruisce una volta sola: con un catalogo da ventimila
+  // carte, cercare scorrendo l'elenco a ogni riga vuol dire milioni di
+  // confronti e un telefono che si pianta a metà import.
+  const indice = useMemo(() => {
+    const carte = catalogoLocale({
+      seen: data.seen,
+      watchlist: data.watchlist,
+      positions: data.positions,
+      condivise: data.sharedPlayers,
+    }) as CartaBase[]
+    return indicePerNome([...Object.values(catalogo), ...carte])
+  }, [data.seen, data.watchlist, data.positions, data.sharedPlayers, catalogo])
 
   /** Abbina ogni voce a una carta esistente, o ne prepara una nuova. */
   const prepara = useCallback(
     (voci: VoceDaImportare[]): RigaPreparata[] =>
       voci.map((voce) => {
-        const nota = matchKnownPlayer(voce.name, catalogo) as CartaBase | null
+        const nota = trovaNelCatalogo(voce.name, voce.rating ?? 0, indice) as CartaBase | null
         const player = (nota ?? creaCarta({ name: voce.name, rating: voce.rating ?? 0 })) as Player | null
         return { voce, player, nuova: !nota }
       }),
-    [catalogo],
+    [indice],
   )
 
   const applica = useCallback(
