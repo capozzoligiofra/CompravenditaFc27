@@ -11,19 +11,19 @@ const PER_INVIO = 500
 /**
  * I doppioni, e come spariscono.
  *
- * Prima che esistesse il catalogo, incollare un prezzo per un nome mai visto
- * creava una carta senza valutazione: era l'unico posto dove metterlo. Poi è
- * arrivato il catalogo con lo stesso giocatore e il suo voto vero, e siccome
- * l'identificativo si calcola da nome **e** valutazione, adesso sono due
- * carte. Nel pannello dei prezzi si vede la stessa persona due volte, e il
- * prezzo sta su quella sbagliata.
+ * Lo stesso giocatore finiva su due carte per due motivi. Il primo: prima che
+ * esistesse il catalogo, incollare un prezzo per un nome mai visto creava una
+ * carta senza valutazione, e siccome l'identificativo si calcola da nome
+ * **e** valutazione, l'arrivo del catalogo con il voto vero ne faceva una
+ * seconda. Il secondo: lo stesso nome scritto in due forme — il catalogo dice
+ * «Aitana Bonmatí», l'elenco dei prezzi «Aitana Bonmatí Conca».
  *
  * Si uniscono da sole, appena l'app se ne accorge: non c'è niente da
  * decidere, il segnaposto non ha nulla di suo oltre al nome, e il prezzo, lo
  * storico e i target passano sulla carta buona. Quello che invece non si
  * indovina resta qui sotto, scritto: «Vitinha 90» e «Vitinha 75» sono due
- * persone diverse, e scegliere per te vorrebbe dire spostare un prezzo sulla
- * carta sbagliata per tutto il gruppo.
+ * persone diverse, «Mbappé» da solo è Kylian o Ethan, e scegliere per te
+ * vorrebbe dire spostare un prezzo sulla carta sbagliata per tutto il gruppo.
  */
 export default function Duplicates() {
   const { account, unisciDoppioni } = useStore()
@@ -79,7 +79,7 @@ export default function Duplicates() {
 
   return (
     <Card>
-      <CardTitle hint="Due carte per lo stesso giocatore: succedeva quando un prezzo incollato creava una carta senza valutazione, prima che ci fosse il catalogo.">
+      <CardTitle hint="Due carte per lo stesso giocatore: un prezzo incollato prima che ci fosse il catalogo, oppure lo stesso nome scritto in due forme — «Aitana Bonmatí» e «Aitana Bonmatí Conca».">
         Doppioni
       </CardTitle>
 
@@ -96,8 +96,8 @@ export default function Duplicates() {
         <>
           <p className="mt-3 text-sm text-chalk-dim">
             {ambigui.length === 1 ? 'Una carta senza valutazione corrisponde' : `${ambigui.length} carte senza valutazione corrispondono`}{' '}
-            a più giocatori con lo stesso nome. Non le tocco: apri la scheda e scrivi la valutazione giusta, e il
-            doppione si unisce da solo.
+            a più giocatori diversi. Non le tocco: apri la scheda e scrivi il nome per intero o la valutazione
+            giusta, e il doppione si unisce da solo.
           </p>
           <ul className="mt-2 space-y-2">
             {ambigui.map((voce) => (

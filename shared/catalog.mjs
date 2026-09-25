@@ -69,7 +69,11 @@ export function creaCarta({ name, rating = 0, position = '', club = '', league =
 export function cercaCarte(testo, carte = [], limite = 12) {
   const cercato = normalizeName(testo)
   if (cercato.length < 2) return []
-  const trovate = carte.filter((carta) => carta?.name && normalizeName(carta.name).includes(cercato))
+  const trovate = carte.filter(
+    (carta) =>
+      carta?.name &&
+      (normalizeName(carta.name).includes(cercato) || altriNomi(carta).some((altro) => altro.includes(cercato))),
+  )
   // Prima chi comincia con quello che hai scritto, poi i più forti: è
   // l'ordine in cui uno si aspetta di vedere i risultati.
   return trovate
@@ -253,8 +257,9 @@ export function leggiCsv(testo) {
     const campi = dividiRigaCsv(riga, delimitatore)
     // Il nome «comune» a volte manca (è vuoto per chi si conosce col nome
     // intero): in quel caso lo si compone da nome e cognome.
+    const completo = [campo(campi, cPrimoNome), campo(campi, cCognome)].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()
     let nome = campo(campi, indiceNome)
-    if (!nome) nome = [campo(campi, cPrimoNome), campo(campi, cCognome)].filter(Boolean).join(' ')
+    if (!nome) nome = completo
     nome = nome.replace(/\s+/g, ' ').trim()
 
     if (nome.length < 2) {
@@ -275,6 +280,19 @@ export function leggiCsv(testo) {
       scartate += 1
       continue
     }
+
+    // Gli altri modi in cui la stessa persona viene scritta. Non sono
+    // invenzioni: stanno nel file, in colonne diverse. «Aitana Bonmatí» si
+    // chiama per esteso «Aitana Bonmatí Conca», e un elenco di prezzi puo'
+    // usare l'una o l'altra forma — senza questi, sarebbero due carte.
+    const altriNomi = []
+    const cognome = campo(campi, cCognome).replace(/\s+/g, ' ').trim()
+    for (const altro of [completo, cognome]) {
+      if (altro && altro.length >= 2 && normalizeName(altro) !== normalizeName(nome) && !altriNomi.includes(altro)) {
+        altriNomi.push(altro)
+      }
+    }
+    if (altriNomi.length > 0) carta.aka = altriNomi.join('|')
 
     const alternativi = campo(campi, cAlternativi)
     if (alternativi) carta.alt = alternativi
@@ -314,20 +332,67 @@ export function leggiCsv(testo) {
   }
 }
 
+/** Gli altri nomi con cui una carta puo' essere scritta, gia' normalizzati. */
+export function altriNomi(carta) {
+  if (!carta?.aka) return []
+  const principale = normalizeName(carta.name ?? '')
+  return String(carta.aka)
+    .split('|')
+    .map((nome) => normalizeName(nome))
+    .filter((nome) => nome.length >= 2 && nome !== principale)
+}
+
 /**
  * Un indice per nome: con ventimila carte, cercarle scorrendo l'elenco a ogni
  * riga di un import significa milioni di confronti e un telefono che si pianta.
+ *
+ * L'indice ha due scaffali. `nomi` sono i nomi veri delle carte. `alias` sono
+ * gli altri modi in cui il file scrive la stessa persona — «Aitana Bonmatí
+ * Conca» per «Aitana Bonmatí» — e ci finiscono a una condizione: che
+ * corrispondano a **una sola** carta. «Mbappé» da solo e' Kylian o Ethan, e
+ * «Haaland» e' Erling o Markus: quelli restano fuori, perche' indovinare
+ * vorrebbe dire spostare un prezzo sulla persona sbagliata. Un alias non
+ * scavalca mai un nome vero.
  */
 export function indicePerNome(carte = []) {
-  const indice = new Map()
+  const nomi = new Map()
   for (const carta of carte) {
     if (!carta?.name) continue
     const chiave = normalizeName(carta.name)
-    const elenco = indice.get(chiave)
+    const elenco = nomi.get(chiave)
     if (elenco) elenco.push(carta)
-    else indice.set(chiave, [carta])
+    else nomi.set(chiave, [carta])
   }
-  return indice
+
+  // Un nome vero oscura l'alias di un'altra carta solo se quella carta ha una
+  // valutazione. Un segnaposto nato da un prezzo — «Aitana Bonmatí Conca»,
+  // voto zero — non deve impedire di riconoscere che e' proprio quella la
+  // forma lunga di «Aitana Bonmatí»: e' il caso che stiamo cercando di
+  // risolvere, non un ostacolo.
+  const nomiCertificati = new Set()
+  for (const [chiave, elenco] of nomi) {
+    if (elenco.some((carta) => (Number(carta.rating) || 0) > 0)) nomiCertificati.add(chiave)
+  }
+
+  const candidati = new Map()
+  for (const carta of carte) {
+    for (const chiave of altriNomi(carta)) {
+      if (nomiCertificati.has(chiave)) continue
+      const elenco = candidati.get(chiave)
+      if (elenco) {
+        if (!elenco.includes(carta)) elenco.push(carta)
+      } else candidati.set(chiave, [carta])
+    }
+  }
+
+  const alias = new Map()
+  const contesi = new Map()
+  for (const [chiave, elenco] of candidati) {
+    if (elenco.length === 1) alias.set(chiave, elenco[0])
+    else contesi.set(chiave, elenco)
+  }
+
+  return { nomi, alias, contesi }
 }
 
 /**
@@ -341,8 +406,12 @@ export function indicePerNome(carte = []) {
 export function trovaNelCatalogo(nome, valutazione, indice) {
   const chiave = normalizeName(nome)
   if (chiave.length < 2) return null
-  const candidate = indice?.get(chiave)
-  if (!candidate || candidate.length === 0) return null
+  const candidate = indice?.nomi?.get(chiave)
+  if (!candidate || candidate.length === 0) {
+    // Nessun nome vero: si prova con gli altri modi di scriverlo, ma solo
+    // quelli che portano a una persona sola.
+    return indice?.alias?.get(chiave) ?? null
+  }
   if (valutazione > 0) {
     const esatta = candidate.find((carta) => carta.rating === valutazione)
     if (esatta) return esatta

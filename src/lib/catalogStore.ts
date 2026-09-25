@@ -21,8 +21,8 @@ const CHIAVE_VERSIONE = 'fc27-trader:catalogo-versione'
 
 export type Catalogo = Record<string, CartaBase>
 
-/** [nome, voto, ruolo, club, lega, nazione, alternativi, genere, [statistiche]] */
-export type RigaCompatta = [string, number, string?, string?, string?, string?, string?, string?, number[]?]
+/** [nome, voto, ruolo, club, lega, nazione, alternativi, genere, [statistiche], altri nomi] */
+export type RigaCompatta = [string, number, string?, string?, string?, string?, string?, string?, number[]?, string?]
 
 interface Salvato {
   v: 1
@@ -32,8 +32,13 @@ interface Salvato {
 const CHIAVI_STATISTICHE = ['pac', 'sho', 'pas', 'dri', 'dif', 'fis'] as const
 
 export function compattaCarta(carta: CartaBase, dettaglio: 'completo' | 'ridotto' | 'minimo' = 'completo'): RigaCompatta {
-  if (dettaglio === 'minimo') return [carta.name, carta.rating]
-  if (dettaglio === 'ridotto') return [carta.name, carta.rating, carta.position ?? '', carta.club ?? '']
+  // Gli altri nomi restano anche quando si taglia il dettaglio: senza, lo
+  // stesso giocatore tornerebbe a sdoppiarsi in due carte, che è molto
+  // peggio di non sapere in che squadra gioca.
+  if (dettaglio === 'minimo') return [carta.name, carta.rating, '', '', '', '', '', '', undefined, carta.aka ?? '']
+  if (dettaglio === 'ridotto') {
+    return [carta.name, carta.rating, carta.position ?? '', carta.club ?? '', '', '', '', '', undefined, carta.aka ?? '']
+  }
   const stats = carta.stats ? CHIAVI_STATISTICHE.map((chiave) => carta.stats?.[chiave] ?? 0) : undefined
   return [
     carta.name,
@@ -45,11 +50,12 @@ export function compattaCarta(carta: CartaBase, dettaglio: 'completo' | 'ridotto
     carta.alt ?? '',
     carta.gender ?? '',
     stats,
+    carta.aka ?? '',
   ]
 }
 
 export function espandiCarta(riga: RigaCompatta): CartaBase | null {
-  const [name, rating, position = '', club = '', league = '', nation = '', alt = '', gender = '', stats] = riga
+  const [name, rating, position = '', club = '', league = '', nation = '', alt = '', gender = '', stats, aka = ''] = riga
   if (!name) return null
   const id = idCarta(name, rating)
   if (!id) return null
@@ -66,6 +72,7 @@ export function espandiCarta(riga: RigaCompatta): CartaBase | null {
   }
   if (alt) carta.alt = alt
   if (gender) carta.gender = gender
+  if (aka) carta.aka = aka
   if (Array.isArray(stats) && stats.some((valore) => valore > 0)) {
     carta.stats = Object.fromEntries(CHIAVI_STATISTICHE.map((chiave, indice) => [chiave, stats[indice] ?? 0]))
   }

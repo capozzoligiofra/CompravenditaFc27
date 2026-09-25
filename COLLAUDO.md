@@ -259,6 +259,19 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
 - [ ] Un nome che nel catalogo corrisponde a **due giocatori diversi** (per
       esempio «Vitinha», che c'è a 90 e a 75) **non** viene unito: compare
       nell'elenco sotto, con i candidati.
+
+### Lo stesso nome scritto in due forme
+
+- [ ] Incolla un prezzo per «Aitana Bonmatí Conca» (il nome completo) mentre
+      nel catalogo lei si chiama «Aitana Bonmatí»: **non** nasce una seconda
+      carta, il prezzo va sulla sua.
+- [ ] Funziona anche al contrario e con il solo cognome: «Putellas Segura»
+      trova Alexia Putellas.
+- [ ] Cercando dal *Mercato* «bonmati conca» la trova lo stesso.
+- [ ] Un cognome che vale per **più persone** non abbina niente: «Mbappé» da
+      solo non diventa né Kylian né Ethan, e «Haaland» né Erling né Markus.
+- [ ] Dopo **Condividi con il gruppo**, un secondo dispositivo riconosce gli
+      stessi nomi: le forme alternative viaggiano con il catalogo.
 - [ ] **Dimentica i prezzi scaricati** svuota la copia locale del listino: le
       carte non mostrano più «da <nome>». Rosa, watchlist e i prezzi scritti
       da te restano al loro posto.

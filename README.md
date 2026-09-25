@@ -450,12 +450,22 @@ Quello che si fa invece:
   solo il segnaposto, che non aveva niente di suo oltre al nome. L'unione
   arriva anche al listino, altrimenti alla sincronizzazione dopo il doppione
   tornerebbe giù, qui e su tutti gli altri dispositivi.
-  **Quello che non si può indovinare non si tocca**: nel file dei giocatori
-  ci sono centotrentotto nomi che appartengono a due persone diverse
-  («Vitinha 90» gioca nel PSG, «Vitinha 75» è un altro), e una carta
-  «Vitinha» senza voto potrebbe essere l'uno o l'altro. Quelle restano dove
-  sono, elencate nel pannello *Doppioni*: apri la scheda, scrivi la
-  valutazione giusta, e da lì l'unione avviene da sola.
+  Lo stesso giocatore si sdoppiava anche per un secondo motivo: **il nome
+  scritto in due forme**. Il catalogo la chiama «Aitana Bonmatí», un elenco di
+  prezzi può scriverla «Aitana Bonmatí Conca», e per l'app erano due persone.
+  Qui non si va a somiglianza — è il modo sicuro di regalare il prezzo di
+  Vinícius a «Vini Jr» — ma si usano i nomi che **stanno già nel file**: di
+  ogni giocatore l'export riporta il nome comune, il nome completo e il
+  cognome, e tutte e tre le forme diventano chiavi di ricerca. Sul file vero
+  sono 15.692 forme aggiuntive utilizzabili.
+  **Quello che non si può indovinare non si tocca.** Una forma vale solo se
+  porta a **una persona sola**: «Mbappé» da solo è Kylian o Ethan, «Haaland»
+  è Erling o Markus, «Silva» sono undici persone, e quelle 1.881 forme
+  contese restano fuori. Stessa regola per i nomi ripetuti: nel file ci sono
+  138 nomi che appartengono a due giocatori diversi («Vitinha 90» gioca nel
+  PSG, «Vitinha 75» è un altro). Tutti questi casi restano dove sono,
+  elencati nel pannello *Doppioni*: apri la scheda, scrivi il nome per intero
+  o la valutazione giusta, e da lì l'unione avviene da sola.
 - **Incollare un elenco JSON.** In *Prezzi* c'è «Prezzi da un elenco JSON»,
   per chi i prezzi li tiene in un foglio o in un file:
   `[{"nome": "Klara Bühl", "prezzo": "8.2K"}, …]`. Accetta le chiavi in

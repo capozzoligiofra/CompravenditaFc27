@@ -136,3 +136,58 @@ test('senza doppioni non si tocca niente', () => {
   assert.equal(esito.unite, 0)
   assert.equal(esito.data, data, 'lo stesso oggetto: nessun ridisegno inutile')
 })
+
+test('lo stesso giocatore scritto per esteso si unisce al nome comune', () => {
+  // Il catalogo la chiama «Aitana Bonmatí»; l'elenco dei prezzi usava il nome
+  // completo, e cosi' e' nata una carta a parte.
+  const catalogo = {
+    ...creaCarta({ name: 'Aitana Bonmatí', rating: 90 }),
+    aka: 'Aitana Bonmatí Conca|Bonmatí Conca',
+  }
+  const segnaposto = carta('Aitana Bonmatí Conca')
+  const { unioni, ambigui } = trovaDoppioni([catalogo, segnaposto])
+  assert.deepEqual(ambigui, [])
+  assert.equal(unioni.length, 1)
+  assert.equal(unioni[0].da, segnaposto.id)
+  assert.equal(unioni[0].a, catalogo.id)
+  assert.equal(unioni[0].voto, 90)
+})
+
+test('anche il solo cognome si unisce, se porta a una persona sola', () => {
+  const catalogo = { ...creaCarta({ name: 'Alexia Putellas', rating: 91 }), aka: 'Alexia Putellas Segura|Putellas Segura' }
+  const { unioni } = trovaDoppioni([catalogo, carta('Putellas Segura')])
+  assert.equal(unioni.length, 1)
+  assert.equal(unioni[0].a, catalogo.id)
+})
+
+test('un cognome che vale per due persone non unisce niente', () => {
+  // «Mbappé» e' Kylian o Ethan: sceglierne uno vorrebbe dire spostare il
+  // prezzo di uno sull'altro, per tutto il gruppo.
+  const kylian = { ...creaCarta({ name: 'Kylian Mbappé', rating: 91 }), aka: 'Mbappé' }
+  const ethan = { ...creaCarta({ name: 'Ethan Mbappé', rating: 74 }), aka: 'Mbappé' }
+  const { unioni, ambigui } = trovaDoppioni([kylian, ethan, carta('Mbappé')])
+  assert.deepEqual(unioni, [])
+  assert.equal(ambigui.length, 1)
+  assert.deepEqual(
+    ambigui[0].candidati.map((c) => c.voto),
+    [91, 74],
+  )
+})
+
+test('un altro nome non scavalca mai il nome vero di un’altra carta', () => {
+  // Se «Gabriel» e' il nome vero di una carta, non puo' diventare l'alias di
+  // un'altra: il nome vero vince sempre.
+  const vero = creaCarta({ name: 'Gabriel', rating: 89 })
+  const altro = { ...creaCarta({ name: 'Gabriel Martinelli', rating: 84 }), aka: 'Gabriel' }
+  const { unioni } = trovaDoppioni([vero, altro, carta('Gabriel')])
+  assert.equal(unioni.length, 1)
+  assert.equal(unioni[0].a, vero.id, 'si unisce al «Gabriel» vero, non a Martinelli')
+})
+
+test('il nome scritto uguale vince sull’altro nome', () => {
+  const esatta = creaCarta({ name: 'Aitana Bonmatí Conca', rating: 85 })
+  const conAlias = { ...creaCarta({ name: 'Aitana Bonmatí', rating: 90 }), aka: 'Aitana Bonmatí Conca' }
+  const { unioni } = trovaDoppioni([esatta, conAlias, carta('Aitana Bonmatí Conca')])
+  assert.equal(unioni.length, 1)
+  assert.equal(unioni[0].a, esatta.id)
+})

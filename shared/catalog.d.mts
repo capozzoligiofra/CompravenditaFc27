@@ -14,6 +14,12 @@ export interface CartaBase {
   gender?: string
   /** Le sei statistiche principali, se il file le contiene. */
   stats?: Record<string, number>
+  /**
+   * Gli altri modi in cui il file scrive questa persona, separati da «|»:
+   * il nome completo e il cognome, quando sono diversi dal nome comune.
+   * «Aitana Bonmatí» → «Aitana Bonmatí Conca|Bonmatí Conca».
+   */
+  aka?: string
 }
 
 export function idCarta(nome: string, valutazione?: number): string
@@ -41,9 +47,15 @@ export function leggiCsv(testo: string): {
   scartate: number
   colonne: { nome: string; valutazione: string | null; extra?: string[] } | null
 }
-export function indicePerNome(carte?: CartaBase[]): Map<string, CartaBase[]>
-export function trovaNelCatalogo(
-  nome: string,
-  valutazione: number,
-  indice: Map<string, CartaBase[]>,
-): CartaBase | null
+export interface IndiceCarte {
+  /** I nomi veri delle carte. */
+  nomi: Map<string, CartaBase[]>
+  /** Gli altri nomi che portano a una carta sola. */
+  alias: Map<string, CartaBase>
+  /** Gli altri nomi che portano a più persone: non si usano per abbinare. */
+  contesi: Map<string, CartaBase[]>
+}
+
+export function altriNomi(carta: CartaBase): string[]
+export function indicePerNome(carte?: CartaBase[]): IndiceCarte
+export function trovaNelCatalogo(nome: string, valutazione: number, indice: IndiceCarte): CartaBase | null

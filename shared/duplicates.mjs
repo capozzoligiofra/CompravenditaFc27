@@ -14,8 +14,17 @@
 // del PSG a uno sconosciuto, per sempre e su tutti i dispositivi. Quelle non
 // si toccano: si mettono da parte e le guardi tu.
 //
+// C'e' un secondo modo in cui lo stesso giocatore si sdoppia: il nome
+// scritto in due forme. Il catalogo la chiama «Aitana Bonmatí», l'elenco dei
+// prezzi «Aitana Bonmatí Conca», e per l'app sono due persone. Anche qui la
+// risposta non si indovina: sta nel file, che di ogni giocatore riporta il
+// nome comune, il nome completo e il cognome. Quelle forme diventano alias,
+// e valgono solo quando portano a una persona sola — «Mbappé» da solo e'
+// Kylian o Ethan, «Haaland» e' Erling o Markus, e quelli restano fuori.
+//
 // Quindi: si unisce solo quando la risposta e' una sola.
 
+import { indicePerNome } from './catalog.mjs'
 import { normalizeName } from './text.mjs'
 
 function voto(carta) {
@@ -31,43 +40,65 @@ function voto(carta) {
  *   `ambigui` i nomi senza voto che corrispondono a piu' giocatori diversi.
  */
 export function trovaDoppioni(carte = []) {
-  const gruppi = new Map()
-  for (const carta of carte) {
-    if (!carta?.id || !carta?.name) continue
-    const chiave = normalizeName(carta.name)
-    if (chiave.length < 2) continue
-    const gruppo = gruppi.get(chiave)
-    if (gruppo) gruppo.push(carta)
-    else gruppi.set(chiave, [carta])
-  }
+  const valide = carte.filter((carta) => carta?.id && carta?.name && normalizeName(carta.name).length >= 2)
+  const { nomi, alias, contesi } = indicePerNome(valide)
 
   const unioni = []
   const ambigui = []
-  for (const gruppo of gruppi.values()) {
+  const sistemate = new Set()
+
+  const segnalaAmbiguo = (carta, candidati) => {
+    ambigui.push({
+      nome: carta.name,
+      id: carta.id,
+      candidati: [...candidati]
+        .sort((a, b) => voto(b) - voto(a))
+        .map((scelta) => ({ id: scelta.id, nome: scelta.name, voto: voto(scelta), club: scelta.club ?? '' })),
+    })
+  }
+
+  // Primo giro: stesso nome scritto uguale. E' il caso di gran lunga piu'
+  // comune — il segnaposto nato da un prezzo incollato e la carta del
+  // catalogo si chiamano allo stesso modo, cambia solo il voto.
+  for (const gruppo of nomi.values()) {
     const senzaVoto = gruppo.filter((carta) => voto(carta) === 0)
     if (senzaVoto.length === 0) continue
-    // Piu' carte senza voto con lo stesso nome non possono esistere: l'id si
-    // calcola da nome e voto, quindi sarebbero la stessa carta. Se capita, e'
-    // roba vecchia: si uniscono comunque fra loro.
     const conVoto = gruppo.filter((carta) => voto(carta) > 0)
     const distinti = new Set(conVoto.map((carta) => voto(carta)))
 
     if (distinti.size === 0) continue
     if (distinti.size > 1) {
-      ambigui.push({
-        nome: senzaVoto[0].name,
-        id: senzaVoto[0].id,
-        candidati: [...conVoto]
-          .sort((a, b) => voto(b) - voto(a))
-          .map((carta) => ({ id: carta.id, nome: carta.name, voto: voto(carta), club: carta.club ?? '' })),
-      })
+      for (const doppione of senzaVoto) {
+        sistemate.add(doppione.id)
+        segnalaAmbiguo(doppione, conVoto)
+      }
       continue
     }
 
     const buona = conVoto.reduce((migliore, carta) => (voto(carta) > voto(migliore) ? carta : migliore))
     for (const doppione of senzaVoto) {
+      sistemate.add(doppione.id)
       if (doppione.id === buona.id) continue
       unioni.push({ da: doppione.id, a: buona.id, nome: buona.name, voto: voto(buona) })
+    }
+  }
+
+  // Secondo giro: lo stesso giocatore scritto in un altro modo. Il file dice
+  // che «Aitana Bonmatí» per esteso e' «Aitana Bonmatí Conca»; se l'elenco
+  // dei prezzi usava quella forma, e' nata una carta a parte.
+  for (const carta of valide) {
+    if (voto(carta) > 0 || sistemate.has(carta.id)) continue
+    const chiave = normalizeName(carta.name)
+    const buona = alias.get(chiave)
+    if (buona && voto(buona) > 0 && buona.id !== carta.id) {
+      sistemate.add(carta.id)
+      unioni.push({ da: carta.id, a: buona.id, nome: buona.name, voto: voto(buona) })
+      continue
+    }
+    const contesa = contesi.get(chiave)
+    if (contesa && contesa.length > 1) {
+      sistemate.add(carta.id)
+      segnalaAmbiguo(carta, contesa)
     }
   }
 

@@ -9,6 +9,7 @@ import {
   creaCarta,
   dividiRigaCsv,
   idCarta,
+  altriNomi,
   indicePerNome,
   leggiCsv,
   trovaNelCatalogo,
@@ -192,4 +193,45 @@ test('una colonna in meno non manda tutto di traverso', () => {
   assert.equal(esito.carte[0].name, 'Moise Kean')
   assert.equal(esito.carte[0].rating, 84)
   assert.equal(esito.carte[0].stats, undefined)
+})
+
+test('il file porta anche il nome completo e il cognome, e diventano altri nomi', () => {
+  const testo = [
+    'common_name,first_name,last_name,overall_rating,club',
+    'Aitana Bonmatí,Aitana,Bonmatí Conca,90,FC Barcelona',
+    ',Kylian,Mbappé,91,Real Madrid',
+  ].join('\n')
+  const { carte } = leggiCsv(testo)
+  const aitana = carte.find((c) => c.name === 'Aitana Bonmatí')
+  assert.deepEqual(altriNomi(aitana), ['aitana bonmati conca', 'bonmati conca'])
+  // Chi non ha un nome comune si chiama gia' per esteso: resta solo il cognome.
+  const kylian = carte.find((c) => c.name === 'Kylian Mbappé')
+  assert.deepEqual(altriNomi(kylian), ['mbappe'])
+})
+
+test('un prezzo scritto con il nome completo trova la carta giusta', () => {
+  const carte = [
+    { id: 'a', name: 'Aitana Bonmatí', rating: 90, aka: 'Aitana Bonmatí Conca|Bonmatí Conca' },
+    { id: 'b', name: 'Alexia Putellas', rating: 91, aka: 'Alexia Putellas Segura|Putellas Segura' },
+  ]
+  const indice = indicePerNome(carte)
+  assert.equal(trovaNelCatalogo('Aitana Bonmatí Conca', 0, indice).id, 'a')
+  assert.equal(trovaNelCatalogo('bonmati conca', 0, indice).id, 'a')
+  assert.equal(trovaNelCatalogo('Aitana Bonmatí', 0, indice).id, 'a')
+})
+
+test('un altro nome che vale per due persone non abbina niente', () => {
+  const carte = [
+    { id: 'a', name: 'Kylian Mbappé', rating: 91, aka: 'Mbappé' },
+    { id: 'b', name: 'Ethan Mbappé', rating: 74, aka: 'Mbappé' },
+  ]
+  const indice = indicePerNome(carte)
+  assert.equal(trovaNelCatalogo('Mbappé', 0, indice), null)
+  assert.deepEqual(indice.contesi.get('mbappe').map((c) => c.id), ['a', 'b'])
+})
+
+test('la ricerca trova un giocatore anche con il nome completo', () => {
+  const carte = [{ id: 'a', name: 'Aitana Bonmatí', rating: 90, aka: 'Aitana Bonmatí Conca|Bonmatí Conca' }]
+  assert.equal(cercaCarte('bonmati conca', carte)[0]?.id, 'a')
+  assert.equal(cercaCarte('conca', carte)[0]?.id, 'a')
 })
