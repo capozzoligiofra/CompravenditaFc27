@@ -54,6 +54,9 @@ export function vociPrezzo({
   // già avviato non ha né rosa né schede aperte, ma i prezzi degli altri sì.
   // Senza questa fonte si troverebbe un pannello vuoto con il listino pieno.
   condivise = {},
+  // Le carte che esistono solo nella sorgente automatica: il primo giorno
+  // sono tutto quello che c'e', perche' non hai ancora aperto niente.
+  dallaSorgente = {},
   manualPrices = {},
   priceHistory = {},
   now = Date.now(),
@@ -69,6 +72,9 @@ export function vociPrezzo({
   for (const player of seen) aggiungi(mappa, player, 'visto')
   for (const [id, carta] of Object.entries(condivise)) {
     aggiungi(mappa, { id, name: carta?.name ?? '', rating: carta?.rating ?? 0 }, 'listino')
+  }
+  for (const [id, carta] of Object.entries(dallaSorgente)) {
+    aggiungi(mappa, { id, name: carta?.name ?? '', rating: carta?.rating ?? 0 }, 'sorgente')
   }
 
   const voci = []
@@ -119,7 +125,7 @@ export function ordinaVoci(voci, chiave = (voce) => voce.osservatoIl) {
  * prezzi è in comune, l'elenco delle carte seguite no.
  */
 export function eTua(voce) {
-  return (voce?.gruppi ?? []).some((gruppo) => gruppo !== 'listino')
+  return (voce?.gruppi ?? []).some((gruppo) => gruppo !== 'listino' && gruppo !== 'sorgente')
 }
 
 /**
@@ -138,6 +144,7 @@ export function filtraVoci(voci, { gruppo = 'tutte', testo = '', tieni = [] } = 
     // Le carte del listino stanno nel loro scomparto: non si mescolano con
     // le tue finché non ne apri una, che è il gesto con cui la segui.
     if (gruppo === 'listino') return voce.gruppi.includes('listino')
+    if (gruppo === 'sorgente') return voce.gruppi.includes('sorgente')
     if (!eTua(voce)) return false
     if (gruppo === 'rosa' && !voce.gruppi.includes('rosa')) return false
     if (gruppo === 'watchlist' && !voce.gruppi.includes('watchlist')) return false
@@ -156,5 +163,7 @@ export function riepilogo(voci) {
     mai: mie.filter((voce) => voce.stato === 'mai').length,
     /** Quante carte ci sono nel listino e non fra le tue: si possono adottare. */
     dalListino: voci.filter((voce) => !eTua(voce)).length,
+    /** Quante arrivano dalla sorgente automatica. */
+    dallaSorgente: voci.filter((voce) => voce.gruppi.includes('sorgente')).length,
   }
 }

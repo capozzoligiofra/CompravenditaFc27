@@ -111,6 +111,8 @@ export interface AppData {
   sharedPlayers: Record<string, { name: string; rating: number }>
   /** I prezzi letti dalla sorgente automatica, se il server ne ha una. */
   sourcePrices: Record<string, { price: number; at: number }>
+  /** Le carte che la sorgente conosce: le sue righe, abbinate al catalogo. */
+  sourcePlayers: Record<string, { name: string; rating: number }>
   /** Cursore della sincronizzazione: è l'orologio del server, non il nostro. */
   syncedAt: number
   /** A quale piattaforma appartiene il listino scaricato: cambiarla lo azzera. */

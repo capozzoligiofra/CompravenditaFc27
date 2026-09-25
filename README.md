@@ -430,9 +430,20 @@ Quello che si fa invece:
   quali non ha riconosciuto; se sbaglia, i nomi esatti si fissano in
   `config.php`. Il prezzo lo legge com'è scritto: `985000`, `985.000`, `985K`,
   `1,2M`.
-  Servono nome e prezzo; la valutazione è facoltativa ma conviene, perché è
-  quella che distingue **Vitinha 90 dal PSG da Vitinha 75**, che sono due
-  persone. Senza, quei casi vengono saltati invece di tirare a indovinare.
+  Servono nome e prezzo; la valutazione è facoltativa, e se la tabella non ce
+  l'ha **la mette il catalogo**: l'app prende i nomi dalla sorgente e li cerca
+  fra le sue carte, anche nelle forme lunghe («Aitana Bonmatí Conca» finisce
+  su «Aitana Bonmatí 90»). Restano fuori solo i nomi che nel catalogo valgono
+  **due giocatori diversi** — Vitinha c'è a 90 e a 75 — perché dare a uno il
+  prezzo dell'altro è un errore che non si vede: il numero c'è, sembra giusto,
+  e ti fa comprare la persona sbagliata. Il pannello li elenca, e basta
+  aggiungere una colonna con la valutazione perché si sistemino.
+  Un nome che nel catalogo non c'è affatto si vede lo stesso, senza
+  valutazione, e se il catalogo lo imparerà i doppioni si uniranno da soli.
+  **I prezzi compaiono anche il primo giorno**, quando non segui ancora
+  nessuna carta: l'app scarica tutta la sorgente e la mette nel filtro
+  *Dalla sorgente*, di fianco a *Dal listino*. Non diventano tue finché non ne
+  apri una — la sorgente porta prezzi, non carte da seguire.
   I prezzi della sorgente valgono come tutti gli altri — vince l'osservazione
   più recente — e quelli che hai scritto tu non si perdono.
 - **Caricare il catalogo dei giocatori.** In *Prezzi* → «Catalogo dei

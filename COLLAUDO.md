@@ -282,6 +282,16 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
       basta.
 - [ ] Senza nessuna di quelle tabelle, il pannello **non compare** e l'app
       funziona esattamente come prima.
+- [ ] **Con l'app appena installata**, senza nessuna carta seguita: i prezzi
+      della sorgente compaiono lo stesso, nel filtro *Dalla sorgente*.
+- [ ] Se la tabella **non ha la colonna della valutazione**, le carte
+      prendono comunque il voto giusto dal catalogo.
+- [ ] Una riga scritta con il nome lungo («Aitana Bonmatí Conca») finisce
+      sulla **stessa carta** di quella scritta corto, non su una seconda.
+- [ ] Un nome che nel catalogo vale due giocatori (Vitinha) resta **senza
+      prezzo**, e il pannello lo dice con i due voti possibili.
+- [ ] Le carte della sorgente **non** finiscono fra «Tutte le mie»: il
+      contatore in alto non cambia finché non ne apri una.
 
 ### Lo stesso nome scritto in due forme
 

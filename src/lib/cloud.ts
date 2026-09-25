@@ -9,6 +9,7 @@
 //     dell'osservazione, non quello della sincronizzazione.
 
 import type { Unione } from '../../shared/duplicates.d.mts'
+import type { RigaSorgente } from '../../shared/source.d.mts'
 import type { AppData, Platform, Player } from '../types.ts'
 
 const CHIAVE_ACCOUNT = 'fc27-trader:account'
@@ -249,25 +250,18 @@ export function statoSorgente(server: string, signal?: AbortSignal): Promise<Sta
 }
 
 /**
- * I prezzi della sorgente per le carte che ti interessano.
+ * Tutta la sorgente: i nomi che ha e i loro prezzi.
  *
- * Si mandano le carte invece di scaricare tutta la tabella: di ventimila
- * righe te ne servono quelle che segui, e ventimila prezzi nel telefono
- * sarebbero megabyte buttati. Con il nome viaggia la valutazione, che e'
- * quella che distingue i due Vitinha.
+ * L'abbinamento alle carte lo fa l'app, che il catalogo ce l'ha; il server si
+ * limita a mandare i nomi come sono scritti nella tabella. Cosi' il primo
+ * giorno, quando non segui ancora nessuno, i prezzi compaiono lo stesso.
  */
-export function prezziSorgente(
+export function elencoSorgente(
   server: string,
   piattaforma: Platform,
-  carte: { id: string; nome: string; voto: number }[],
   signal?: AbortSignal,
-): Promise<{ prezzi: { id: string; price: number; at: number }[]; carte: number }> {
-  return chiama(server, 'sorgente', {
-    metodo: 'POST',
-    cerca: { cosa: 'prezzi' },
-    corpo: { piattaforma, carte },
-    signal,
-  })
+): Promise<{ righe: RigaSorgente[]; contesi: string[]; adesso: number }> {
+  return chiama(server, 'sorgente', { cerca: { cosa: 'elenco', piattaforma }, signal })
 }
 
 /** L'andamento passato di una carta, dalla tabella dello storico. */

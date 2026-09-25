@@ -1,5 +1,5 @@
 export type StatoPrezzo = 'mai' | 'vecchio' | 'oggi'
-export type GruppoPrezzo = 'tutte' | 'rosa' | 'watchlist' | 'da-aggiornare' | 'listino'
+export type GruppoPrezzo = 'tutte' | 'rosa' | 'watchlist' | 'da-aggiornare' | 'listino' | 'sorgente'
 
 export interface VocePrezzo {
   id: string
@@ -26,6 +26,7 @@ export function vociPrezzo(input?: {
   watchlist?: { id: string; name: string; rating?: number }[]
   positions?: { playerId: string; name: string; rating?: number; quantity?: number; sellPrice?: number | null }[]
   condivise?: Record<string, { name: string; rating?: number }>
+  dallaSorgente?: Record<string, { name: string; rating?: number }>
   manualPrices?: Record<string, { price: number; at: number }>
   priceHistory?: Record<string, { t: number; price: number }[]>
   now?: number
@@ -43,4 +44,5 @@ export function riepilogo(voci: VocePrezzo[]): {
   daAggiornare: number
   mai: number
   dalListino: number
+  dallaSorgente: number
 }

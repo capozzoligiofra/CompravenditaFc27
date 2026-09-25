@@ -120,7 +120,7 @@ test('«da aggiornare» lascia fuori solo le carte segnate oggi', () => {
     filtraVoci(voci, { gruppo: 'da-aggiornare' }).map((voce) => voce.id),
     ['mai', 'vecchia'],
   )
-  assert.deepEqual(riepilogo(voci), { totale: 3, aggiornate: 1, daAggiornare: 2, mai: 1, dalListino: 0 })
+  assert.deepEqual(riepilogo(voci), { totale: 3, aggiornate: 1, daAggiornare: 2, mai: 1, dalListino: 0, dallaSorgente: 0 })
 })
 
 test('a parità di anzianità conta la valutazione, e l\'ordine non muta l\'originale', () => {
@@ -216,4 +216,30 @@ test('una carta che hai già in rosa non si sdoppia per colpa del listino', () =
   })
   assert.equal(voci.length, 1)
   assert.deepEqual(voci[0].gruppi, ['rosa', 'listino'])
+})
+
+test('le carte della sorgente stanno nel loro scomparto, non fra le tue', () => {
+  const voci = vociPrezzo({
+    seen: [{ id: 'mia', name: 'Mia', rating: 84 }],
+    condivise: { dellaltro: { name: 'Dell Altro', rating: 85 } },
+    dallaSorgente: { automatica: { name: 'Automatica', rating: 90 } },
+    now: ADESSO,
+  })
+  assert.deepEqual(filtraVoci(voci, { gruppo: 'sorgente' }).map((v) => v.id), ['automatica'])
+  assert.deepEqual(filtraVoci(voci, { gruppo: 'listino' }).map((v) => v.id), ['dellaltro'])
+  // «Tutte le mie» resta tua: la sorgente porta prezzi, non carte da seguire.
+  assert.deepEqual(filtraVoci(voci, { gruppo: 'tutte' }).map((v) => v.id), ['mia'])
+  const conti = riepilogo(voci)
+  assert.equal(conti.totale, 1)
+  assert.equal(conti.dallaSorgente, 1)
+})
+
+test('una carta che segui e che sta anche nella sorgente resta tua', () => {
+  const voci = vociPrezzo({
+    seen: [{ id: 'mia', name: 'Mia', rating: 84 }],
+    dallaSorgente: { mia: { name: 'Mia', rating: 84 } },
+    now: ADESSO,
+  })
+  assert.deepEqual(filtraVoci(voci, { gruppo: 'tutte' }).map((v) => v.id), ['mia'])
+  assert.equal(riepilogo(voci).totale, 1)
 })

@@ -317,6 +317,9 @@ function indiceSorgente(PDO $db, array $mappa, string $tabella, int $massimo): a
             continue;
         }
         $voce = [
+            // Il nome com'e' scritto nella tabella, non la chiave: serve a
+            // mostrarlo e a ritrovarlo nel catalogo.
+            'nome' => trim((string) ($riga['nome'] ?? '')),
             'prezzo' => $prezzo,
             'voto' => isset($riga['valutazione']) ? (int) $riga['valutazione'] : 0,
             'quando' => quandoInMillisecondi($riga['aggiornato'] ?? null),

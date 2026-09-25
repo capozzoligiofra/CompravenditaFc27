@@ -99,9 +99,18 @@ stesse informazioni stanno nel pannello **Sorgente automatica** della pagina
 `sorgente_colonne_prezzi` e vincono sul riconoscimento.
 
 Servono almeno una colonna con il **nome** e una con il **prezzo**. Quella
-della **valutazione** non e' obbligatoria ma conviene averla: senza, due
-carte che si chiamano uguale (Vitinha a 90 e Vitinha a 75) vengono saltate
-invece di rischiare di scambiarle.
+della **valutazione** non e' obbligatoria: se manca, la mette il catalogo
+dell'app, che i nomi li conosce. Restano fuori solo i nomi che nel catalogo
+valgono due giocatori diversi (Vitinha a 90 e Vitinha a 75), che vengono
+saltati invece di rischiare di scambiarli — il pannello dell'app li elenca.
+
+Le chiamate della sorgente:
+
+| Chiamata | Cosa fa |
+| --- | --- |
+| `GET api.php?azione=sorgente` | cosa ha capito delle tue tabelle: colonne vere e colonne scelte |
+| `GET api.php?azione=sorgente&cosa=elenco` | tutti i nomi con il loro prezzo |
+| `GET api.php?azione=sorgente&cosa=storico&nome=...` | l'andamento passato di un nome |
 
 ## Ripartire da zero
 

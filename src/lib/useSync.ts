@@ -8,6 +8,7 @@ const SPENTO: StatoSync = {
   ultima: 0,
   errore: null,
   inAttesa: 0,
+  sorgente: null,
   sincronizzaOra: () => {},
 }
 

@@ -62,7 +62,10 @@ export interface Store {
   /** Butta la copia locale del listino: prezzi e carte scaricati dal server. */
   dimenticaListino: () => void
   /** I prezzi appena letti dalla sorgente automatica del server. */
-  impostaPrezziSorgente: (prezzi: Record<string, { price: number; at: number }>) => void
+  impostaPrezziSorgente: (
+    prezzi: Record<string, { price: number; at: number }>,
+    carte: Record<string, { name: string; rating: number }>,
+  ) => void
   /** Fonde i doppioni: la carta senza valutazione sparisce dentro quella buona. */
   unisciDoppioni: (unioni: Unione[]) => number
   recordPrices: (quotes: Record<string, Quote | null>) => void
@@ -248,7 +251,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * esistono più. La tua rosa, la watchlist e i prezzi scritti da te restano.
    */
   const dimenticaListino = useCallback(() => {
-    setData((current) => ({ ...current, sharedPrices: {}, sharedPlayers: {}, sourcePrices: {}, syncedAt: 0 }))
+    setData((current) => ({ ...current, sharedPrices: {}, sharedPlayers: {}, sourcePrices: {}, sourcePlayers: {}, syncedAt: 0 }))
   }, [])
 
   /**
@@ -258,7 +261,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * scritti a mano non si toccano — la sorgente li copre finche' e' piu'
    * fresca, poi tornano a valere da soli.
    */
-  const impostaPrezziSorgente = useCallback((prezzi: Record<string, { price: number; at: number }>) => {
+  const impostaPrezziSorgente = useCallback((
+    prezzi: Record<string, { price: number; at: number }>,
+    carte: Record<string, { name: string; rating: number }>,
+  ) => {
     setData((current) => {
       const adesso = Date.now()
       const priceHistory = { ...current.priceHistory }
@@ -273,7 +279,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
       }
       if (!cambiato) return current
-      return { ...current, sourcePrices: prezzi, priceHistory }
+      return { ...current, sourcePrices: prezzi, sourcePlayers: carte, priceHistory }
     })
   }, [])
 

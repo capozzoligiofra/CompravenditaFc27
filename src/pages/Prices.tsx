@@ -24,6 +24,9 @@ const GRUPPI: { value: GruppoPrezzo; label: string }[] = [
   { value: 'tutte', label: 'Tutte le mie' },
   // Le carte che esistono solo nel listino: non sono tue finché non le apri.
   { value: 'listino', label: 'Dal listino' },
+  // Le carte che arrivano dalla tabella dei prezzi del server: prezzo sì,
+  // ma non sono tue finché non ne apri una.
+  { value: 'sorgente', label: 'Dalla sorgente' },
 ]
 
 const STATO = {
@@ -71,13 +74,14 @@ export default function Prices() {
         watchlist: data.watchlist,
         positions: data.positions,
         condivise: data.sharedPlayers,
+        dallaSorgente: data.sourcePlayers,
         // Il listino condiviso e i tuoi prezzi, già fusi: quello che vale
         // adesso, chiunque l'abbia segnato.
         manualPrices: prezzi,
         priceHistory: data.priceHistory,
         now: adesso,
       }) as VocePrezzo[],
-    [data.seen, data.watchlist, data.positions, data.sharedPlayers, prezzi, data.priceHistory, adesso],
+    [data.seen, data.watchlist, data.positions, data.sharedPlayers, data.sourcePlayers, prezzi, data.priceHistory, adesso],
   )
 
   // Le righe sistemate poco fa restano dove sono e restano visibili, anche

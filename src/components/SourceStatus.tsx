@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardTitle } from './ui.tsx'
 import { statoSorgente, type StatoSorgente, type TabellaSorgente } from '../lib/cloud.ts'
 import { useStore } from '../lib/useStore.ts'
+import { useSync } from '../lib/useSync.ts'
 
 const RUOLI: Record<string, string> = {
   nome: 'nome',
@@ -33,6 +34,7 @@ function elencoColonne(tabella: TabellaSorgente) {
  */
 export default function SourceStatus() {
   const { account } = useStore()
+  const { sorgente } = useSync()
   const [stato, setStato] = useState<StatoSorgente | null>(null)
 
   useEffect(() => {
@@ -76,6 +78,34 @@ export default function SourceStatus() {
       )}
 
       {colonne ? <p className="mt-2 text-xs text-chalk-dim">Prezzi: {colonne}.</p> : null}
+
+      {sorgente ? (
+        <p className="mt-2 text-xs text-chalk-dim">
+          {sorgente.abbinate.toLocaleString('it-IT')} {sorgente.abbinate === 1 ? 'prezzo attaccato' : 'prezzi attaccati'} alle
+          carte.
+          {sorgente.sconosciuti.length > 0
+            ? ` ${sorgente.sconosciuti.length} ${sorgente.sconosciuti.length === 1 ? 'nome non è' : 'nomi non sono'} nel catalogo: ${sorgente.sconosciuti.slice(0, 4).join(', ')}${sorgente.sconosciuti.length > 4 ? '…' : ''} — si vedono lo stesso, ma senza valutazione.`
+            : ''}
+        </p>
+      ) : null}
+
+      {sorgente && sorgente.contesi.length > 0 ? (
+        <div className="mt-2">
+          <p className="text-xs text-loss">
+            {sorgente.contesi.length === 1 ? 'Un nome corrisponde' : `${sorgente.contesi.length} nomi corrispondono`} a più
+            giocatori, e la tua tabella non ha la valutazione: {sorgente.contesi.length === 1 ? 'è' : 'sono'} rimast
+            {sorgente.contesi.length === 1 ? 'o' : 'i'} senza prezzo, perché darlo alla persona sbagliata non si
+            vedrebbe. Aggiungi una colonna con la valutazione e si sistemano da soli.
+          </p>
+          <ul className="mt-1 space-y-1">
+            {sorgente.contesi.slice(0, 8).map((voce) => (
+              <li key={voce.nome} className="text-[11px] text-chalk-dim">
+                <span className="text-chalk">{voce.nome}</span> — nel catalogo c'è a {voce.voti.join(' e a ')}.
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {stato.storico.esiste ? (
         stato.storico.pronto ? (

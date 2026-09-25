@@ -1,7 +1,8 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { applicaRemoti, daInviare, scegliDati } from '../../shared/sync.mjs'
-import { catalogoLocale } from '../../shared/catalog.mjs'
+import { catalogoLocale, indicePerNome } from '../../shared/catalog.mjs'
+import { abbinaSorgente } from '../../shared/source.mjs'
 import type { CartaBase } from '../../shared/catalog.d.mts'
 import type { PrezzoCondiviso } from '../../shared/sync.d.mts'
 import { dalServer, leggiVersioneCatalogo, salvaVersioneCatalogo } from './catalogStore.ts'
@@ -10,7 +11,7 @@ import {
   datiPersonali,
   entra,
   inviaDati,
-  prezziSorgente,
+  elencoSorgente,
   inviaPrezzi,
   scaricaBloccoCatalogo,
   scaricaDati,
@@ -23,8 +24,6 @@ import { useStore } from './useStore.ts'
 const OGNI = 3 * 60_000
 /** Non si rientra più spesso di così: se il server dice sempre di no, non serve insistere. */
 const UN_MINUTO = 60_000
-/** Quante carte si chiedono alla sorgente per volta: quelle che segui, non tutta la tabella. */
-const MAX_CARTE_SORGENTE = 2000
 const ATTESA_DOPO_UNA_MODIFICA = 2_000
 
 export interface StatoSync {
@@ -36,7 +35,18 @@ export interface StatoSync {
   errore: string | null
   /** Quanti dei tuoi prezzi il server non ha ancora. */
   inAttesa: number
+  /** Com'è andato l'abbinamento dell'ultima lettura della sorgente automatica. */
+  sorgente: EsitoSorgente | null
   sincronizzaOra: () => void
+}
+
+export interface EsitoSorgente {
+  /** Quante righe della sorgente si sono attaccate a una carta. */
+  abbinate: number
+  /** I nomi che nel catalogo valgono più giocatori: saltati di proposito. */
+  contesi: { nome: string; voti: number[] }[]
+  /** I nomi che nel catalogo non ci sono: mostrati, ma senza valutazione. */
+  sconosciuti: string[]
 }
 
 export const SyncContext = createContext<StatoSync | null>(null)
@@ -65,8 +75,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   // React può essere cambiato sotto i piedi. Si lavora sempre sull'ultima
   // versione dei dati, non su quella catturata alla partenza.
   const datiRef = useRef(store.data)
+  const catalogoRef = useRef(store.catalogo)
   useEffect(() => {
     datiRef.current = store.data
+    catalogoRef.current = store.catalogo
   })
 
   const [inCorso, setInCorso] = useState(false)
@@ -76,6 +88,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const rientrato = useRef(0)
   // null = non si sa ancora, false = il server non ha una sorgente utilizzabile.
   const sorgenteViva = useRef<boolean | null>(null)
+  const [esitoSorgente, setEsitoSorgente] = useState<EsitoSorgente | null>(null)
   const impronta = useRef<string | null>(null)
 
   const allineaCatalogo = useCallback(async () => {
@@ -108,26 +121,36 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     if (!account) return
     if (sorgenteViva.current === false) return
     const dati = datiRef.current
-    const carte = (
-      catalogoLocale({
-        seen: dati.seen,
-        watchlist: dati.watchlist,
-        positions: dati.positions,
-        condivise: dati.sharedPlayers,
-      }) as CartaBase[]
-    )
-      .slice(0, MAX_CARTE_SORGENTE)
-      .map((carta) => ({ id: carta.id, nome: carta.name, voto: carta.rating }))
-
-    if (carte.length === 0) return
     try {
-      const esito = await prezziSorgente(account.server, dati.settings.platform, carte)
+      // Tutta la sorgente, non solo le carte che segui: il primo giorno non
+      // ne segui nessuna, e un elenco di prezzi che non mostra niente
+      // sembrerebbe rotto. L'abbinamento al catalogo lo fa l'app, che il
+      // catalogo ce l'ha; il server manda i nomi cosi' come sono scritti.
+      const elenco = await elencoSorgente(account.server, dati.settings.platform)
       sorgenteViva.current = true
-      impostaPrezziSorgente(Object.fromEntries(esito.prezzi.map((voce) => [voce.id, { price: voce.price, at: voce.at }])))
+      const indice = indicePerNome([
+        ...Object.values(catalogoRef.current),
+        ...(catalogoLocale({
+          seen: dati.seen,
+          watchlist: dati.watchlist,
+          positions: dati.positions,
+          condivise: dati.sharedPlayers,
+        }) as CartaBase[]),
+      ])
+      const abbinati = abbinaSorgente(elenco.righe, indice)
+      impostaPrezziSorgente(abbinati.prezzi, abbinati.carte)
+      setEsitoSorgente({
+        abbinate: Object.keys(abbinati.prezzi).length,
+        contesi: abbinati.contesi,
+        sconosciuti: abbinati.sconosciuti,
+      })
     } catch (problema) {
       // Un 409 vuol dire «non ho una sorgente, o non la capisco»: e' una
       // risposta, non un guasto, e non si insiste a ogni sincronizzazione.
-      if (problema instanceof CloudError && problema.stato === 409) sorgenteViva.current = false
+      if (problema instanceof CloudError && problema.stato === 409) {
+        sorgenteViva.current = false
+        setEsitoSorgente(null)
+      }
       else throw problema
     }
   }, [account, impostaPrezziSorgente])
@@ -277,9 +300,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       ultima,
       errore,
       inAttesa,
+      sorgente: esitoSorgente,
       sincronizzaOra: () => void sincronizza(),
     }),
-    [account, inCorso, ultima, errore, inAttesa, sincronizza],
+    [account, inCorso, ultima, errore, inAttesa, esitoSorgente, sincronizza],
   )
 
   return <SyncContext.Provider value={valore}>{children}</SyncContext.Provider>

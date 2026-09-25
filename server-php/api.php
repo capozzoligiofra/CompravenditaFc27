@@ -611,6 +611,41 @@ try {
                 rispondi(['piattaforma' => $piattaforma, 'adesso' => $ora, 'prezzi' => $prezzi, 'carte' => count($indice)]);
             }
 
+            if ($cosa === 'elenco') {
+                // Tutta la sorgente, non solo le carte che gia' segui.
+                //
+                // E' questo che la rende autonoma: se la tabella ha sessanta
+                // giocatori, quei sessanta prezzi devono comparire nell'app
+                // anche il primo giorno, quando non hai ancora aperto la
+                // scheda di nessuno. Chiedere «dammi il prezzo di queste
+                // carte» non basta se di carte non ne hai.
+                $indice = indiceSorgente($db, $mappaPrezzi, $impostazioni['prezzi'], $impostazioni['massimo']);
+                $piattaforma = piattaformaValida($_GET['piattaforma'] ?? 'ps');
+                $ora = adesso();
+                $righe = [];
+                $contesi = [];
+                foreach ($indice as $righeNome) {
+                    $scelta = scegliRigaSorgente($righeNome, 0, $piattaforma);
+                    if ($scelta === null) {
+                        // Lo stesso nome due volte e nessuna valutazione per
+                        // distinguerle: si dice, non si tira a indovinare.
+                        $contesi[] = $righeNome[0]['nome'] ?? '';
+                        continue;
+                    }
+                    $righe[] = [
+                        'nome' => $scelta['nome'],
+                        'voto' => $scelta['voto'],
+                        'price' => $scelta['prezzo'],
+                        'at' => $scelta['quando'] > 0 ? $scelta['quando'] : $ora,
+                    ];
+                }
+                rispondi([
+                    'adesso' => $ora,
+                    'righe' => $righe,
+                    'contesi' => array_values(array_filter($contesi)),
+                ]);
+            }
+
             if ($cosa === 'storico') {
                 $mappaStorico = leggiColonneSorgente($db, $impostazioni['storico'], VOLUTE_STORICO, $impostazioni['colonne_storico']);
                 if (!$mappaStorico['esiste'] || count(array_intersect(NECESSARIE_STORICO, $mappaStorico['mancanti'])) > 0) {
