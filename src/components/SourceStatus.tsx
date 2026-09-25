@@ -32,10 +32,33 @@ function elencoColonne(tabella: TabellaSorgente) {
  *
  * Chi non ha una sorgente non vede niente: è un di più, non un requisito.
  */
+/** «poco fa», «2 minuti fa»: da quanto è stata letta. */
+function daQuanto(quando: number, adesso: number): string {
+  const secondi = Math.max(0, Math.round((adesso - quando) / 1000))
+  if (secondi < 75) return 'poco fa'
+  const minuti = Math.round(secondi / 60)
+  if (minuti < 60) return `${minuti} minuti fa`
+  const ore = Math.round(minuti / 60)
+  return `${ore} ${ore === 1 ? 'ora' : 'ore'} fa`
+}
+
 export default function SourceStatus() {
-  const { account } = useStore()
+  const { account, prezzi } = useStore()
   const { sorgente } = useSync()
   const [stato, setStato] = useState<StatoSorgente | null>(null)
+
+  // L'orologio si rinfresca da solo: «poco fa» deve smettere di dirlo.
+  const [adesso, setAdesso] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setAdesso(Date.now()), 20_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Quanti dei prezzi della sorgente stanno vincendo davvero. Il resto è
+  // coperto da un'osservazione più recente — la tua, o quella di qualcun
+  // altro del gruppo — ed è giusto così, ma va detto: un prezzo che non
+  // cambia mentre il database cambia, senza una spiegazione, sembra rotto.
+  const mostrati = Object.values(prezzi).filter((voce) => voce.origine === 'sorgente').length
 
   useEffect(() => {
     if (!account) {
@@ -81,8 +104,15 @@ export default function SourceStatus() {
 
       {sorgente ? (
         <p className="mt-2 text-xs text-chalk-dim">
+          Letta {daQuanto(sorgente.letta, adesso)}, e poi ogni quarantacinque secondi.{' '}
           {sorgente.abbinate.toLocaleString('it-IT')} {sorgente.abbinate === 1 ? 'prezzo attaccato' : 'prezzi attaccati'} alle
-          carte.
+          carte, {mostrati.toLocaleString('it-IT')} in uso adesso
+          {mostrati < sorgente.abbinate
+            ? sorgente.abbinate - mostrati === 1
+              ? ' (uno è coperto da un prezzo osservato più tardi, tuo o del gruppo)'
+              : ` (gli altri ${(sorgente.abbinate - mostrati).toLocaleString('it-IT')} sono coperti da prezzi osservati più tardi, tuoi o del gruppo)`
+            : ''}
+          .
           {sorgente.sconosciuti.length > 0
             ? ` ${sorgente.sconosciuti.length} ${sorgente.sconosciuti.length === 1 ? 'nome non è' : 'nomi non sono'} nel catalogo: ${sorgente.sconosciuti.slice(0, 4).join(', ')}${sorgente.sconosciuti.length > 4 ? '…' : ''} — si vedono lo stesso, ma senza valutazione.`
             : ''}

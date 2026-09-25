@@ -260,6 +260,18 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
       esempio «Vitinha», che c'è a 90 e a 75) **non** viene unito: compare
       nell'elenco sotto, con i candidati.
 
+### I prezzi si aggiornano da soli
+
+- [ ] Con l'app aperta sulla pagina *Prezzi*, cambia un prezzo direttamente
+      nel database: entro **un minuto** cambia anche sullo schermo, senza
+      toccare niente.
+- [ ] Cambiandone un altro e tornando sull'app da un'altra scheda, il prezzo
+      nuovo c'è **subito**.
+- [ ] Il pannello *Sorgente automatica* dice **quando** ha letto l'ultima
+      volta, e il tempo avanza da solo.
+- [ ] Se un prezzo della sorgente è coperto da uno tuo più recente, il
+      pannello lo dice con il conteggio: «N in uso adesso (…coperti…)».
+
 ### Quando il server è più vecchio dell'app
 
 - [ ] Con un `api.php` di una versione precedente, **Controlla il server**

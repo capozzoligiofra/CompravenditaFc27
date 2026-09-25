@@ -22,6 +22,16 @@ import {
 import { useStore } from './useStore.ts'
 
 const OGNI = 3 * 60_000
+/**
+ * Ogni quanto si rilegge la sorgente automatica.
+ *
+ * Molto piu' spesso del giro completo, perche' e' una cosa diversa: il giro
+ * completo scambia prezzi, dati personali e catalogo, costa e non serve farlo
+ * di continuo; la sorgente e' una sola richiesta piccola, ed e' quella che
+ * deve stare al passo con il mercato. Tre minuti, per chi sta girando il
+ * mercato con l'app aperta di fianco, sono un'eternita'.
+ */
+const OGNI_SORGENTE = 45_000
 /** Non si rientra più spesso di così: se il server dice sempre di no, non serve insistere. */
 const UN_MINUTO = 60_000
 const ATTESA_DOPO_UNA_MODIFICA = 2_000
@@ -41,6 +51,8 @@ export interface StatoSync {
 }
 
 export interface EsitoSorgente {
+  /** Quando e' stata letta l'ultima volta, orologio di questo dispositivo. */
+  letta: number
   /** Quante righe della sorgente si sono attaccate a una carta. */
   abbinate: number
   /** I nomi che nel catalogo valgono più giocatori: saltati di proposito. */
@@ -88,6 +100,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const rientrato = useRef(0)
   // null = non si sa ancora, false = il server non ha una sorgente utilizzabile.
   const sorgenteViva = useRef<boolean | null>(null)
+  const letturaSorgente = useRef(false)
   const [esitoSorgente, setEsitoSorgente] = useState<EsitoSorgente | null>(null)
   const impronta = useRef<string | null>(null)
 
@@ -122,6 +135,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const leggiSorgente = useCallback(async () => {
     if (!account) return
     if (sorgenteViva.current === false) return
+    // La sorgente ha due modi di partire — il suo giro veloce e quello
+    // completo — e possono capitare insieme: una lettura per volta basta.
+    if (letturaSorgente.current) return
+    letturaSorgente.current = true
     const dati = datiRef.current
     try {
       // Tutta la sorgente, non solo le carte che segui: il primo giorno non
@@ -142,6 +159,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       const abbinati = abbinaSorgente(elenco.righe, indice)
       impostaPrezziSorgente(abbinati.prezzi, abbinati.carte)
       setEsitoSorgente({
+        letta: Date.now(),
         abbinate: Object.keys(abbinati.prezzi).length,
         contesi: abbinati.contesi,
         sconosciuti: abbinati.sconosciuti,
@@ -156,6 +174,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         sorgenteViva.current = false
         setEsitoSorgente(null)
       }
+    } finally {
+      letturaSorgente.current = false
     }
   }, [account, impostaPrezziSorgente])
 
@@ -267,6 +287,26 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('online', alRitorno)
     }
   }, [account, piattaforma, sincronizza])
+
+  // La sorgente ha un suo giro, piu' corto. Se restasse dentro quello
+  // completo, un prezzo cambiato nel database comparirebbe fino a tre minuti
+  // dopo — e con l'app aperta di fianco al gioco si vede eccome.
+  useEffect(() => {
+    if (!account) return undefined
+    const timer = setInterval(() => void leggiSorgente(), OGNI_SORGENTE)
+    // Tornando sull'app si rilegge subito: e' il momento in cui il prezzo
+    // vecchio si nota di piu'.
+    const alRitorno = () => {
+      if (document.visibilityState === 'visible') void leggiSorgente()
+    }
+    document.addEventListener('visibilitychange', alRitorno)
+    window.addEventListener('focus', alRitorno)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', alRitorno)
+      window.removeEventListener('focus', alRitorno)
+    }
+  }, [account, leggiSorgente])
 
   // Un prezzo appena scritto non deve aspettare tre minuti per arrivare agli
   // altri: si parte poco dopo, quel tanto che basta per non spedire una

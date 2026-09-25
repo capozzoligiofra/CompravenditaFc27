@@ -25,6 +25,7 @@ foreach ($casi as $caso) {
     'prezzo' => prezzoInMonete($caso['valore']),
     'quando' => quandoInMillisecondi($caso['valore']),
     'nome' => normalizzaNomeCarta($caso['valore']),
+    'ragionevole' => quandoRagionevole($caso['valore'], (int) round(microtime(true) * 1000)),
     default => null,
   };
 }

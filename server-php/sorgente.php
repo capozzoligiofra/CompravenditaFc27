@@ -249,6 +249,25 @@ function quandoInMillisecondi($valore): int
     return $tempo === false ? 0 : $tempo * 1000;
 }
 
+/**
+ * La stessa data, ma mai nel futuro.
+ *
+ * Una riga datata domani vincerebbe su qualunque altra osservazione per
+ * sempre — la regola e' «vince la piu' recente» — e nessuno capirebbe perche'
+ * quel prezzo non cambia mai. Succede senza malizia: basta che il programma
+ * che riempie la tabella scriva l'ora locale e il database la legga come UTC,
+ * e sono due ore di scarto. Un'osservazione non puo' essere piu' nuova di
+ * adesso, quindi si riporta ad adesso.
+ */
+function quandoRagionevole($valore, int $ora): int
+{
+    $quando = quandoInMillisecondi($valore);
+    if ($quando <= 0) {
+        return 0;
+    }
+    return $quando > $ora ? $ora : $quando;
+}
+
 /** Il numero dentro «12.500», «12,5K», «1.2M», «985 000» o «12500». */
 function prezzoInMonete($valore): int
 {
@@ -297,6 +316,7 @@ function prezzoInMonete($valore): int
  */
 function indiceSorgente(PDO $db, array $mappa, string $tabella, int $massimo): array
 {
+    $ora = adesso();
     $c = $mappa['trovate'];
     $campi = [];
     foreach (['nome', 'valutazione', 'prezzo', 'aggiornato', 'piattaforma'] as $ruolo) {
@@ -322,7 +342,7 @@ function indiceSorgente(PDO $db, array $mappa, string $tabella, int $massimo): a
             'nome' => trim((string) ($riga['nome'] ?? '')),
             'prezzo' => $prezzo,
             'voto' => isset($riga['valutazione']) ? (int) $riga['valutazione'] : 0,
-            'quando' => quandoInMillisecondi($riga['aggiornato'] ?? null),
+            'quando' => quandoRagionevole($riga['aggiornato'] ?? null, $ora),
             'piattaforma' => isset($riga['piattaforma']) ? strtolower(trim((string) $riga['piattaforma'])) : '',
         ];
         $indice[$chiave][] = $voce;

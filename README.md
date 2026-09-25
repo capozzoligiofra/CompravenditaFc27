@@ -444,8 +444,20 @@ Quello che si fa invece:
   nessuna carta: l'app scarica tutta la sorgente e la mette nel filtro
   *Dalla sorgente*, di fianco a *Dal listino*. Non diventano tue finché non ne
   apri una — la sorgente porta prezzi, non carte da seguire.
+  **La sorgente si rilegge ogni quarantacinque secondi**, e subito ogni volta
+  che torni sull'app: ha un giro suo, più corto di quello del listino. Il giro
+  completo scambia prezzi, dati personali e catalogo, costa, e tre minuti
+  vanno benissimo; la sorgente invece è una sola richiesta piccola ed è quella
+  che deve stare al passo con il mercato — con l'app aperta di fianco al
+  gioco, tre minuti si vedono eccome.
   I prezzi della sorgente valgono come tutti gli altri — vince l'osservazione
-  più recente — e quelli che hai scritto tu non si perdono.
+  più recente — e quelli che hai scritto tu non si perdono. Il che vuol dire
+  che un prezzo della sorgente può restare **coperto** da un'osservazione più
+  fresca, tua o del gruppo: il pannello dice quanti sono, perché un prezzo che
+  non cambia mentre il database cambia, senza una spiegazione, sembra rotto.
+  Una riga datata nel futuro — basta che il tuo programma scriva l'ora locale
+  e il database la legga come UTC — vincerebbe su tutto per sempre: quelle
+  date vengono riportate ad adesso.
 - **Caricare il catalogo dei giocatori.** In *Prezzi* → «Catalogo dei
   giocatori» si carica un **CSV** con i nomi e, se c'è, la valutazione: da
   quel momento la ricerca li trova tutti e gli elenchi di prezzi riconoscono i

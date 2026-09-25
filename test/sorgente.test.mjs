@@ -94,3 +94,18 @@ test('le date si leggono in tutte le forme in cui si scrivono', salta, () => {
   assert.equal(vuoto, 0, 'vuoto vuol dire «non lo so», non il 1970')
   assert.equal(zero, 0)
 })
+
+test('una data nel futuro si riporta ad adesso', salta, () => {
+  // Basta che il programma che riempie la tabella scriva l'ora locale e il
+  // database la legga come UTC: due ore di scarto, e quel prezzo vincerebbe
+  // su tutto per sempre, senza che si capisca perché non cambia mai.
+  const domani = new Date(Date.now() + 86_400_000).toISOString().slice(0, 19).replace('T', ' ')
+  const ieri = new Date(Date.now() - 86_400_000).toISOString().slice(0, 19).replace('T', ' ')
+  const [nelFuturo, nelPassato] = chiamaPhp([
+    { funzione: 'ragionevole', valore: domani },
+    { funzione: 'ragionevole', valore: ieri },
+  ])
+  assert.ok(nelFuturo <= Date.now() + 2000, `una data di domani non deve restare nel futuro: ${new Date(nelFuturo).toISOString()}`)
+  assert.ok(nelFuturo > Date.now() - 120_000, 'ma nemmeno azzerata: vale adesso')
+  assert.ok(Math.abs(nelPassato - (Date.now() - 86_400_000)) < 7_200_000 + 60_000, 'una data passata resta com’è')
+})
