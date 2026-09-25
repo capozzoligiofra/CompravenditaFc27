@@ -79,8 +79,10 @@ di nuovo tutto `schema.sql`: le tabelle che esistono già non vengono toccate
 
 Apri `https://iltuosito.it/fc27/api.php?azione=diagnostica` (oppure premi
 **Controlla il server** in *Opzioni → Listino condiviso*). Risponde con la
-versione di PHP, quella del database e **l'elenco delle tabelle mancanti**:
-se ne manca una, basta rieseguire `schema.sql` da phpMyAdmin.
+versione di PHP, quella del database, **quanti giocatori ci sono in archivio**
+e **l'elenco delle tabelle mancanti**: se ne manca una, basta rieseguire
+`schema.sql` da phpMyAdmin; se i giocatori sono molti meno delle carte del tuo
+CSV, il catalogo va ricondiviso dall'app.
 
 ## Manutenzione
 
@@ -100,7 +102,7 @@ Per un backup basta l'esportazione di phpMyAdmin; per ricominciare da capo,
 | `GET api.php?azione=diagnostica` | versioni e tabelle mancanti: la prima cosa da guardare se qualcosa non va |
 | `GET api.php?azione=catalogo` | stato del catalogo condiviso (versione, blocchi, carte) |
 | `GET api.php?azione=catalogo&blocco=0` | un blocco del catalogo |
-| `POST api.php?azione=catalogo` | `{versione, indice, blocchi, carte}` carica un blocco (serve il token) |
+| `POST api.php?azione=catalogo` | `{versione, indice, blocchi, totale, carte}` carica un blocco, e scrive le stesse carte in `giocatori` (serve il token) |
 | `GET api.php?azione=cerca&q=lautaro` | cerca nel catalogo comune delle carte |
 | `POST api.php?azione=carta` | `{giocatore:{id,name,rating,…}}` aggiunge una carta al catalogo (serve il token) |
 | `GET api.php?azione=storico&id=1001&piattaforma=ps` | un prezzo al giorno per quella carta |

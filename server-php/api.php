@@ -173,6 +173,62 @@ function richiediUtente(PDO $db): array
     return $utente;
 }
 
+/**
+ * Scrive un blocco di carte nella tabella dei giocatori.
+ *
+ * Le righe arrivano nella forma compatta [id, nome, voto, ruolo, club, lega,
+ * nazione, ...]. Si inseriscono a gruppi: una sola istruzione da duemila
+ * righe supererebbe i limiti di tanti hosting, duemila istruzioni separate ci
+ * metterebbero un minuto.
+ */
+function scriviGiocatori(PDO $db, array $carte, int $ora): int
+{
+    $gruppi = array_chunk($carte, 200);
+    $scritte = 0;
+    $db->beginTransaction();
+    foreach ($gruppi as $gruppo) {
+        $valori = [];
+        $parametri = [];
+        foreach ($gruppo as $riga) {
+            if (!is_array($riga) || count($riga) < 2) {
+                continue;
+            }
+            $id = idValido($riga[0] ?? null);
+            $nome = is_scalar($riga[1] ?? null) ? trim((string) $riga[1]) : '';
+            if ($id === null || $nome === '') {
+                continue;
+            }
+            $valori[] = '(?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            array_push(
+                $parametri,
+                $id,
+                mb_substr($nome, 0, 120),
+                (int) ($riga[2] ?? 0),
+                mb_substr((string) ($riga[3] ?? ''), 0, 12),
+                mb_substr((string) ($riga[4] ?? ''), 0, 80),
+                mb_substr((string) ($riga[5] ?? ''), 0, 80),
+                mb_substr((string) ($riga[6] ?? ''), 0, 80),
+                '',
+                $ora
+            );
+            $scritte++;
+        }
+        if (count($valori) === 0) {
+            continue;
+        }
+        $db->prepare(
+            'insert into giocatori (id, nome, valutazione, ruolo, club, lega, nazione, versione, aggiornato)
+             values ' . implode(',', $valori) . '
+             on duplicate key update
+               nome = values(nome), valutazione = values(valutazione), ruolo = values(ruolo),
+               club = values(club), lega = values(lega), nazione = values(nazione),
+               aggiornato = values(aggiornato)'
+        )->execute($parametri);
+    }
+    $db->commit();
+    return $scritte;
+}
+
 // --- Azioni ------------------------------------------------------------
 
 $azione = $_GET['azione'] ?? 'salute';
@@ -209,9 +265,13 @@ try {
                 $presenti[] = (string) $riga[0];
             }
             $mancanti = array_values(array_diff($attese, $presenti));
+            $giocatori = in_array('giocatori', $presenti, true)
+                ? (int) $db->query('select count(*) as n from giocatori')->fetch()['n']
+                : 0;
             rispondi([
                 'php' => PHP_VERSION,
                 'database' => $db->getAttribute(PDO::ATTR_SERVER_VERSION),
+                'giocatori' => $giocatori,
                 'tabelle' => count($presenti),
                 'mancanti' => $mancanti,
                 'pronto' => count($mancanti) === 0,
@@ -420,6 +480,12 @@ try {
                  on duplicate key update contenuto = values(contenuto), aggiornato = values(aggiornato)'
             )->execute([$versione, $indice, json_encode($carte, JSON_UNESCAPED_UNICODE), $ora]);
 
+            // Il blocco serve ai dispositivi, che lo scaricano tal quale; ma
+            // un blob JSON il database non sa leggerlo. Le stesse carte
+            // finiscono quindi anche in «giocatori», riga per riga: e' quella
+            // la tabella che risponde alle ricerche e che si puo' guardare.
+            $scritte = scriviGiocatori($db, $carte, $ora);
+
             // Si contano le righe, non le carte dentro al JSON: json_length()
             // non esiste sui MySQL piu' vecchi, e un hosting condiviso puo'
             // benissimo averne uno. Il totale lo dichiara chi carica.
@@ -438,7 +504,12 @@ try {
                 $db->prepare('delete from catalogo where versione <> ?')->execute([$versione]);
             }
 
-            rispondi(['versione' => $versione, 'indice' => $indice, 'completo' => $completo]);
+            rispondi([
+                'versione' => $versione,
+                'indice' => $indice,
+                'completo' => $completo,
+                'giocatori' => $scritte,
+            ]);
 
         case 'cerca':
             // Il catalogo delle carte e' di tutti: chi ne crea una la rende

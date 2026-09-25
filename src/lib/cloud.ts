@@ -205,6 +205,7 @@ export function registraCarta(account: Account, giocatore: Player): Promise<{ id
 export interface Diagnostica {
   php: string
   database: string
+  giocatori: number
   tabelle: number
   mancanti: string[]
   pronto: boolean

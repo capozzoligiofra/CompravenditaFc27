@@ -2,7 +2,7 @@ import { createContext, useCallback, useEffect, useMemo, useRef, useState, type 
 
 import { applicaRemoti, daInviare, scegliDati } from '../../shared/sync.mjs'
 import type { PrezzoCondiviso } from '../../shared/sync.d.mts'
-import { espandiCarta, leggiVersioneCatalogo, salvaVersioneCatalogo, type RigaCompatta } from './catalogStore.ts'
+import { dalServer, leggiVersioneCatalogo, salvaVersioneCatalogo } from './catalogStore.ts'
 import {
   datiPersonali,
   inviaDati,
@@ -73,8 +73,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     const carte = []
     for (let indice = 0; indice < stato.blocchi; indice += 1) {
       const blocco = await scaricaBloccoCatalogo(account.server, indice)
-      for (const riga of blocco.carte as RigaCompatta[]) {
-        const carta = espandiCarta(riga)
+      for (const riga of blocco.carte) {
+        const carta = dalServer(riga)
         if (carta) carte.push(carta)
       }
     }

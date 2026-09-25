@@ -432,6 +432,13 @@ Quello che si fa invece:
   alla prima sincronizzazione — una volta sola, non uno per telefono. Il server
   pubblica il catalogo nuovo solo quando sono arrivati tutti i blocchi, così
   nessuno si ritrova un elenco a metà.
+  **Tutte le carte finiscono anche nella tabella dei giocatori**, una riga
+  ciascuna, non solo quelle con un prezzo: il blocco compresso serve ai
+  dispositivi, ma è un pacco che il database non sa aprire, e finché le carte
+  stavano solo lì dentro la ricerca del server ne conosceva una manciata.
+  Ventimila carte ci arrivano in mezzo secondo, e ricaricare lo stesso file
+  non le duplica. **Controlla il server** dice quante ce ne sono: se il
+  numero è quello del CSV, il gruppo le ha davvero tutte.
 - **Incollare un elenco JSON.** In *Prezzi* c'è «Prezzi da un elenco JSON»,
   per chi i prezzi li tiene in un foglio o in un file:
   `[{"nome": "Klara Bühl", "prezzo": "8.2K"}, …]`. Accetta le chiavi in
@@ -671,6 +678,8 @@ due i passaggi, in quest'ordine:
 
 1. **Sul server**, da phpMyAdmin (scheda SQL):
    `delete from prezzi; delete from storico; delete from giocatori;`
+   (`giocatori` è l'anagrafica completa: se cancelli quella, il catalogo va
+   ricondiviso da un dispositivo che ce l'ha)
    e, se vuoi buttare anche il catalogo condiviso,
    `delete from catalogo; delete from catalogo_stato;`
    Gli account restano: nessuno deve rientrare.

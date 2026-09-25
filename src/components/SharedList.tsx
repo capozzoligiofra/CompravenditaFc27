@@ -126,7 +126,7 @@ export default function SharedList() {
               {typeof esame === 'string'
                 ? esame
                 : esame.pronto
-                  ? `Server a posto: PHP ${esame.php}, database ${esame.database}, tutte le tabelle presenti.`
+                  ? `Server a posto: ${esame.giocatori.toLocaleString('it-IT')} giocatori in archivio, PHP ${esame.php}, database ${esame.database}.`
                   : `Mancano delle tabelle (${esame.mancanti.join(', ')}): riesegui schema.sql da phpMyAdmin. PHP ${esame.php}, database ${esame.database}.`}
             </p>
           ) : null}

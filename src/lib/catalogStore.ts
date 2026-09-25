@@ -115,6 +115,28 @@ export function salvaCatalogo(catalogo: Catalogo): EsitoSalvataggio {
   return { salvato: false, dettaglio: 'nessuno' }
 }
 
+/**
+ * La stessa riga, ma con l'identificativo davanti: è la forma in cui il
+ * catalogo viaggia verso il server. In memoria l'id si omette (si ricalcola
+ * da nome e valutazione) perché sono trenta caratteri per ventimila carte;
+ * al server invece serve, perché è la chiave della tabella dei giocatori.
+ */
+export type RigaTrasporto = [string, ...RigaCompatta]
+
+export function perIlServer(carta: CartaBase): RigaTrasporto {
+  return [carta.id, ...compattaCarta(carta)]
+}
+
+export function dalServer(riga: unknown): CartaBase | null {
+  if (!Array.isArray(riga) || riga.length === 0) return null
+  // Si accetta anche il formato senza id, per non rompere i cataloghi
+  // caricati prima di questa versione.
+  const conId = typeof riga[0] === 'string' && typeof riga[1] === 'string'
+  const carta = espandiCarta((conId ? riga.slice(1) : riga) as RigaCompatta)
+  if (!carta) return null
+  return conId ? { ...carta, id: String(riga[0]) } : carta
+}
+
 /** La versione del catalogo condiviso che questo dispositivo ha già scaricato. */
 export function leggiVersioneCatalogo(): number {
   try {

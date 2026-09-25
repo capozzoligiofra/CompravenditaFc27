@@ -3,7 +3,7 @@ import { useRef, useState } from 'react'
 import { Card, CardTitle, buttonClass, primaryButtonClass } from './ui.tsx'
 import { leggiCsv } from '../../shared/catalog.mjs'
 import type { CartaBase } from '../../shared/catalog.d.mts'
-import { compattaCarta, salvaVersioneCatalogo } from '../lib/catalogStore.ts'
+import { perIlServer, salvaVersioneCatalogo } from '../lib/catalogStore.ts'
 import { inviaBloccoCatalogo } from '../lib/cloud.ts'
 import { useStore } from '../lib/useStore.ts'
 
@@ -39,7 +39,7 @@ export default function CatalogImport() {
    */
   const condividi = async () => {
     if (!account) return
-    const carte = Object.values(catalogo).map((carta) => compattaCarta(carta))
+    const carte = Object.values(catalogo).map((carta) => perIlServer(carta))
     const blocchi = Math.max(1, Math.ceil(carte.length / PER_BLOCCO))
     const versione = Date.now()
     setInvio(`Invio 0 di ${blocchi}…`)
