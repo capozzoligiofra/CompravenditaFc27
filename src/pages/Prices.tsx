@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import PlayerLink from '../components/PlayerLink.tsx'
 import CardSearch from '../components/CardSearch.tsx'
 import CatalogImport from '../components/CatalogImport.tsx'
+import Duplicates from '../components/Duplicates.tsx'
 import JsonPriceImport from '../components/JsonPriceImport.tsx'
 import PriceListImport from '../components/PriceListImport.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass } from '../components/ui.tsx'
@@ -220,6 +221,8 @@ export default function Prices() {
       <JsonPriceImport />
 
       <CatalogImport />
+
+      <Duplicates />
     </div>
   )
 }

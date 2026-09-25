@@ -511,6 +511,76 @@ try {
                 'giocatori' => $scritte,
             ]);
 
+        case 'unisci':
+            // Due carte, lo stesso giocatore: succedeva prima che esistesse il
+            // catalogo, quando un prezzo incollato per un nome sconosciuto
+            // creava una carta senza valutazione. Adesso quella carta ha un
+            // gemello con il voto giusto, e il prezzo va spostato li'.
+            //
+            // Si fa sul server, non solo nel telefono: altrimenti alla
+            // sincronizzazione dopo il doppione tornerebbe giu' da solo, e
+            // resterebbe anche a tutti gli altri.
+            if ($metodo !== 'POST') {
+                errore('Serve una POST.', 405);
+            }
+            richiediUtente($db);
+            $dati = corpo();
+            $coppie = is_array($dati['unioni'] ?? null) ? $dati['unioni'] : [];
+            if (count($coppie) > 1000) {
+                errore('Troppe unioni in una volta: mandane al massimo mille per richiesta.');
+            }
+
+            $ora = adesso();
+            $unite = 0;
+            $db->beginTransaction();
+
+            // Il prezzo si sposta solo se e' piu' recente di quello che c'e'
+            // gia' sulla carta buona: e' la stessa regola di tutto il resto
+            // del listino, vince l'osservazione piu' fresca.
+            $spostaPrezzo = $db->prepare(
+                // La sorgente si chiama «vecchia»: senza un nome suo, il
+                // database non saprebbe se «prezzi.osservato» nell'update
+                // parla della riga che arriva o di quella che c'e' gia'.
+                'insert into prezzi (id, piattaforma, prezzo, osservato, aggiornato, autore)
+                 select ?, vecchia.piattaforma, vecchia.prezzo, vecchia.osservato, ?, vecchia.autore
+                 from prezzi as vecchia where vecchia.id = ?
+                 on duplicate key update
+                   prezzo = if(values(osservato) > prezzi.osservato, values(prezzo), prezzi.prezzo),
+                   autore = if(values(osservato) > prezzi.osservato, values(autore), prezzi.autore),
+                   osservato = greatest(prezzi.osservato, values(osservato)),
+                   aggiornato = values(aggiornato)'
+            );
+            // Nello storico c'e' un prezzo al giorno e non si sa a che ora:
+            // dove i due si sovrappongono tiene quello della carta che resta.
+            $spostaStorico = $db->prepare(
+                'insert ignore into storico (id, piattaforma, giorno, prezzo)
+                 select ?, vecchia.piattaforma, vecchia.giorno, vecchia.prezzo
+                 from storico as vecchia where vecchia.id = ?'
+            );
+            $togliPrezzo = $db->prepare('delete from prezzi where id = ?');
+            $togliStorico = $db->prepare('delete from storico where id = ?');
+            $togliGiocatore = $db->prepare('delete from giocatori where id = ?');
+
+            foreach ($coppie as $coppia) {
+                if (!is_array($coppia)) {
+                    continue;
+                }
+                $da = idValido($coppia['da'] ?? null);
+                $a = idValido($coppia['a'] ?? null);
+                if ($da === null || $a === null || $da === $a) {
+                    continue;
+                }
+                $spostaPrezzo->execute([$a, $ora, $da]);
+                $spostaStorico->execute([$a, $da]);
+                $togliPrezzo->execute([$da]);
+                $togliStorico->execute([$da]);
+                $togliGiocatore->execute([$da]);
+                $unite++;
+            }
+
+            $db->commit();
+            rispondi(['unite' => $unite]);
+
         case 'cerca':
             // Il catalogo delle carte e' di tutti: chi ne crea una la rende
             // trovabile agli altri. Senza sorgenti esterne, questa e' la

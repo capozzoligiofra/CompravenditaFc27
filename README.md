@@ -439,6 +439,23 @@ Quello che si fa invece:
   Ventimila carte ci arrivano in mezzo secondo, e ricaricare lo stesso file
   non le duplica. **Controlla il server** dice quante ce ne sono: se il
   numero è quello del CSV, il gruppo le ha davvero tutte.
+- **I doppioni si uniscono da soli.** Prima che ci fosse il catalogo, un
+  prezzo incollato per un nome mai visto creava una carta **senza
+  valutazione**: era l'unico posto dove metterlo. Poi il catalogo ha portato
+  lo stesso giocatore con il suo voto vero, e siccome l'identificativo si
+  calcola da nome **e** valutazione, quelle diventavano due carte: la stessa
+  persona due volte nel pannello dei prezzi, con il prezzo su quella
+  sbagliata. Adesso l'app se ne accorge da sola e le fonde — prezzo, storico,
+  target della watchlist e posizioni passano sulla carta buona, e sparisce
+  solo il segnaposto, che non aveva niente di suo oltre al nome. L'unione
+  arriva anche al listino, altrimenti alla sincronizzazione dopo il doppione
+  tornerebbe giù, qui e su tutti gli altri dispositivi.
+  **Quello che non si può indovinare non si tocca**: nel file dei giocatori
+  ci sono centotrentotto nomi che appartengono a due persone diverse
+  («Vitinha 90» gioca nel PSG, «Vitinha 75» è un altro), e una carta
+  «Vitinha» senza voto potrebbe essere l'uno o l'altro. Quelle restano dove
+  sono, elencate nel pannello *Doppioni*: apri la scheda, scrivi la
+  valutazione giusta, e da lì l'unione avviene da sola.
 - **Incollare un elenco JSON.** In *Prezzi* c'è «Prezzi da un elenco JSON»,
   per chi i prezzi li tiene in un foglio o in un file:
   `[{"nome": "Klara Bühl", "prezzo": "8.2K"}, …]`. Accetta le chiavi in

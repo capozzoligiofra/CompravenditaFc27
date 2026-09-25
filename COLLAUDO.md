@@ -241,6 +241,24 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
       CSV**, non una manciata: le carte vanno tutte sul server, non solo
       quelle con un prezzo.
 - [ ] Ricondividendo lo stesso catalogo il numero **non raddoppia**.
+
+### Doppioni
+
+- [ ] Incolla un prezzo per un nome **senza valutazione** (per esempio
+      «Klara Bühl 8.2K») **prima** di caricare il catalogo: nasce una carta
+      senza voto.
+- [ ] Carica il catalogo, che quel nome ce l'ha con il suo voto. Tornando in
+      *Prezzi* compare il pannello **Doppioni** con «1 doppione unito».
+- [ ] Il giocatore adesso compare **una volta sola**, con la valutazione
+      giusta, e il prezzo che avevi scritto è **il suo**.
+- [ ] Se era in watchlist, i tuoi target di acquisto e vendita sono ancora
+      quelli; se avevi una posizione aperta, punta alla carta giusta.
+- [ ] Ricaricando la pagina il doppione **non ricompare**.
+- [ ] Con il listino collegato, un secondo dispositivo che sincronizza **non
+      si riporta giù** il doppione.
+- [ ] Un nome che nel catalogo corrisponde a **due giocatori diversi** (per
+      esempio «Vitinha», che c'è a 90 e a 75) **non** viene unito: compare
+      nell'elenco sotto, con i candidati.
 - [ ] **Dimentica i prezzi scaricati** svuota la copia locale del listino: le
       carte non mostrano più «da <nome>». Rosa, watchlist e i prezzi scritti
       da te restano al loro posto.

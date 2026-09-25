@@ -3,6 +3,8 @@ import { createContext, useCallback, useEffect, useMemo, useState, type ReactNod
 import type { Catalyst } from '../../shared/catalysts.d.mts'
 import { normalizeCatalyst } from '../../shared/catalysts.mjs'
 import { needsSnapshot, recordSnapshot } from '../../shared/history.mjs'
+import { applicaUnioni } from '../../shared/duplicates.mjs'
+import type { Unione } from '../../shared/duplicates.d.mts'
 import { localiSuperati, prezziEffettivi } from '../../shared/sync.mjs'
 import type { PrezzoCondiviso } from '../../shared/sync.d.mts'
 import type { CartaBase } from '../../shared/catalog.d.mts'
@@ -59,6 +61,8 @@ export interface Store {
   clearManualPrices: () => void
   /** Butta la copia locale del listino: prezzi e carte scaricati dal server. */
   dimenticaListino: () => void
+  /** Fonde i doppioni: la carta senza valutazione sparisce dentro quella buona. */
+  unisciDoppioni: (unioni: Unione[]) => number
   recordPrices: (quotes: Record<string, Quote | null>) => void
   addCatalyst: (raw: Partial<Catalyst> & { title: string }) => void
   removeCatalyst: (id: string) => void
@@ -246,6 +250,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /**
+   * Fonde i doppioni nei dati di questo dispositivo.
+   *
+   * Non e' una cancellazione: il prezzo, lo storico, i target della watchlist
+   * e le posizioni passano sulla carta buona, e sparisce solo il segnaposto,
+   * che non aveva niente di suo oltre al nome. I dati contano come cambiati,
+   * cosi' la nuova versione va sul server invece di farsi riportare indietro
+   * la vecchia.
+   */
+  const unisciDoppioni = useCallback((unioni: Unione[]) => {
+    if (unioni.length === 0) return 0
+    let unite = 0
+    setData((current) => {
+      const esito = applicaUnioni(current, unioni)
+      unite = esito.unite
+      if (esito.data === current) return current
+      return { ...esito.data, dataChangedAt: Date.now() }
+    })
+    // Anche dal catalogo, se il segnaposto era finito pure li' (capita con un
+    // CSV che elenca lo stesso nome una volta con il voto e una senza). Senza
+    // questo passaggio la carta resterebbe fra i doppioni per sempre, e
+    // l'app continuerebbe a provare a unirla.
+    setCatalogo((current) => {
+      const prossimo = { ...current }
+      let cambiato = false
+      for (const { da } of unioni) {
+        if (prossimo[da]) {
+          delete prossimo[da]
+          cambiato = true
+        }
+      }
+      if (!cambiato) return current
+      salvaCatalogo(prossimo)
+      return prossimo
+    })
+    return unite
+  }, [])
+
+  /**
    * Il listino comune appena arrivato. I prezzi tuoi che il listino ha ormai
    * assorbito si buttano: tenerne due copie identiche non serve, e si
    * finirebbe per rispedirli in eterno.
@@ -407,6 +449,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       importaPrezzi,
       clearManualPrices,
       dimenticaListino,
+      unisciDoppioni,
       recordPrices,
       addCatalyst,
       removeCatalyst,
@@ -441,6 +484,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       importaPrezzi,
       clearManualPrices,
       dimenticaListino,
+      unisciDoppioni,
       recordPrices,
       addCatalyst,
       removeCatalyst,

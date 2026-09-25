@@ -8,6 +8,7 @@
 //   - il tempo che conta per decidere chi ha ragione è quello
 //     dell'osservazione, non quello della sincronizzazione.
 
+import type { Unione } from '../../shared/duplicates.d.mts'
 import type { AppData, Platform, Player } from '../types.ts'
 
 const CHIAVE_ACCOUNT = 'fc27-trader:account'
@@ -200,6 +201,20 @@ export function cercaNelListino(account: Account, testo: string, signal?: AbortS
 /** Rende trovabile agli altri una carta appena creata, anche senza prezzo. */
 export function registraCarta(account: Account, giocatore: Player): Promise<{ id: string }> {
   return chiama(account.server, 'carta', { metodo: 'POST', token: account.token, corpo: { giocatore } })
+}
+
+/**
+ * Dice al listino che due carte sono lo stesso giocatore. Il server sposta
+ * prezzo e storico sulla carta buona e butta l'altra: senza questo passaggio
+ * il doppione tornerebbe giù alla sincronizzazione dopo, qui e su tutti gli
+ * altri dispositivi.
+ */
+export function unisciCarte(account: Account, unioni: Unione[]): Promise<{ unite: number }> {
+  return chiama(account.server, 'unisci', {
+    metodo: 'POST',
+    token: account.token,
+    corpo: { unioni: unioni.map(({ da, a }) => ({ da, a })) },
+  })
 }
 
 export interface Diagnostica {
