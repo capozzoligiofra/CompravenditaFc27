@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { chiCe, diagnostica, entra, normalizzaServer, salute, type Diagnostica, type Salute } from '../lib/cloud.ts'
+import { VERSIONE_API_ATTESA, chiCe, diagnostica, entra, normalizzaServer, salute, type Diagnostica, type Salute } from '../lib/cloud.ts'
 import { useStore } from '../lib/useStore.ts'
 import { useSync } from '../lib/useSync.ts'
 import { Card, CardTitle, Pill, buttonClass, primaryButtonClass } from './ui.tsx'
@@ -128,6 +128,20 @@ export default function SharedList() {
                 : esame.pronto
                   ? `Server a posto: ${esame.giocatori.toLocaleString('it-IT')} giocatori in archivio, PHP ${esame.php}, database ${esame.database}.`
                   : `Mancano delle tabelle (${esame.mancanti.join(', ')}): riesegui schema.sql da phpMyAdmin. PHP ${esame.php}, database ${esame.database}.`}
+            </p>
+          ) : null}
+
+          {/*
+            L'app si aggiorna da sola, api.php lo carichi tu via FTP: le due
+            cose vanno fuori passo, e quando succede si vedono errori che
+            sembrano guasti e invece sono solo un file vecchio. Meglio dirlo.
+          */}
+          {esame && typeof esame !== 'string' && (esame.versione ?? 0) < VERSIONE_API_ATTESA ? (
+            <p className="text-xs text-loss">
+              Il file <code className="font-mono">api.php</code> sul server è più vecchio di questa app
+              {esame.versione ? ` (versione ${esame.versione}, serve la ${VERSIONE_API_ATTESA})` : ''}: ricaricalo via
+              FTP insieme a <code className="font-mono">sorgente.php</code>. Finché non lo fai, le novità non
+              funzionano — il resto sì.
             </p>
           ) : null}
 

@@ -111,11 +111,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, [account, aggiungiAlCatalogo])
 
   /**
-   * I prezzi della sorgente automatica, per le carte che l'app conosce.
+   * I prezzi della sorgente automatica.
    *
-   * Si chiede solo quello che serve: le carte che segui, non le ventimila
-   * della tabella. E se il server non ha una sorgente non succede niente —
-   * e' un di piu', non un requisito, e l'app deve funzionare identica senza.
+   * Non solleva mai: qualunque cosa vada storta qui, la sincronizzazione del
+   * listino deve arrivare in fondo lo stesso. La sorgente e' un di piu', e un
+   * di piu' che rompe tutto il resto e' peggio di non averlo — era successo
+   * proprio questo, con un server piu' vecchio dell'app che rispondeva «non
+   * so cosa vuoi» e lasciava il listino fermo a «mai sincronizzato».
    */
   const leggiSorgente = useCallback(async () => {
     if (!account) return
@@ -145,13 +147,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         sconosciuti: abbinati.sconosciuti,
       })
     } catch (problema) {
-      // Un 409 vuol dire «non ho una sorgente, o non la capisco»: e' una
-      // risposta, non un guasto, e non si insiste a ogni sincronizzazione.
-      if (problema instanceof CloudError && problema.stato === 409) {
+      // 409: «non ho una sorgente, o non la capisco». 404: il server e' piu'
+      // vecchio dell'app e questa richiesta non la conosce. In tutti e due i
+      // casi e' una risposta, non un guasto: si smette di chiedere fino al
+      // prossimo avvio, e il resto della sincronizzazione prosegue.
+      const stato = problema instanceof CloudError ? problema.stato : undefined
+      if (stato === 409 || stato === 404) {
         sorgenteViva.current = false
         setEsitoSorgente(null)
       }
-      else throw problema
     }
   }, [account, impostaPrezziSorgente])
 
@@ -301,7 +305,14 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       errore,
       inAttesa,
       sorgente: esitoSorgente,
-      sincronizzaOra: () => void sincronizza(),
+      sincronizzaOra: () => {
+        // Chiedere a mano vuol dire «riprova davvero»: se la sorgente era
+        // stata messa da parte perche' il server non la conosceva, e' il
+        // momento di riprovarci — di solito si preme proprio dopo aver
+        // caricato il file nuovo via FTP.
+        sorgenteViva.current = null
+        void sincronizza()
+      },
     }),
     [account, inCorso, ultima, errore, inAttesa, esitoSorgente, sincronizza],
   )

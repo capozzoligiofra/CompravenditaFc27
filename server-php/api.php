@@ -33,6 +33,16 @@
 
 declare(strict_types=1);
 
+/**
+ * La versione di questo file.
+ *
+ * L'app sta su GitHub Pages e si aggiorna da sola; api.php lo carichi tu via
+ * FTP. Le due cose vanno fuori passo facilmente, e quando succede si vedono
+ * errori che sembrano guasti e invece sono solo un file vecchio. L'app
+ * confronta questo numero con quello che si aspetta e lo dice chiaro.
+ */
+const VERSIONE_API = 4;
+
 const GIORNO_MS = 86400000;
 const MAX_PREZZI_PER_CHIAMATA = 300;
 const MAX_CORPO_BYTE = 2097152; // 2 MB: la rosa più lunga sta in molto meno
@@ -274,6 +284,7 @@ try {
                 : 0;
             rispondi([
                 'php' => PHP_VERSION,
+                'versione' => VERSIONE_API,
                 'database' => $db->getAttribute(PDO::ATTR_SERVER_VERSION),
                 'giocatori' => $giocatori,
                 'tabelle' => count($presenti),
@@ -686,7 +697,7 @@ try {
                 rispondi(['punti' => array_slice($punti, -120)]);
             }
 
-            errore('Non so cosa vuoi dalla sorgente: usa stato, prezzi o storico.', 404);
+            errore('Non so cosa vuoi dalla sorgente: usa stato, elenco o storico.', 404);
 
         case 'unisci':
             // Due carte, lo stesso giocatore: succedeva prima che esistesse il

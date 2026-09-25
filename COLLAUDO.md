@@ -260,6 +260,23 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
       esempio «Vitinha», che c'è a 90 e a 75) **non** viene unito: compare
       nell'elenco sotto, con i candidati.
 
+### Quando il server è più vecchio dell'app
+
+- [ ] Con un `api.php` di una versione precedente, **Controlla il server**
+      dice che il file è da ricaricare, con le due versioni.
+- [ ] E soprattutto: la sincronizzazione **arriva in fondo lo stesso**. La
+      sorgente è un di più, e non deve mai impedire ai prezzi, ai dati
+      personali e al catalogo di sincronizzarsi.
+- [ ] Dopo aver caricato il file nuovo, **Sincronizza ora** riprova la
+      sorgente senza dover ricaricare la pagina.
+
+### L'indirizzo del listino
+
+- [ ] Incollando l'indirizzo copiato dalla barra del browser dopo una prova
+      (`…/api.php?azione=salute`), l'app lo riduce a `…/api.php`.
+- [ ] Un indirizzo già salvato storto si raddrizza da solo al primo avvio,
+      senza doverlo reinserire.
+
 ### Sorgente automatica dei prezzi
 
 - [ ] Con nel database una tabella `futbin_giocatori_gold`, in *Prezzi*

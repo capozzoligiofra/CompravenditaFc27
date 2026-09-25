@@ -10,6 +10,7 @@
 
 import type { Unione } from '../../shared/duplicates.d.mts'
 import type { RigaSorgente } from '../../shared/source.d.mts'
+import { normalizzaServer } from '../../shared/server-address.mjs'
 import type { AppData, Platform, Player } from '../types.ts'
 
 const CHIAVE_ACCOUNT = 'fc27-trader:account'
@@ -20,6 +21,8 @@ export interface Account {
   nome: string
   token: string
 }
+
+export { normalizzaServer }
 
 export class CloudError extends Error {
   /** Il codice HTTP, quando la risposta è arrivata. 401 vuol dire «token non più valido». */
@@ -37,7 +40,9 @@ export function leggiAccount(): Account | null {
     if (!grezzo) return null
     const letto = JSON.parse(grezzo) as Partial<Account>
     if (!letto.server || !letto.nome || !letto.token) return null
-    return { server: letto.server, nome: letto.nome, token: letto.token }
+    // L'indirizzo si ripulisce anche in lettura: chi l'aveva gia' salvato
+    // storto non deve reinserirlo a mano.
+    return { server: normalizzaServer(letto.server), nome: letto.nome, token: letto.token }
   } catch {
     return null
   }
@@ -50,15 +55,6 @@ export function salvaAccount(account: Account | null): void {
   } catch {
     // Storage bloccato: la condivisione varrà solo per questa sessione.
   }
-}
-
-/** L'indirizzo si scrive una volta; si accetta anche senza «api.php» in fondo. */
-export function normalizzaServer(indirizzo: string): string {
-  const pulito = indirizzo.trim().replace(/\s+/g, '')
-  if (!pulito) return ''
-  const conProtocollo = /^https?:\/\//i.test(pulito) ? pulito : `https://${pulito}`
-  const senzaBarra = conProtocollo.replace(/\/+$/, '')
-  return /api\.php$/i.test(senzaBarra) ? senzaBarra : `${senzaBarra}/api.php`
 }
 
 async function chiama<T>(
@@ -274,8 +270,13 @@ export function storicoSorgente(
   return chiama(server, 'sorgente', { cerca: { cosa: 'storico', nome, voto: String(voto) }, signal })
 }
 
+/** La versione di api.php che questa app si aspetta di trovare sul server. */
+export const VERSIONE_API_ATTESA = 4
+
 export interface Diagnostica {
   php: string
+  /** Assente sui server con un api.php anteriore a questo controllo. */
+  versione?: number
   database: string
   giocatori: number
   tabelle: number
