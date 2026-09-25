@@ -703,20 +703,32 @@ così il telefono nuovo riceve la rosa invece di azzerarla.
 server e in copia su ogni dispositivo. Per ripartire da zero servono tutti e
 due i passaggi, in quest'ordine:
 
-1. **Sul server**, da phpMyAdmin (scheda SQL):
-   `delete from prezzi; delete from storico; delete from giocatori;`
-   (`giocatori` è l'anagrafica completa: se cancelli quella, il catalogo va
-   ricondiviso da un dispositivo che ce l'ha)
-   e, se vuoi buttare anche il catalogo condiviso,
-   `delete from catalogo; delete from catalogo_stato;`
-   Gli account restano: nessuno deve rientrare.
+1. **Sul server**, da phpMyAdmin (scheda SQL): incolla
+   **`server-php/svuota.sql`**, che è scritto apposta e commentato riga per
+   riga. Svuota `giocatori`, `prezzi`, `storico` e il catalogo condiviso; in
+   fondo, separate e segnalate, ci sono anche le tre righe che buttano
+   account e dati personali di tutti — se vuoi tenere le persone, fermati
+   prima. Le tabelle restano al loro posto, quindi non serve rieseguire
+   `schema.sql`.
 2. **Su ogni dispositivo**, in *Opzioni → Listino condiviso*, **Dimentica i
    prezzi scaricati**. Senza questo passo il telefono continuerebbe a mostrare
    la sua copia di prezzi che sul server non esistono più.
 
 Prima del passo 1 conviene cancellare i propri prezzi scritti a mano (*Opzioni
 → Dati locali → cancellali*): altrimenti la prima sincronizzazione li rimanda
-sul server, e il listino si ripopola da solo.
+sul server, e il listino si ripopola da solo. Stessa cosa per il catalogo, che
+però non risale da solo: si toglie da *Prezzi → Catalogo dei giocatori →
+Svuota il catalogo*.
+
+Se svuoti anche `sessioni` e `utenti`, il token salvato su ogni telefono non
+vale più. **Non è un problema**: il token non è una password, è il nome che
+dice chi sei, e quello l'app ce l'ha — appena il server risponde «non
+riconosciuto», rientra da sola e continua. Gli account però vengono ricreati
+da capo, quindi chi teneva rosa e watchlist solo sul server le ritrova solo
+se sono ancora sul suo dispositivo.
+
+Per controllare che sia andata: *Opzioni → Listino condiviso* → **Controlla
+il server**, che deve dire «0 giocatori in archivio».
 
 Non c'è un pulsante «svuota tutto» che agisca sul server, ed è voluto: il nome
 non è una password, quindi chiunque conosca l'indirizzo potrebbe cancellare i

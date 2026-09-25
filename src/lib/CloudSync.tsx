@@ -4,7 +4,9 @@ import { applicaRemoti, daInviare, scegliDati } from '../../shared/sync.mjs'
 import type { PrezzoCondiviso } from '../../shared/sync.d.mts'
 import { dalServer, leggiVersioneCatalogo, salvaVersioneCatalogo } from './catalogStore.ts'
 import {
+  CloudError,
   datiPersonali,
+  entra,
   inviaDati,
   inviaPrezzi,
   scaricaBloccoCatalogo,
@@ -16,6 +18,8 @@ import {
 import { useStore } from './useStore.ts'
 
 const OGNI = 3 * 60_000
+/** Non si rientra più spesso di così: se il server dice sempre di no, non serve insistere. */
+const UN_MINUTO = 60_000
 const ATTESA_DOPO_UNA_MODIFICA = 2_000
 
 export interface StatoSync {
@@ -50,7 +54,7 @@ function raccogliCarte(prezzi: { id: string; carta?: string; valutazione?: numbe
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const store = useStore()
-  const { account, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati, aggiungiAlCatalogo } = store
+  const { account, setAccount, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati, aggiungiAlCatalogo } = store
 
   // Il ciclo di sincronizzazione è asincrono: quando finisce, lo stato di
   // React può essere cambiato sotto i piedi. Si lavora sempre sull'ultima
@@ -64,6 +68,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [ultima, setUltima] = useState(0)
   const [errore, setErrore] = useState<string | null>(null)
   const occupato = useRef(false)
+  const rientrato = useRef(0)
   const impronta = useRef<string | null>(null)
 
   const allineaCatalogo = useCallback(async () => {
@@ -151,12 +156,26 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setErrore(null)
       setUltima(Date.now())
     } catch (problema) {
+      // Il token non vale più: il listino è stato svuotato dal pannello, o
+      // le sessioni sono scadute. Non è una cosa da far risolvere a mano —
+      // il token non è una password, è il nome che dice chi sei, e quello
+      // l'app ce l'ha. Si rientra da soli e si riprova.
+      if (problema instanceof CloudError && problema.stato === 401 && Date.now() - rientrato.current > UN_MINUTO) {
+        rientrato.current = Date.now()
+        try {
+          setAccount(await entra(account.server, account.nome))
+          setErrore(null)
+          return
+        } catch {
+          // Se non si riesce nemmeno a rientrare, vale il messaggio di sotto.
+        }
+      }
       setErrore(problema instanceof Error ? problema.message : 'Sincronizzazione non riuscita.')
     } finally {
       occupato.current = false
       setInCorso(false)
     }
-  }, [account, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati, allineaCatalogo])
+  }, [account, setAccount, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati, allineaCatalogo])
 
   // Appena collegati, poi ogni tanto, e ogni volta che si torna sull'app:
   // è il momento in cui è più probabile che qualcun altro abbia scritto.

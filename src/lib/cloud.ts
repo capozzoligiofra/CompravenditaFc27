@@ -20,7 +20,15 @@ export interface Account {
   token: string
 }
 
-export class CloudError extends Error {}
+export class CloudError extends Error {
+  /** Il codice HTTP, quando la risposta è arrivata. 401 vuol dire «token non più valido». */
+  stato?: number
+
+  constructor(messaggio: string, stato?: number) {
+    super(messaggio)
+    this.stato = stato
+  }
+}
 
 export function leggiAccount(): Account | null {
   try {
@@ -93,7 +101,7 @@ async function chiama<T>(
   }
   if (!risposta.ok) {
     const messaggio = (dati as { errore?: string } | null)?.errore
-    throw new CloudError(messaggio ?? `Il server ha risposto ${risposta.status}.`)
+    throw new CloudError(messaggio ?? `Il server ha risposto ${risposta.status}.`, risposta.status)
   }
   return dati as T
 }

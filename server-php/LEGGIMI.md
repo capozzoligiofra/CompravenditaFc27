@@ -84,6 +84,15 @@ e **l'elenco delle tabelle mancanti**: se ne manca una, basta rieseguire
 `schema.sql` da phpMyAdmin; se i giocatori sono molti meno delle carte del tuo
 CSV, il catalogo va ricondiviso dall'app.
 
+## Ripartire da zero
+
+`svuota.sql`, da incollare in phpMyAdmin come `schema.sql`. Svuota le tabelle
+senza toglierle, quindi dopo non serve rieseguire `schema.sql`. Le righe che
+cancellano account e dati personali sono in fondo, separate: se vuoi buttare
+solo giocatori e prezzi, fermati prima. Dopo, su ogni dispositivo, servono i
+passi scritti in fondo al file: senza quelli il listino si ripopola da solo
+con le copie locali.
+
 ## Manutenzione
 
 Praticamente nessuna. Il listino si pota da solo quando supera
