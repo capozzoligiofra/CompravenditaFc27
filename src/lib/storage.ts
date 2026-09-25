@@ -16,6 +16,7 @@ export const defaultData: AppData = {
   priceHistory: {},
   sharedPrices: {},
   sharedPlayers: {},
+  sourcePrices: {},
   syncedAt: 0,
   syncedPlatform: 'ps',
   dataChangedAt: 0,
@@ -40,6 +41,7 @@ export function loadData(): AppData {
       // la prima sincronizzazione lo riporta.
       sharedPrices: isRecord(parsed.sharedPrices) ? parsed.sharedPrices : {},
       sharedPlayers: isPlainObject(parsed.sharedPlayers) ? parsed.sharedPlayers : {},
+      sourcePrices: isRecord(parsed.sourcePrices) ? parsed.sourcePrices : {},
       syncedAt: Number(parsed.syncedAt) || 0,
       syncedPlatform: parsed.syncedPlatform ?? 'ps',
       dataChangedAt: Number(parsed.dataChangedAt) || 0,
@@ -74,6 +76,9 @@ export function importData(raw: string): AppData {
     priceHistory: isPlainObject(parsed.priceHistory) ? parsed.priceHistory : {},
     sharedPrices: isRecord(parsed.sharedPrices) ? parsed.sharedPrices : {},
     sharedPlayers: isPlainObject(parsed.sharedPlayers) ? parsed.sharedPlayers : {},
+    // La sorgente si rilegge dal server alla prima sincronizzazione: importarla
+    // da un file avrebbe il solo effetto di mostrare prezzi vecchi per un minuto.
+    sourcePrices: {},
     syncedAt: Number(parsed.syncedAt) || 0,
     syncedPlatform: parsed.syncedPlatform ?? 'ps',
     dataChangedAt: Number(parsed.dataChangedAt) || 0,

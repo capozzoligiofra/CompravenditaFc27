@@ -84,6 +84,25 @@ e **l'elenco delle tabelle mancanti**: se ne manca una, basta rieseguire
 `schema.sql` da phpMyAdmin; se i giocatori sono molti meno delle carte del tuo
 CSV, il catalogo va ricondiviso dall'app.
 
+## Se hai gia' le tue tabelle dei prezzi
+
+Se nel database ci sono gia' tabelle con i prezzi aggiornati (per esempio
+`futbin_giocatori_gold`) e con quelli passati (`futbin_storico_gold`), l'app
+le legge da sola: non serve reincollare le cifre a mano. **Le tue tabelle non
+vengono mai scritte**: si leggono e basta, le riempie il tuo programma.
+
+I nomi delle colonne il server prova a riconoscerli da solo. Per vedere cosa
+ha capito: `https://iltuosito.it/fc27/api.php?azione=sorgente`, che risponde
+con l'elenco delle colonne vere e con quale ha scelto per ogni mestiere. Le
+stesse informazioni stanno nel pannello **Sorgente automatica** della pagina
+*Prezzi*. Se sbaglia, i nomi esatti si scrivono in `config.php` sotto
+`sorgente_colonne_prezzi` e vincono sul riconoscimento.
+
+Servono almeno una colonna con il **nome** e una con il **prezzo**. Quella
+della **valutazione** non e' obbligatoria ma conviene averla: senza, due
+carte che si chiamano uguale (Vitinha a 90 e Vitinha a 75) vengono saltate
+invece di rischiare di scambiarle.
+
 ## Ripartire da zero
 
 `svuota.sql`, da incollare in phpMyAdmin come `schema.sql`. Svuota le tabelle

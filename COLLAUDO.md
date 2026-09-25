@@ -260,6 +260,29 @@ Sono il motore delle fasi e della stima, e EA li sposta: qui si correggono.
       esempio «Vitinha», che c'è a 90 e a 75) **non** viene unito: compare
       nell'elenco sotto, con i candidati.
 
+### Sorgente automatica dei prezzi
+
+- [ ] Con nel database una tabella `futbin_giocatori_gold`, in *Prezzi*
+      compare il pannello **Sorgente automatica** con quante righe ha letto.
+- [ ] Il pannello dice **quale colonna** sta usando per nome, valutazione,
+      prezzo e data. Sono quelle giuste.
+- [ ] I prezzi delle carte che segui si riempiono **da soli**, senza scrivere
+      niente: dopo una sincronizzazione il filtro *Da aggiornare* si svuota.
+- [ ] Un giocatore con lettere non inglesi nel nome (Bonmatí, Mbappé,
+      Yıldız) prende il **suo** prezzo: se l'aggancio fallisse resterebbe
+      semplicemente senza, senza nessun errore, quindi va guardato.
+- [ ] Due carte con lo stesso nome e valutazione diversa (Vitinha 90 e 75)
+      prendono **prezzi diversi**.
+- [ ] Un prezzo scritto a mano **non sparisce**: resta nel listino con il tuo
+      nome, e la sorgente lo copre solo finché è più fresca.
+- [ ] Con anche `futbin_storico_gold`, il pannello dice quante righe di
+      andamento ha trovato, e il grafico della carta mostra i punti passati.
+- [ ] Se una colonna non viene riconosciuta, il pannello **lo dice** ed
+      elenca i nomi veri delle colonne, invece di non mostrare prezzi e
+      basta.
+- [ ] Senza nessuna di quelle tabelle, il pannello **non compare** e l'app
+      funziona esattamente come prima.
+
 ### Lo stesso nome scritto in due forme
 
 - [ ] Incolla un prezzo per «Aitana Bonmatí Conca» (il nome completo) mentre

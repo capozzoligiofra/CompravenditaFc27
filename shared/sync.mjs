@@ -13,17 +13,28 @@
 // Il primo serve a decidere chi vince, il secondo a chiedere «cos'è cambiato
 // da quando ti ho sentito l'ultima volta».
 
-/** Il prezzo buono per ogni carta: il più recente fra il tuo e quello comune. */
-export function prezziEffettivi(locali = {}, condivisi = {}) {
+/**
+ * Il prezzo buono per ogni carta, fra i tre posti da cui puo' arrivare: la
+ * sorgente automatica, il listino del gruppo e quello che hai scritto tu.
+ *
+ * La regola non cambia: vince l'osservazione più recente. A parità di data
+ * vince la tua, perché se hai appena guardato il mercato con i tuoi occhi
+ * quella è l'osservazione, non la copia.
+ *
+ * Quello che perde non si cancella: resta dov'è, e torna a valere appena è di
+ * nuovo il più fresco. Qui si decide solo cosa mostrare.
+ */
+export function prezziEffettivi(locali = {}, condivisi = {}, sorgente = {}) {
   const fuse = {}
-  for (const [id, voce] of Object.entries(condivisi)) {
-    if (voce?.price > 0) fuse[id] = { ...voce }
+  const metti = (id, voce, extra = {}) => {
+    if (!(voce?.price > 0)) return
+    const presente = fuse[id]
+    if (presente && (presente.at ?? 0) > (voce.at ?? 0)) return
+    fuse[id] = { price: voce.price, at: voce.at ?? 0, ...extra, ...(voce.autore ? { autore: voce.autore } : {}) }
   }
-  for (const [id, voce] of Object.entries(locali)) {
-    if (!(voce?.price > 0)) continue
-    const remoto = fuse[id]
-    if (!remoto || (voce.at ?? 0) >= (remoto.at ?? 0)) fuse[id] = { price: voce.price, at: voce.at ?? 0 }
-  }
+  for (const [id, voce] of Object.entries(sorgente)) metti(id, voce, { origine: 'sorgente' })
+  for (const [id, voce] of Object.entries(condivisi)) metti(id, voce)
+  for (const [id, voce] of Object.entries(locali)) metti(id, voce)
   return fuse
 }
 

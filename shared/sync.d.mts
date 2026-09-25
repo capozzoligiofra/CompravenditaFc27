@@ -2,11 +2,14 @@ export interface PrezzoCondiviso {
   price: number
   at: number
   autore?: string
+  /** Presente quando il prezzo arriva dalla sorgente automatica. */
+  origine?: 'sorgente'
 }
 
 export function prezziEffettivi(
   locali?: Record<string, { price: number; at: number }>,
   condivisi?: Record<string, PrezzoCondiviso>,
+  sorgente?: Record<string, { price: number; at: number }>,
 ): Record<string, PrezzoCondiviso>
 
 export function daInviare(

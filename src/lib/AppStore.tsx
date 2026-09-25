@@ -61,6 +61,8 @@ export interface Store {
   clearManualPrices: () => void
   /** Butta la copia locale del listino: prezzi e carte scaricati dal server. */
   dimenticaListino: () => void
+  /** I prezzi appena letti dalla sorgente automatica del server. */
+  impostaPrezziSorgente: (prezzi: Record<string, { price: number; at: number }>) => void
   /** Fonde i doppioni: la carta senza valutazione sparisce dentro quella buona. */
   unisciDoppioni: (unioni: Unione[]) => number
   recordPrices: (quotes: Record<string, Quote | null>) => void
@@ -246,7 +248,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * esistono più. La tua rosa, la watchlist e i prezzi scritti da te restano.
    */
   const dimenticaListino = useCallback(() => {
-    setData((current) => ({ ...current, sharedPrices: {}, sharedPlayers: {}, syncedAt: 0 }))
+    setData((current) => ({ ...current, sharedPrices: {}, sharedPlayers: {}, sourcePrices: {}, syncedAt: 0 }))
+  }, [])
+
+  /**
+   * I prezzi della sorgente automatica. Sostituiscono in blocco i precedenti,
+   * non si fondono: la sorgente e' una fotografia di adesso, e una carta che
+   * ne e' sparita non deve restare a mostrare il prezzo di ieri. I prezzi
+   * scritti a mano non si toccano — la sorgente li copre finche' e' piu'
+   * fresca, poi tornano a valere da soli.
+   */
+  const impostaPrezziSorgente = useCallback((prezzi: Record<string, { price: number; at: number }>) => {
+    setData((current) => {
+      const adesso = Date.now()
+      const priceHistory = { ...current.priceHistory }
+      let cambiato = Object.keys(prezzi).length !== Object.keys(current.sourcePrices).length
+      for (const [id, voce] of Object.entries(prezzi)) {
+        if (current.sourcePrices[id]?.price !== voce.price || current.sourcePrices[id]?.at !== voce.at) cambiato = true
+        // Anche questi sono osservazioni, e valgono per lo storico con la
+        // data in cui il prezzo e' stato visto, non con quella di adesso.
+        const quando = voce.at || adesso
+        if (needsSnapshot(priceHistory[id] ?? [], voce.price, quando)) {
+          priceHistory[id] = recordSnapshot(priceHistory[id] ?? [], voce.price, quando)
+        }
+      }
+      if (!cambiato) return current
+      return { ...current, sourcePrices: prezzi, priceHistory }
+    })
   }, [])
 
   /**
@@ -419,8 +447,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // aspetta la sincronizzazione.
   const prezzi = useMemo(() => {
     const comune = data.syncedPlatform === data.settings.platform ? data.sharedPrices : {}
-    return prezziEffettivi(data.manualPrices, comune) as Record<string, PrezzoCondiviso>
-  }, [data.manualPrices, data.sharedPrices, data.syncedPlatform, data.settings.platform])
+    const automatici = data.syncedPlatform === data.settings.platform ? data.sourcePrices : {}
+    return prezziEffettivi(data.manualPrices, comune, automatici) as Record<string, PrezzoCondiviso>
+  }, [data.manualPrices, data.sharedPrices, data.sourcePrices, data.syncedPlatform, data.settings.platform])
 
   const value = useMemo<Store>(
     () => ({
@@ -449,6 +478,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       importaPrezzi,
       clearManualPrices,
       dimenticaListino,
+      impostaPrezziSorgente,
       unisciDoppioni,
       recordPrices,
       addCatalyst,
@@ -484,6 +514,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       importaPrezzi,
       clearManualPrices,
       dimenticaListino,
+      impostaPrezziSorgente,
       unisciDoppioni,
       recordPrices,
       addCatalyst,

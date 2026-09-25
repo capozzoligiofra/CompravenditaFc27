@@ -1,6 +1,8 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { applicaRemoti, daInviare, scegliDati } from '../../shared/sync.mjs'
+import { catalogoLocale } from '../../shared/catalog.mjs'
+import type { CartaBase } from '../../shared/catalog.d.mts'
 import type { PrezzoCondiviso } from '../../shared/sync.d.mts'
 import { dalServer, leggiVersioneCatalogo, salvaVersioneCatalogo } from './catalogStore.ts'
 import {
@@ -8,6 +10,7 @@ import {
   datiPersonali,
   entra,
   inviaDati,
+  prezziSorgente,
   inviaPrezzi,
   scaricaBloccoCatalogo,
   scaricaDati,
@@ -20,6 +23,8 @@ import { useStore } from './useStore.ts'
 const OGNI = 3 * 60_000
 /** Non si rientra più spesso di così: se il server dice sempre di no, non serve insistere. */
 const UN_MINUTO = 60_000
+/** Quante carte si chiedono alla sorgente per volta: quelle che segui, non tutta la tabella. */
+const MAX_CARTE_SORGENTE = 2000
 const ATTESA_DOPO_UNA_MODIFICA = 2_000
 
 export interface StatoSync {
@@ -54,7 +59,7 @@ function raccogliCarte(prezzi: { id: string; carta?: string; valutazione?: numbe
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const store = useStore()
-  const { account, setAccount, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati, aggiungiAlCatalogo } = store
+  const { account, setAccount, impostaPrezziCondivisi, impostaPrezziSorgente, applicaDatiRemoti, segnaDatiCambiati, aggiungiAlCatalogo } = store
 
   // Il ciclo di sincronizzazione è asincrono: quando finisce, lo stato di
   // React può essere cambiato sotto i piedi. Si lavora sempre sull'ultima
@@ -69,6 +74,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [errore, setErrore] = useState<string | null>(null)
   const occupato = useRef(false)
   const rientrato = useRef(0)
+  // null = non si sa ancora, false = il server non ha una sorgente utilizzabile.
+  const sorgenteViva = useRef<boolean | null>(null)
   const impronta = useRef<string | null>(null)
 
   const allineaCatalogo = useCallback(async () => {
@@ -89,6 +96,41 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     // browser era pieno, al prossimo giro ci riproviamo.
     if (esito.salvato) salvaVersioneCatalogo(stato.versione)
   }, [account, aggiungiAlCatalogo])
+
+  /**
+   * I prezzi della sorgente automatica, per le carte che l'app conosce.
+   *
+   * Si chiede solo quello che serve: le carte che segui, non le ventimila
+   * della tabella. E se il server non ha una sorgente non succede niente —
+   * e' un di piu', non un requisito, e l'app deve funzionare identica senza.
+   */
+  const leggiSorgente = useCallback(async () => {
+    if (!account) return
+    if (sorgenteViva.current === false) return
+    const dati = datiRef.current
+    const carte = (
+      catalogoLocale({
+        seen: dati.seen,
+        watchlist: dati.watchlist,
+        positions: dati.positions,
+        condivise: dati.sharedPlayers,
+      }) as CartaBase[]
+    )
+      .slice(0, MAX_CARTE_SORGENTE)
+      .map((carta) => ({ id: carta.id, nome: carta.name, voto: carta.rating }))
+
+    if (carte.length === 0) return
+    try {
+      const esito = await prezziSorgente(account.server, dati.settings.platform, carte)
+      sorgenteViva.current = true
+      impostaPrezziSorgente(Object.fromEntries(esito.prezzi.map((voce) => [voce.id, { price: voce.price, at: voce.at }])))
+    } catch (problema) {
+      // Un 409 vuol dire «non ho una sorgente, o non la capisco»: e' una
+      // risposta, non un guasto, e non si insiste a ogni sincronizzazione.
+      if (problema instanceof CloudError && problema.stato === 409) sorgenteViva.current = false
+      else throw problema
+    }
+  }, [account, impostaPrezziSorgente])
 
   const sincronizza = useCallback(async () => {
     if (!account || occupato.current) return
@@ -152,6 +194,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       // Il catalogo del gruppo: si scarica solo se è più nuovo di quello che
       // hai già, e una volta sola — sono megabyte, non un ping.
       await allineaCatalogo()
+      await leggiSorgente()
 
       setErrore(null)
       setUltima(Date.now())
@@ -175,7 +218,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       occupato.current = false
       setInCorso(false)
     }
-  }, [account, setAccount, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati, allineaCatalogo])
+  }, [account, setAccount, impostaPrezziCondivisi, applicaDatiRemoti, segnaDatiCambiati, allineaCatalogo, leggiSorgente])
 
   // Appena collegati, poi ogni tanto, e ogni volta che si torna sull'app:
   // è il momento in cui è più probabile che qualcun altro abbia scritto.

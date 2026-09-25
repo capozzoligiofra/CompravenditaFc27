@@ -225,6 +225,61 @@ export function unisciCarte(account: Account, unioni: Unione[]): Promise<{ unite
   })
 }
 
+export interface StatoSorgente {
+  attiva: boolean
+  pronta: boolean
+  motivo?: string
+  prezzi: TabellaSorgente
+  storico: TabellaSorgente & { pronto: boolean }
+}
+
+export interface TabellaSorgente {
+  tabella: string
+  esiste: boolean
+  colonne: string[]
+  /** Quale colonna della tabella fa quale mestiere, per come l'ha capito il server. */
+  riconosciute: Record<string, string | null>
+  mancanti: string[]
+  righe: number
+}
+
+/** Che tabelle dei prezzi ha il server, e cosa ha capito delle loro colonne. */
+export function statoSorgente(server: string, signal?: AbortSignal): Promise<StatoSorgente> {
+  return chiama(server, 'sorgente', { cerca: { cosa: 'stato' }, signal })
+}
+
+/**
+ * I prezzi della sorgente per le carte che ti interessano.
+ *
+ * Si mandano le carte invece di scaricare tutta la tabella: di ventimila
+ * righe te ne servono quelle che segui, e ventimila prezzi nel telefono
+ * sarebbero megabyte buttati. Con il nome viaggia la valutazione, che e'
+ * quella che distingue i due Vitinha.
+ */
+export function prezziSorgente(
+  server: string,
+  piattaforma: Platform,
+  carte: { id: string; nome: string; voto: number }[],
+  signal?: AbortSignal,
+): Promise<{ prezzi: { id: string; price: number; at: number }[]; carte: number }> {
+  return chiama(server, 'sorgente', {
+    metodo: 'POST',
+    cerca: { cosa: 'prezzi' },
+    corpo: { piattaforma, carte },
+    signal,
+  })
+}
+
+/** L'andamento passato di una carta, dalla tabella dello storico. */
+export function storicoSorgente(
+  server: string,
+  nome: string,
+  voto: number,
+  signal?: AbortSignal,
+): Promise<{ punti: { t: number; price: number }[] }> {
+  return chiama(server, 'sorgente', { cerca: { cosa: 'storico', nome, voto: String(voto) }, signal })
+}
+
 export interface Diagnostica {
   php: string
   database: string

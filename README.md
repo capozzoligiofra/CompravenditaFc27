@@ -416,6 +416,25 @@ Quello che si fa invece:
   il cursore sulla carta dopo. Si scrive anche `44k` o `1,2M`. I filtri
   *Da aggiornare / La mia rosa / Watchlist* servono a fare un giro per volta,
   e il contatore in alto dice quante ne restano.
+- **Se hai già i prezzi in un database, l'app se li prende da sola.** È il
+  modo di non scrivere più niente a mano: se sul server ci sono tabelle con i
+  prezzi aggiornati (`futbin_giocatori_gold`) e con quelli passati
+  (`futbin_storico_gold`), l'app le legge a ogni sincronizzazione e le usa per
+  i prezzi e per l'andamento. **Le tue tabelle non vengono mai scritte**: le
+  riempie il tuo programma, l'app le legge e basta.
+  I nomi delle colonne non si indovinano — ogni database ha i suoi, e una
+  sorgente che non si aggancia fallisce in silenzio — quindi il server guarda
+  cosa c'è davvero dentro la tabella e riconosce le colonne per nome, in
+  italiano o in inglese. Il pannello *Sorgente automatica*, nella pagina
+  *Prezzi*, scrive quale colonna sta usando per il prezzo, quale per il nome e
+  quali non ha riconosciuto; se sbaglia, i nomi esatti si fissano in
+  `config.php`. Il prezzo lo legge com'è scritto: `985000`, `985.000`, `985K`,
+  `1,2M`.
+  Servono nome e prezzo; la valutazione è facoltativa ma conviene, perché è
+  quella che distingue **Vitinha 90 dal PSG da Vitinha 75**, che sono due
+  persone. Senza, quei casi vengono saltati invece di tirare a indovinare.
+  I prezzi della sorgente valgono come tutti gli altri — vince l'osservazione
+  più recente — e quelli che hai scritto tu non si perdono.
 - **Caricare il catalogo dei giocatori.** In *Prezzi* → «Catalogo dei
   giocatori» si carica un **CSV** con i nomi e, se c'è, la valutazione: da
   quel momento la ricerca li trova tutti e gli elenchi di prezzi riconoscono i

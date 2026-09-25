@@ -4,6 +4,7 @@ import PlayerLink from '../components/PlayerLink.tsx'
 import CardSearch from '../components/CardSearch.tsx'
 import CatalogImport from '../components/CatalogImport.tsx'
 import Duplicates from '../components/Duplicates.tsx'
+import SourceStatus from '../components/SourceStatus.tsx'
 import JsonPriceImport from '../components/JsonPriceImport.tsx'
 import PriceListImport from '../components/PriceListImport.tsx'
 import { Card, CardTitle, EmptyState, Pill, Stat, buttonClass } from '../components/ui.tsx'
@@ -219,6 +220,8 @@ export default function Prices() {
       <PriceListImport />
 
       <JsonPriceImport />
+
+      <SourceStatus />
 
       <CatalogImport />
 

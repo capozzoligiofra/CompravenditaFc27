@@ -41,6 +41,10 @@ $config = file_exists(__DIR__ . '/config.php')
     ? require __DIR__ . '/config.php'
     : null;
 
+// La sorgente automatica sta in un file suo: e' un pezzo che si puo' non
+// usare, e tenerlo separato lascia api.php leggibile.
+require_once __DIR__ . '/sorgente.php';
+
 // --- Intestazioni ------------------------------------------------------
 
 $origine = $_SERVER['HTTP_ORIGIN'] ?? '';
@@ -510,6 +514,144 @@ try {
                 'completo' => $completo,
                 'giocatori' => $scritte,
             ]);
+
+        case 'sorgente':
+            // La sorgente automatica: le tabelle dei prezzi che hai messo tu
+            // nel database. Si leggono e basta — non si scrivono mai.
+            $impostazioni = configurazioneSorgente($config);
+            if (!$impostazioni['attiva']) {
+                rispondi(['attiva' => false, 'pronta' => false, 'motivo' => 'Sorgente disattivata in config.php.']);
+            }
+            $mappaPrezzi = leggiColonneSorgente($db, $impostazioni['prezzi'], VOLUTE_PREZZI, $impostazioni['colonne_prezzi']);
+            $mancaPrezzi = array_values(array_intersect(NECESSARIE_PREZZI, $mappaPrezzi['mancanti']));
+            $pronta = $mappaPrezzi['esiste'] && count($mancaPrezzi) === 0;
+            $cosa = (string) ($_GET['cosa'] ?? 'stato');
+
+            if ($cosa === 'stato') {
+                $mappaStorico = leggiColonneSorgente($db, $impostazioni['storico'], VOLUTE_STORICO, $impostazioni['colonne_storico']);
+                $mancaStorico = array_values(array_intersect(NECESSARIE_STORICO, $mappaStorico['mancanti']));
+                // Si dice cosa si e' capito e cosa no, con i nomi veri delle
+                // colonne: una sorgente che non parte deve saper spiegare
+                // perche', o si finisce a indovinare.
+                rispondi([
+                    'attiva' => true,
+                    'pronta' => $pronta,
+                    'prezzi' => [
+                        'tabella' => $mappaPrezzi['tabella'],
+                        'esiste' => $mappaPrezzi['esiste'],
+                        'colonne' => $mappaPrezzi['colonne'],
+                        'riconosciute' => $mappaPrezzi['trovate'],
+                        'mancanti' => $mancaPrezzi,
+                        'righe' => $mappaPrezzi['esiste']
+                            ? (int) $db->query('select count(*) as n from `' . $impostazioni['prezzi'] . '`')->fetch()['n']
+                            : 0,
+                    ],
+                    'storico' => [
+                        'tabella' => $mappaStorico['tabella'],
+                        'esiste' => $mappaStorico['esiste'],
+                        'colonne' => $mappaStorico['colonne'],
+                        'riconosciute' => $mappaStorico['trovate'],
+                        'mancanti' => $mancaStorico,
+                        'pronto' => $mappaStorico['esiste'] && count($mancaStorico) === 0,
+                        'righe' => $mappaStorico['esiste']
+                            ? (int) $db->query('select count(*) as n from `' . $impostazioni['storico'] . '`')->fetch()['n']
+                            : 0,
+                    ],
+                ]);
+            }
+
+            if (!$pronta) {
+                errore(
+                    $mappaPrezzi['esiste']
+                        ? 'Nella tabella ' . $impostazioni['prezzi'] . ' non riconosco le colonne: ' . implode(', ', $mancaPrezzi) . '.'
+                        : 'La tabella ' . $impostazioni['prezzi'] . " non c'e'.",
+                    409,
+                );
+            }
+
+            if ($cosa === 'prezzi') {
+                if ($metodo !== 'POST') {
+                    errore('Serve una POST con le carte che ti interessano.', 405);
+                }
+                $dati = corpo();
+                $carte = is_array($dati['carte'] ?? null) ? $dati['carte'] : [];
+                if (count($carte) > 2000) {
+                    $carte = array_slice($carte, 0, 2000);
+                }
+                $piattaforma = piattaformaValida($dati['piattaforma'] ?? 'ps');
+                $indice = indiceSorgente($db, $mappaPrezzi, $impostazioni['prezzi'], $impostazioni['massimo']);
+                $ora = adesso();
+                $prezzi = [];
+                foreach ($carte as $carta) {
+                    if (!is_array($carta)) {
+                        continue;
+                    }
+                    $id = idValido($carta['id'] ?? null);
+                    $nome = is_scalar($carta['nome'] ?? null) ? (string) $carta['nome'] : '';
+                    if ($id === null || $nome === '') {
+                        continue;
+                    }
+                    $righe = $indice[normalizzaNomeCarta($nome)] ?? null;
+                    if ($righe === null) {
+                        continue;
+                    }
+                    $scelta = scegliRigaSorgente($righe, (int) ($carta['voto'] ?? 0), $piattaforma);
+                    if ($scelta === null) {
+                        continue;
+                    }
+                    $prezzi[] = [
+                        'id' => $id,
+                        'price' => $scelta['prezzo'],
+                        // Senza una data nella tabella vale «adesso»: il prezzo
+                        // e' quello che c'e' in questo momento, ed e' l'unica
+                        // cosa onesta da dire.
+                        'at' => $scelta['quando'] > 0 ? $scelta['quando'] : $ora,
+                    ];
+                }
+                rispondi(['piattaforma' => $piattaforma, 'adesso' => $ora, 'prezzi' => $prezzi, 'carte' => count($indice)]);
+            }
+
+            if ($cosa === 'storico') {
+                $mappaStorico = leggiColonneSorgente($db, $impostazioni['storico'], VOLUTE_STORICO, $impostazioni['colonne_storico']);
+                if (!$mappaStorico['esiste'] || count(array_intersect(NECESSARIE_STORICO, $mappaStorico['mancanti'])) > 0) {
+                    rispondi(['punti' => [], 'motivo' => 'Storico non disponibile.']);
+                }
+                $nome = is_scalar($_GET['nome'] ?? null) ? (string) $_GET['nome'] : '';
+                if (trim($nome) === '') {
+                    errore('Serve il nome della carta.');
+                }
+                $voto = (int) ($_GET['voto'] ?? 0);
+                $c = $mappaStorico['trovate'];
+                $campi = ['`' . $c['nome'] . '` as nome', '`' . $c['prezzo'] . '` as prezzo', '`' . $c['giorno'] . '` as giorno'];
+                if (!empty($c['valutazione'])) {
+                    $campi[] = '`' . $c['valutazione'] . '` as valutazione';
+                }
+                // Il confronto sul nome lo fa il database con la sua
+                // collazione, che ignora maiuscole e accenti; il controllo
+                // fine, quello che toglie punti e apostrofi, si rifa' qui.
+                $query = $db->prepare(
+                    'select ' . implode(', ', $campi) . ' from `' . $impostazioni['storico'] . '`
+                     where `' . $c['nome'] . '` = ? order by `' . $c['giorno'] . '` asc limit 400'
+                );
+                $query->execute([trim($nome)]);
+                $punti = [];
+                foreach ($query->fetchAll() as $riga) {
+                    if (normalizzaNomeCarta((string) $riga['nome']) !== normalizzaNomeCarta($nome)) {
+                        continue;
+                    }
+                    if ($voto > 0 && isset($riga['valutazione']) && (int) $riga['valutazione'] > 0 && (int) $riga['valutazione'] !== $voto) {
+                        continue;
+                    }
+                    $prezzo = prezzoInMonete($riga['prezzo']);
+                    $quando = quandoInMillisecondi($riga['giorno']);
+                    if ($prezzo > 0 && $quando > 0) {
+                        $punti[] = ['t' => $quando, 'price' => $prezzo];
+                    }
+                }
+                rispondi(['punti' => array_slice($punti, -120)]);
+            }
+
+            errore('Non so cosa vuoi dalla sorgente: usa stato, prezzi o storico.', 404);
 
         case 'unisci':
             // Due carte, lo stesso giocatore: succedeva prima che esistesse il
